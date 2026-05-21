@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vessel Risk Details - Marine Hull Insurance</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/riskvessel.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <i class="fas fa-ship"></i> Marine RiskManager
+        </div>
+        <ul class="nav-menu">
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1><i class="fas fa-ship"></i> Marine Hull Risk Details</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" id="editBtn"><i class="fas fa-edit"></i> Edit</button>
+                <button class="btn btn-secondary" id="saveBtn"><i class="fas fa-save"></i> Save</button>
+                <button class="btn btn-danger" id="deleteBtn"><i class="fas fa-trash"></i> Delete</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span id="riskBadge" class="risk-badge">Risk No: 1/1</span>
+                <span class="status-badge">Active</span>
+            </div>
+            <div class="card-body">
+                <!-- Multi Risk Switcher (multiple vessels) -->
+                <div class="risk-switcher">
+                    <div class="risk-switcher-head">
+                        <span class="risk-switcher-title">Multi Vessel Setup</span>
+                        <button type="button" id="addRiskBtn" class="btn-add-risk">
+                            <i class="fas fa-plus-circle"></i> Add Vessel
+                        </button>
+                    </div>
+                    <div id="riskList" class="risk-list"></div>
+                </div>
+
+                <!-- Main vessel information fields -->
+                <div class="info-grid" id="vesselMainFields">
+                    <!-- JS will populate -->
+                </div>
+
+                <!-- Tabs: Vessel Details & Coverage -->
+                <div class="breakdown-section">
+                    <h3>Vessel & Coverage Breakdown</h3>
+                    <div class="tabs-shell">
+                        <div class="tab-controls">
+                            <button type="button" class="tab-btn active" data-target="vessel-tab"><i class="fas fa-info-circle"></i> Object Detail</button>
+                            <button type="button" class="tab-btn" data-target="coverage-tab"><i class="fas fa-umbrella"></i> Coverage & Premium</button>
+                        </div>
+
+                        <!-- Tab: Vessel Details (hull, machinery, equipment breakdown) -->
+                        <div id="vessel-tab" class="tab-panel active">
+                            <div id="vesselDetailRows" class="entry-list"></div>
+                            <div class="tab-tools">
+                                <button type="button" id="addAssetRowBtn" class="btn-add-row">
+                                    <i class="fas fa-plus-circle"></i> Add Object
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tab: Coverage (with rate per mil) -->
+                        <div id="coverage-tab" class="tab-panel">
+                            <p class="lookup-hint">Coverages and rates in percent (%). Premium = Total Asset Value × (Total Rate / 100)</p>
+                            <div id="coverageRows" class="entry-list"></div>
+                            <div class="tab-tools">
+                                <button type="button" id="addCoverageRowBtn" class="btn-add-row">
+                                    <i class="fas fa-plus-circle"></i> Add Coverage
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Premium Calculation Card -->
+                    <div class="calc-card">
+                        <h4><i class="fas fa-calculator"></i> Premium Calculation</h4>
+                        <div id="riskPremiumBreakdown" class="premium-breakdown-table"></div>
+                        <div class="active-risk-detail">
+                            <div class="calc-item">
+                                <span class="calc-label">Active Vessel Total Asset Value</span>
+                                <span id="activeAssetTotalDisplay" class="calc-value">0,00</span>
+                            </div>
+                            <div class="calc-item">
+                                <span class="calc-label">Total Rate (%)</span>
+                                <span id="activeRateDisplay" class="calc-value">0,0000</span>
+                            </div>
+                            <div class="premium-box">
+                                <span class="calc-label">Active Risk Premium</span>
+                                <div id="premiumDisplay" class="premium-value">0,00</div>
+                                <span id="formulaDisplay" class="formula-text"></span>
+                            </div>
+                        </div>
+                        <div class="grand-total">
+                            <div><span class="calc-label">Total Sum Insured (All Vessels)</span><div id="globalSumInsuredDisplay" class="premium-value">0,00</div></div>
+                            <div><span class="calc-label">Total Premium (All Vessels)</span><div id="globalPremiumDisplay" class="premium-value">0,00</div></div>
+                        </div>
+                    </div>
+                </div>
+                <p class="footnote"><i class="fas fa-info-circle"></i> Data ready for API integration. All fields are editable per vessel.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/riskvessel.js"></script>
+</body>
+</html>
+

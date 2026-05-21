@@ -1,0 +1,115 @@
+/* Dashboard grid styles */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    grid-template-rows: 60px 40px 1fr;
+    grid-template-areas: 
+        "menu-bar menu-bar"
+        "status-bar status-bar"
+        "sidebar main-content";
+    height: 100vh;
+}
+
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: 60px 40px auto 1fr;
+        grid-template-areas: 
+            "menu-bar"
+            "status-bar"
+            "sidebar"
+            "main-content";
+    }
+    
+    .sidebar {
+        position: static !important;
+        height: auto !important;
+    }
+}
+
+.menu-bar {
+    grid-area: menu-bar;
+    background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
+}
+
+.status-bar {
+    grid-area: status-bar;
+    background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.sidebar {
+    grid-area: sidebar;
+    background: #f8fafc;
+    border-right: 1px solid #e2e8f0;
+    overflow-y: auto;
+    position: relative;
+    height: calc(100vh - 100px);
+}
+
+.main-content {
+    grid-area: main-content;
+    background: #f1f5f9;
+    overflow-y: auto;
+    padding: 20px;
+    height: calc(100vh - 100px);
+}
+
+.menu-dropdown {
+    position: absolute;
+    z-index: 50;
+    min-width: 220px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    display: none;
+}
+
+.menu-dropdown.show {
+    display: block;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.menu-item {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.menu-item:hover {
+    background-color: #e0f2fe;
+    border-left: 4px solid #0ea5e9;
+}
+
+.menu-item.active {
+    background-color: #dbeafe;
+    border-left: 4px solid #3b82f6;
+    font-weight: 600;
+    color: #1e40af;
+}
+
+.stat-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar {
+    height: 8px;
+    border-radius: 4px;
+    background-color: #e2e8f0;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}

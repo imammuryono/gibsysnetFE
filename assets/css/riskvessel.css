@@ -1,0 +1,358 @@
+/* riskvessel.css */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #eef2f9;
+    color: #1e293b;
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 0.8rem 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    flex-wrap: wrap;
+}
+
+.nav-brand {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #0f52ba;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-menu {
+    display: flex;
+    list-style: none;
+    gap: 1.5rem;
+}
+
+.nav-menu a {
+    text-decoration: none;
+    color: #475569;
+    font-weight: 500;
+}
+
+.nav-user {
+    color: #475569;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.8rem;
+}
+
+.btn {
+    padding: 0.5rem 1.2rem;
+    border-radius: 30px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: 0.2s;
+}
+
+.btn-primary { background: #0f52ba; color: white; }
+.btn-secondary { background: #e2e8f0; color: #1e293b; }
+.btn-danger { background: #dc2626; color: white; }
+.btn-outline { background: transparent; border: 1px solid #cbd5e1; }
+
+.card {
+    background: white;
+    border-radius: 28px;
+    box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.card-header {
+    background: #f8fafc;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+}
+
+.risk-badge {
+    background: #0f52ba;
+    color: white;
+    padding: 0.3rem 1rem;
+    border-radius: 50px;
+    font-weight: 600;
+}
+
+.status-badge {
+    background: #22c55e;
+    color: white;
+    padding: 0.3rem 1rem;
+    border-radius: 50px;
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+/* Multi risk switcher */
+.risk-switcher {
+    background: #f0f4fa;
+    border: 1px solid #cbdde6;
+    border-radius: 16px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.risk-switcher-head {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.7rem;
+}
+
+.risk-list {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.risk-pill {
+    border: 1px solid #b9cfec;
+    background: white;
+    border-radius: 999px;
+    padding: 0.4rem 1rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.risk-pill.active {
+    background: linear-gradient(120deg, #0f52ba, #1e3a8a);
+    color: white;
+    border: none;
+}
+
+.btn-add-risk {
+    background: #e6f0ff;
+    border: 1px solid #7da4d4;
+    border-radius: 10px;
+    padding: 0.4rem 0.9rem;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+/* Info grid for main vessel fields */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.8rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.info-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #5b6e8c;
+    letter-spacing: 0.5px;
+}
+
+.risk-input, .info-item input, .info-item select {
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.9rem;
+    background: white;
+}
+
+/* Tabs */
+.tabs-shell {
+    background: #f8fafc;
+    border-radius: 20px;
+    padding: 1rem;
+    margin-top: 0.8rem;
+}
+
+.tab-controls {
+    display: flex;
+    gap: 0.7rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.tab-btn {
+    border: 1px solid #b9cfec;
+    background: white;
+    border-radius: 999px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.tab-btn.active {
+    background: #0f52ba;
+    color: white;
+    border: none;
+}
+
+.tab-panel {
+    display: none;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+/* Entry list for assets and coverages */
+.entry-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.entry-row {
+    background: #ffffff;
+    border: 1px solid #e2edf7;
+    border-radius: 16px;
+    padding: 0.8rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 0.8rem;
+    align-items: end;
+}
+
+.field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.field-group label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #5b6e8c;
+    text-transform: uppercase;
+}
+
+.field-group input, .field-group select {
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 0.5rem 0.7rem;
+}
+
+.btn-icon {
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    color: #b91c1c;
+}
+
+.btn-add-row {
+    background: #e6f0ff;
+    border: 1px solid #7da4d4;
+    border-radius: 10px;
+    padding: 0.4rem 0.9rem;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    font-weight: 600;
+}
+
+/* Calculation card */
+.calc-card {
+    background: linear-gradient(135deg, #eef3fc, #e1eaf5);
+    border-radius: 20px;
+    padding: 1.2rem;
+    margin-top: 1.5rem;
+}
+
+.premium-breakdown-table {
+    overflow-x: auto;
+    margin-bottom: 1rem;
+}
+
+.premium-breakdown-table table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 14px;
+}
+
+.premium-breakdown-table th, .premium-breakdown-table td {
+    padding: 0.6rem;
+    text-align: right;
+}
+
+.active-risk-detail {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    background: #ffffffcc;
+    padding: 1rem;
+    border-radius: 16px;
+}
+
+.premium-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f52ba;
+    font-family: monospace;
+}
+
+.grand-total {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+    background: white;
+    padding: 1rem;
+    border-radius: 16px;
+    font-weight: 700;
+}
+
+.footnote {
+    margin-top: 1rem;
+    font-size: 0.75rem;
+    background: #f1f5f9;
+    padding: 0.5rem;
+    border-radius: 12px;
+    color: #475569;
+}
+
+@media (max-width: 768px) {
+    .entry-row, .active-risk-detail {
+        grid-template-columns: 1fr;
+    }
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+}

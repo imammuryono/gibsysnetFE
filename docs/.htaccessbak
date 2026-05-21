@@ -1,0 +1,22 @@
+# frontend/.htaccess
+RewriteEngine On
+RewriteBase /
+
+# Redirect semua request ke index.html kecuali file yang ada
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !\.(css|js|png|jpg|jpeg|gif|ico)$
+RewriteRule ^(.*)$ index.html [L,QSA]
+
+# Enable CORS for API calls
+Header set Access-Control-Allow-Origin "*"
+Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+
+# Security headers
+Header set X-Content-Type-Options "nosniff"
+Header set X-Frame-Options "SAMEORIGIN"
+Header set X-XSS-Protection "1; mode=block"
+# Tambahkan di .htaccess
+RewriteRule ^docs/reports$ reports/index.html [L]
+RewriteRule ^docs/reports.html$ reports/index.html [L]

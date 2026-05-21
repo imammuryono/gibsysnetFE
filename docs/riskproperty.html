@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Risk Details</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/riskproperty.css">
+    <style>
+        .risk-input,
+        .summary-input {
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 0.6rem 0.75rem;
+            font-size: 0.95rem;
+            width: 100%;
+            color: #0f172a;
+            background: #ffffff;
+        }
+
+        .risk-textarea {
+            resize: vertical;
+            min-height: 96px;
+            line-height: 1.45;
+            font-family: inherit;
+        }
+
+        .summary-input[readonly],
+        .risk-input[readonly] {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1d4ed8;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+        }
+
+        .risk-switcher {
+            margin-bottom: 1rem;
+            border: 1px solid #dbeafe;
+            background: #f8fbff;
+            border-radius: 14px;
+            padding: 0.9rem;
+        }
+
+        .risk-switcher-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.7rem;
+            margin-bottom: 0.7rem;
+            flex-wrap: wrap;
+        }
+
+        .risk-switcher-title {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: #1e3a8a;
+        }
+
+        .risk-list {
+            display: flex;
+            gap: 0.55rem;
+            flex-wrap: wrap;
+        }
+
+        .risk-pill {
+            border: 1px solid #bfdbfe;
+            background: #ffffff;
+            color: #1e3a8a;
+            border-radius: 999px;
+            padding: 0.42rem 0.9rem;
+            cursor: pointer;
+            font-size: 0.84rem;
+            font-weight: 700;
+        }
+
+        .risk-pill.active {
+            background: linear-gradient(120deg, #2563eb, #1d4ed8);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25);
+        }
+
+        .btn-add-risk {
+            border: 1px solid #93c5fd;
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-radius: 10px;
+            padding: 0.45rem 0.85rem;
+            font-size: 0.84rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .tabs-shell {
+            background: linear-gradient(165deg, #f8fbff 0%, #f1f5ff 100%);
+            border: 1px solid #dbeafe;
+            border-radius: 20px;
+            padding: 1.1rem;
+        }
+
+        .tab-controls {
+            display: flex;
+            gap: 0.7rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            border: 1px solid #bfdbfe;
+            background: #ffffff;
+            color: #1e3a8a;
+            border-radius: 999px;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(120deg, #2563eb, #1d4ed8);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+        }
+
+        .tab-panel {
+            display: none;
+            border: 1px solid #dbeafe;
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 1rem;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .lookup-hint {
+            margin-bottom: 0.9rem;
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
+        .entry-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+        }
+
+        .entry-row {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+            padding: 0.8rem;
+            display: grid;
+            grid-template-columns: minmax(220px, 2fr) minmax(160px, 1fr) auto;
+            gap: 0.7rem;
+            align-items: end;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .field-group label {
+            font-size: 0.78rem;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            color: #475569;
+            font-weight: 700;
+        }
+
+        .field-group select,
+        .field-group input,
+        .field-group textarea {
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 0.58rem 0.7rem;
+            font-size: 0.93rem;
+            background: #ffffff;
+            color: #0f172a;
+        }
+
+        .row-action {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: 1px solid #fecaca;
+            background: #fff1f2;
+            color: #dc2626;
+            cursor: pointer;
+        }
+
+        .tab-tools {
+            margin-top: 0.8rem;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .btn-add-row {
+            border: 1px solid #93c5fd;
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-radius: 10px;
+            padding: 0.5rem 0.85rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .calc-card {
+            margin-top: 1rem;
+            border-radius: 14px;
+            background: linear-gradient(145deg, #eff6ff, #e0ecff);
+            border: 1px solid #bfdbfe;
+            padding: 1rem;
+        }
+
+        .calc-card h4 {
+            margin-bottom: 0.4rem;
+            color: #1e3a8a;
+        }
+
+        .calc-desc {
+            margin-bottom: 0.8rem;
+            font-size: 0.9rem;
+            color: #334155;
+        }
+
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(150px, 1fr));
+            gap: 0.65rem;
+        }
+
+        .calc-item {
+            border: 1px solid #dbeafe;
+            border-radius: 10px;
+            background: #ffffff;
+            padding: 0.65rem;
+        }
+
+        .calc-label {
+            display: block;
+            font-size: 0.72rem;
+            letter-spacing: 0.2px;
+            text-transform: uppercase;
+            color: #64748b;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .calc-value {
+            display: block;
+            font-size: 0.95rem;
+            color: #0f172a;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+        }
+
+        .premium-box {
+            margin-top: 0.8rem;
+            border-top: 1px dashed #93c5fd;
+            padding-top: 0.7rem;
+        }
+
+        .premium-value {
+            font-size: 1.3rem;
+            color: #1d4ed8;
+            font-weight: 800;
+            font-family: 'Courier New', monospace;
+        }
+
+        @media (max-width: 768px) {
+            .entry-row {
+                grid-template-columns: 1fr;
+            }
+
+            .calc-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .row-action {
+                justify-content: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <i class="fas fa-shield-alt"></i> RiskManager
+        </div>
+      
+    </nav>
+
+    <div class="container" id="riskPropertySection">
+        <div class="page-header">
+            <h1><i class="fas fa-building"></i> Property Risk Details</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary"><i class="fas fa-edit"></i> Edit</button>
+                <button id="saveBtn" class="btn btn-secondary"><i class="fas fa-save"></i> Save</button>
+                <button class="btn btn-danger"><i class="fas fa-trash"></i> Delete</button>
+                <button class="btn btn-outline"><i class="fas fa-print"></i> Print</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span id="riskBadge" class="risk-badge">Risk No: 1/1</span>
+                <span class="status-badge">Active</span>
+            </div>
+
+            <div class="card-body">
+                <div class="risk-switcher">
+                    <div class="risk-switcher-head">
+                        <span class="risk-switcher-title">Multi Risk Setup</span>
+                        <button type="button" id="addRiskBtn" class="btn-add-risk">
+                            <i class="fas fa-plus-circle"></i> Add Risk
+                        </button>
+                    </div>
+                    <div id="riskList" class="risk-list"></div>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Risk Number (Auto)</span>
+                        <input type="text" id="riskNumberInput" class="risk-input" readonly>
+                    </div>
+                    <div class="info-item full-width">
+                        <span class="info-label">Address</span>
+                        <textarea id="addressInput" class="risk-input risk-textarea" rows="2" placeholder="Street address, building number, etc."></textarea>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Province</span>
+                        <select id="provinceSelect" class="risk-input">
+                            <option value="">-- Select Province --</option>
+                        </select>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">City</span>
+                        <select id="citySelect" class="risk-input" disabled>
+                            <option value="">-- Select Province first --</option>
+                        </select>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">District</span>
+                        <select id="districtSelect" class="risk-input" disabled>
+                            <option value="">-- Select City first --</option>
+                        </select>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Village</span>
+                        <select id="villageSelect" class="risk-input" disabled>
+                            <option value="">-- Select District first --</option>
+                        </select>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Postal Code</span>
+                        <select id="postalCodeSelect" class="risk-input" disabled>
+                            <option value="">-- Select Village first --</option>
+                        </select>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Occupation</span>
+                        <select id="occupationSelect" class="risk-input">
+                            <option value="">-- Select Occupation --</option>
+                        </select>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Class Construction</span>
+                        <select id="classConstructionSelect" class="risk-input">
+                            <option value="">-- Select Class Construction --</option>
+                            <option value="1st Class Construction">1st Class Construction</option>
+                            <option value="2nd Class Construction">2nd Class Construction</option>
+                            <option value="3rd Class Construction">3rd Class Construction</option>
+                            <option value="4th Class Construction">4th Class Construction</option>
+                            <option value="Market Risk">Market Risk</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+
+                    <div class="info-item full-width">
+                        <span class="info-label">Sum Insured (total object value from all risks)</span>
+                        <input type="text" id="sumInsuredInput" class="summary-input" value="0,00" readonly>
+                    </div>
+
+                    <div class="info-item full-width">
+                        <span class="info-label">Premium (sum of each risk premium, with rate per mil / 1000)</span>
+                        <input type="text" id="premiumInput" class="summary-input" value="0,00" readonly>
+                    </div>
+                </div>
+
+                <div class="breakdown-section" id="assetBreakdownTabs">
+                    <h3>Asset Breakdown</h3>
+
+                    <div class="tabs-shell">
+                        <div class="tab-controls" role="tablist" aria-label="Asset Breakdown Tabs">
+                            <button type="button" class="tab-btn active" data-target="object-tab" aria-selected="true">
+                                <i class="fas fa-cubes"></i> Object
+                            </button>
+                            <button type="button" class="tab-btn" data-target="coverage-tab" aria-selected="false">
+                                <i class="fas fa-umbrella"></i> Coverage
+                            </button>
+                        </div>
+
+                        <div id="object-tab" class="tab-panel active" role="tabpanel">
+                            <p class="lookup-hint">Rows are for active risk only. Lookup from table <strong>object_group</strong>. Total object value from all risks contributes to <strong>Sum Insured</strong>.</p>
+                            <div id="objectRows" class="entry-list"></div>
+                            <div class="tab-tools">
+                                <button type="button" id="addObjectRowBtn" class="btn-add-row">
+                                    <i class="fas fa-plus-circle"></i> Add Object
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="coverage-tab" class="tab-panel" role="tabpanel" aria-hidden="true">
+                            <p class="lookup-hint">Rows are for active risk only. Lookup from table <strong>coverages</strong>. Rate input is <strong>per mil</strong> and converted as <strong>rate / 1000</strong> in premium calculation.</p>
+                            <div id="coverageRows" class="entry-list"></div>
+                            <div class="tab-tools">
+                                <button type="button" id="addCoverageRowBtn" class="btn-add-row">
+                                    <i class="fas fa-plus-circle"></i> Add Coverage
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="calc-card">
+                        <h4><i class="fas fa-calculator" style="margin-right:0.4rem;"></i>Premium Calculation &mdash; Per Risk Breakdown</h4>
+                        <p class="calc-desc">Premium per Risk = Object Total &times; (Total Rate per Mil &divide; 1,000)</p>
+
+                        <!-- Per-risk table rendered by JS -->
+                        <div id="riskPremiumBreakdown" style="margin-bottom:1rem;overflow-x:auto;border-radius:10px;border:1px solid #bfdbfe;"></div>
+
+                        <!-- Active risk detail -->
+                        <div style="border:1px solid #93c5fd;border-radius:12px;padding:0.8rem;background:#f0f7ff;margin-bottom:0.85rem;">
+                            <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.3px;color:#1e40af;font-weight:700;margin-bottom:0.5rem;">
+                                <i class="fas fa-dot-circle"></i> Active Risk Detail
+                            </div>
+                            <div class="calc-grid" style="grid-template-columns:repeat(2,minmax(140px,1fr));margin-bottom:0.6rem;">
+                                <div class="calc-item">
+                                    <span class="calc-label">Object Total</span>
+                                    <span id="activeObjectDisplay" class="calc-value">0,00</span>
+                                </div>
+                                <div class="calc-item">
+                                    <span class="calc-label">Total Rate (permil)</span>
+                                    <span id="activeRateDisplay" class="calc-value">0,0000</span>
+                                </div>
+                            </div>
+                            <div class="premium-box" style="margin-top:0;border-top:1px dashed #93c5fd;padding-top:0.6rem;">
+                                <span class="calc-label">Active Risk Premium</span>
+                                <div id="premiumDisplay" class="premium-value">0,00</div>
+                                <span id="formulaDisplay" class="calc-value" style="font-size:0.82rem;color:#475569;margin-top:0.25rem;display:block;"></span>
+                            </div>
+                        </div>
+
+                        <!-- Grand total -->
+                        <div style="border:2px solid #2563eb;border-radius:12px;padding:0.85rem;background:#eff6ff;">
+                            <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.3px;color:#1e3a8a;font-weight:700;margin-bottom:0.65rem;">
+                                <i class="fas fa-layer-group"></i> Grand Total &mdash; All Risks
+                            </div>
+                            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.7rem;align-items:flex-end;">
+                                <div>
+                                    <span class="calc-label">Total Sum Insured</span>
+                                    <div id="globalObjectDisplay" class="premium-value" style="font-size:1.1rem;color:#1e3a8a;">0,00</div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <span class="calc-label">Total Premium</span>
+                                    <div id="globalPremiumDisplay" class="premium-value" style="font-size:1.4rem;">0,00</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="footnote">
+                    <i class="fas fa-info-circle"></i>
+                    This section is prepared to be embedded into the Risk tab of <strong>quotation.html</strong>.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabPanels = document.querySelectorAll('.tab-panel');
+
+            const riskBadge = document.getElementById('riskBadge');
+            const riskList = document.getElementById('riskList');
+            const addRiskBtn = document.getElementById('addRiskBtn');
+            const saveBtn = document.getElementById('saveBtn');
+
+            const riskNumberInput = document.getElementById('riskNumberInput');
+            const addressInput = document.getElementById('addressInput');
+            const provinceSelect = document.getElementById('provinceSelect');
+            const citySelect = document.getElementById('citySelect');
+            const districtSelect = document.getElementById('districtSelect');
+            const villageSelect = document.getElementById('villageSelect');
+            const postalCodeSelect = document.getElementById('postalCodeSelect');
+            const occupationSelect = document.getElementById('occupationSelect');
+            const classConstructionSelect = document.getElementById('classConstructionSelect');
+
+            const objectRowsContainer = document.getElementById('objectRows');
+            const coverageRowsContainer = document.getElementById('coverageRows');
+            const addObjectRowBtn = document.getElementById('addObjectRowBtn');
+            const addCoverageRowBtn = document.getElementById('addCoverageRowBtn');
+
+            const sumInsuredInput = document.getElementById('sumInsuredInput');
+            const premiumInput = document.getElementById('premiumInput');
+
+            const activeObjectDisplay = document.getElementById('activeObjectDisplay');
+            const activeRateDisplay = document.getElementById('activeRateDisplay');
+            const globalObjectDisplay = document.getElementById('globalObjectDisplay');
+            const globalPremiumDisplay = document.getElementById('globalPremiumDisplay');
+            const premiumDisplay = document.getElementById('premiumDisplay');
+            const formulaDisplay = document.getElementById('formulaDisplay');
+
+            const fallbackObjectGroups = [
+                { code: 'STK', name: 'Stock' },
+                { code: 'BLD', name: 'Building' },
+                { code: 'MCH', name: 'Machinery' }
+            ];
+
+            const fallbackCoverages = [
+                { code: 'FIRE', name: 'Fire' },
+                { code: 'FLOOD', name: 'Flood' },
+                { code: 'EARTH', name: 'Earthquake' }
+            ];
+
+            const fallbackOccupations = [
+                { code: 'OCC-01', name: 'Retail Shop' },
+                { code: 'OCC-02', name: 'Office' },
+                { code: 'OCC-03', name: 'Warehouse' }
+            ];
+
+            const moneyFormatter = new Intl.NumberFormat('id-ID', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+            const rateFormatter = new Intl.NumberFormat('id-ID', {
+                minimumFractionDigits: 4,
+                maximumFractionDigits: 4
+            });
+
+            let objectLookupList = [];
+            let coverageLookupList = [];
+            let occupationLookupList = [];
+
+            const risks = [];
+            let activeRiskIndex = 0;
+
+            function parseNumber(value) {
+                if (typeof value === 'number') {
+                    return Number.isFinite(value) ? value : 0;
+                }
+
+                if (value === null || value === undefined) {
+                    return 0;
+                }
+
+                const raw = String(value).trim().replace(/\s/g, '');
+                if (!raw) {
+                    return 0;
+                }
+
+                const lastComma = raw.lastIndexOf(',');
+                const lastDot = raw.lastIndexOf('.');
+
+                let normalized = raw;
+
+                // Support both decimal styles: 1.234,56 and 1,234.56, plus plain 1.5 or 1,5.
+                if (lastComma !== -1 && lastDot !== -1) {
+                    if (lastComma > lastDot) {
+                        normalized = raw.replace(/\./g, '').replace(',', '.');
+                    } else {
+                        normalized = raw.replace(/,/g, '');
+                    }
+                } else if (lastComma !== -1) {
+                    normalized = raw.replace(',', '.');
+                }
+
+                const n = Number(normalized);
+                return Number.isFinite(n) ? n : 0;
+            }
+
+            function formatMoney(value) {
+                return moneyFormatter.format(value);
+            }
+
+            function formatRate(value) {
+                return rateFormatter.format(value);
+            }
+
+            function formatFieldNumeric(input, decimals) {
+                const raw = String(input.value || '').trim();
+                if (!raw) {
+                    input.value = '';
+                    return;
+                }
+
+                const value = parseNumber(raw);
+                const formatter = new Intl.NumberFormat('id-ID', {
+                    minimumFractionDigits: decimals,
+                    maximumFractionDigits: decimals
+                });
+
+                input.value = formatter.format(value);
+            }
+
+            function getOptionLabel(item) {
+                const code = item.code || item.id || item.object_group_code || item.coverage_code || '';
+                const name = item.name || item.object_group_name || item.coverage_name || item.description || '';
+                return code && name ? code + ' - ' + name : (code || name || '-');
+            }
+
+            function renderOptions(items, placeholder, selectedValue) {
+                const options = ['<option value="">' + placeholder + '</option>'];
+                items.forEach(function (item) {
+                    const value = item.id || item.code || item.object_group_code || item.coverage_code || item.name || '';
+                    const selected = String(value) === String(selectedValue || '') ? ' selected' : '';
+                    options.push('<option value="' + String(value) + '"' + selected + '>' + getOptionLabel(item) + '</option>');
+                });
+                return options.join('');
+            }
+
+            async function loadLookupData(resource, fallbackItems, aliases) {
+                const resources = [resource].concat(aliases || []);
+                const endpoints = [];
+
+                resources.forEach(function (name) {
+                    endpoints.push('../backend/' + name + '.php');
+                    endpoints.push('../backend/api/' + name);
+                    endpoints.push('../backend/' + name);
+                });
+
+                for (const endpoint of endpoints) {
+                    try {
+                        const response = await fetch(endpoint);
+                        if (!response.ok) {
+                            continue;
+                        }
+
+                        const payload = await response.json();
+                        if (Array.isArray(payload) && payload.length > 0) {
+                            return payload;
+                        }
+
+                        if (payload && Array.isArray(payload.data) && payload.data.length > 0) {
+                            return payload.data;
+                        }
+                    } catch (error) {
+                        // Use fallback data when endpoint is unavailable.
+                    }
+                }
+
+                return fallbackItems;
+            }
+
+            /* ── Region cascade helpers ─────────────────────────────── */
+            const regionCache = {};
+
+            async function fetchRegion(url) {
+                if (regionCache[url]) return regionCache[url];
+                try {
+                    const resp = await fetch(url);
+                    if (!resp.ok) return [];
+                    const payload = await resp.json();
+                    const list = Array.isArray(payload) ? payload
+                        : (Array.isArray(payload.data) ? payload.data : []);
+                    regionCache[url] = list;
+                    return list;
+                } catch (e) {
+                    return [];
+                }
+            }
+
+            function buildRegionOptions(items, placeholder, selectedValue) {
+                let html = '<option value="">' + placeholder + '</option>';
+                items.forEach(function (item) {
+                    const val = String(item.id || item.code || '');
+                    const label = item.name || item.province_name || item.city_name ||
+                        item.district_name || item.village_name || val;
+                    const sel = val && val === String(selectedValue || '') ? ' selected' : '';
+                    html += '<option value="' + val + '"' + sel + '>' + label + '</option>';
+                });
+                return html;
+            }
+
+            async function loadProvinces(selectedId) {
+                const data = await fetchRegion('../backend/api/provinces');
+                provinceSelect.innerHTML = buildRegionOptions(data, '-- Select Province --', selectedId);
+                provinceSelect.disabled = false;
+            }
+
+            async function loadCities(provinceId, selectedId) {
+                citySelect.innerHTML = '<option value="">-- Loading... --</option>';
+                citySelect.disabled = true;
+                districtSelect.innerHTML = '<option value="">-- Select City first --</option>';
+                districtSelect.disabled = true;
+                villageSelect.innerHTML = '<option value="">-- Select District first --</option>';
+                villageSelect.disabled = true;
+                postalCodeSelect.innerHTML = '<option value="">-- Select Village first --</option>';
+                postalCodeSelect.disabled = true;
+                if (!provinceId) {
+                    citySelect.innerHTML = '<option value="">-- Select Province first --</option>';
+                    return;
+                }
+                const data = await fetchRegion('../backend/api/cities?province_id=' + encodeURIComponent(provinceId));
+                citySelect.innerHTML = buildRegionOptions(data, '-- Select City --', selectedId);
+                citySelect.disabled = false;
+            }
+
+            async function loadDistricts(cityId, selectedId) {
+                districtSelect.innerHTML = '<option value="">-- Loading... --</option>';
+                districtSelect.disabled = true;
+                villageSelect.innerHTML = '<option value="">-- Select District first --</option>';
+                villageSelect.disabled = true;
+                postalCodeSelect.innerHTML = '<option value="">-- Select Village first --</option>';
+                postalCodeSelect.disabled = true;
+                if (!cityId) {
+                    districtSelect.innerHTML = '<option value="">-- Select City first --</option>';
+                    return;
+                }
+                const data = await fetchRegion('../backend/api/districts?city_id=' + encodeURIComponent(cityId));
+                districtSelect.innerHTML = buildRegionOptions(data, '-- Select District --', selectedId);
+                districtSelect.disabled = false;
+            }
+
+            async function loadVillages(districtId, selectedId) {
+                villageSelect.innerHTML = '<option value="">-- Loading... --</option>';
+                villageSelect.disabled = true;
+                postalCodeSelect.innerHTML = '<option value="">-- Select Village first --</option>';
+                postalCodeSelect.disabled = true;
+                if (!districtId) {
+                    villageSelect.innerHTML = '<option value="">-- Select District first --</option>';
+                    return;
+                }
+                const data = await fetchRegion('../backend/api/villages?district_id=' + encodeURIComponent(districtId));
+                villageSelect.innerHTML = buildRegionOptions(data, '-- Select Village --', selectedId);
+                villageSelect.disabled = false;
+            }
+
+            async function loadPostalCodes(villageId, selectedId) {
+                postalCodeSelect.innerHTML = '<option value="">-- Loading... --</option>';
+                postalCodeSelect.disabled = true;
+                if (!villageId) {
+                    postalCodeSelect.innerHTML = '<option value="">-- Select Village first --</option>';
+                    return;
+                }
+                const data = await fetchRegion('../backend/api/postal_codes?village_id=' + encodeURIComponent(villageId));
+                // postal_code items: { id, postal_code } or just strings
+                let html = '<option value="">-- Select Postal Code --</option>';
+                data.forEach(function (item) {
+                    const val = String(item.postal_code || item.code || item.id || item);
+                    const sel = val === String(selectedId || '') ? ' selected' : '';
+                    html += '<option value="' + val + '"' + sel + '>' + val + '</option>';
+                });
+                postalCodeSelect.innerHTML = html;
+                postalCodeSelect.disabled = false;
+            }
+
+            async function renderRegionCascade(risk) {
+                await loadProvinces(risk.province);
+                await loadCities(risk.province, risk.city);
+                await loadDistricts(risk.city, risk.district);
+                await loadVillages(risk.district, risk.village);
+                await loadPostalCodes(risk.village, risk.postalCode);
+            }
+
+            function createDefaultRisk() {
+                return {
+                    address: '',
+                    village: '',
+                    district: '',
+                    city: '',
+                    province: '',
+                    postalCode: '',
+                    occupation: '',
+                    classConstruction: '',
+                    objects: [
+                        { objectGroup: '', value: '' }
+                    ],
+                    coverages: [
+                        { coverage: '', ratePerMil: '' }
+                    ]
+                };
+            }
+
+            function getActiveRisk() {
+                return risks[activeRiskIndex];
+            }
+
+            function renderRiskList() {
+                riskList.innerHTML = risks.map(function (_, index) {
+                    const activeClass = index === activeRiskIndex ? ' active' : '';
+                    return '<button type="button" class="risk-pill' + activeClass + '" data-risk-index="' + index + '">Risk ' + (index + 1) + '</button>';
+                }).join('');
+
+                riskNumberInput.value = String(activeRiskIndex + 1);
+                riskBadge.textContent = 'Risk No: ' + (activeRiskIndex + 1) + '/' + risks.length;
+            }
+
+            function renderRiskFields() {
+                const risk = getActiveRisk();
+                if (!risk) {
+                    return;
+                }
+
+                addressInput.value = risk.address;
+                renderRegionCascade(risk);
+                occupationSelect.innerHTML = renderOptions(occupationLookupList, '-- Select Occupation --', risk.occupation);
+                classConstructionSelect.value = risk.classConstruction || '';
+            }
+
+            function renderObjectRows() {
+                const risk = getActiveRisk();
+                if (!risk) {
+                    return;
+                }
+
+                objectRowsContainer.innerHTML = risk.objects.map(function (item, index) {
+                    return [
+                        '<div class="entry-row" data-index="' + index + '">',
+                        '<div class="field-group">',
+                        '<label>Object Group</label>',
+                        '<select class="object-group-select">',
+                        renderOptions(objectLookupList, '-- Select Object Group --', item.objectGroup),
+                        '</select>',
+                        '</div>',
+                        '<div class="field-group">',
+                        '<label>Object Value</label>',
+                        '<input type="text" class="object-value-input" inputmode="decimal" value="' + (item.value !== '' ? formatMoney(parseNumber(item.value)) : '') + '" placeholder="Input value (e.g. 1.000,50)">',
+                        '</div>',
+                        '<div class="row-action">',
+                        '<button type="button" class="btn-icon remove-object-row" title="Remove Object Row">',
+                        '<i class="fas fa-times"></i>',
+                        '</button>',
+                        '</div>',
+                        '</div>'
+                    ].join('');
+                }).join('');
+            }
+
+            function renderCoverageRows() {
+                const risk = getActiveRisk();
+                if (!risk) {
+                    return;
+                }
+
+                coverageRowsContainer.innerHTML = risk.coverages.map(function (item, index) {
+                    return [
+                        '<div class="entry-row" data-index="' + index + '">',
+                        '<div class="field-group">',
+                        '<label>Coverage</label>',
+                        '<select class="coverage-select">',
+                        renderOptions(coverageLookupList, '-- Select Coverage --', item.coverage),
+                        '</select>',
+                        '</div>',
+                        '<div class="field-group">',
+                        '<label>Rate (in permil)</label>',
+                        '<input type="text" class="coverage-rate-input" inputmode="decimal" value="' + String(item.ratePerMil || '') + '" placeholder="Input rate in permil (e.g. 2,5 or 2.5)">',
+                        '</div>',
+                        '<div class="row-action">',
+                        '<button type="button" class="btn-icon remove-coverage-row" title="Remove Coverage Row">',
+                        '<i class="fas fa-times"></i>',
+                        '</button>',
+                        '</div>',
+                        '</div>'
+                    ].join('');
+                }).join('');
+            }
+
+            function getRiskObjectTotal(risk) {
+                return risk.objects.reduce(function (sum, item) {
+                    return sum + parseNumber(item.value);
+                }, 0);
+            }
+
+            function getRiskRatePerMilTotal(risk) {
+                return risk.coverages.reduce(function (sum, item) {
+                    return sum + parseNumber(item.ratePerMil);
+                }, 0);
+            }
+
+            function recalculateAll() {
+                let globalObjectTotal = 0;
+                let globalPremiumTotal = 0;
+
+                risks.forEach(function (risk) {
+                    const riskObjectTotal = getRiskObjectTotal(risk);
+                    const riskRatePerMil = getRiskRatePerMilTotal(risk);
+                    const riskPremium = riskObjectTotal * (riskRatePerMil / 1000);
+
+                    globalObjectTotal += riskObjectTotal;
+                    globalPremiumTotal += riskPremium;
+                });
+
+                const activeRisk = getActiveRisk();
+                const activeRiskObjectTotal = activeRisk ? getRiskObjectTotal(activeRisk) : 0;
+                const activeRiskRatePerMil = activeRisk ? getRiskRatePerMilTotal(activeRisk) : 0;
+                const activeRiskPremium = activeRiskObjectTotal * (activeRiskRatePerMil / 1000);
+
+                sumInsuredInput.value = formatMoney(globalObjectTotal);
+                premiumInput.value = formatMoney(globalPremiumTotal);
+
+                activeObjectDisplay.textContent = formatMoney(activeRiskObjectTotal);
+                activeRateDisplay.textContent = formatRate(activeRiskRatePerMil);
+                globalObjectDisplay.textContent = formatMoney(globalObjectTotal);
+                globalPremiumDisplay.textContent = formatMoney(globalPremiumTotal);
+                premiumDisplay.textContent = formatMoney(activeRiskPremium);
+                formulaDisplay.textContent = formatMoney(activeRiskObjectTotal) + ' × (' + formatRate(activeRiskRatePerMil) + ' / 1000)';
+                renderRiskPremiumBreakdown();
+            }
+
+            function renderRiskPremiumBreakdown() {
+                const container = document.getElementById('riskPremiumBreakdown');
+                if (!container) {
+                    return;
+                }
+
+                if (!risks.length) {
+                    container.innerHTML = '<p style="color:#64748b;font-size:0.88rem;padding:0.5rem 0.6rem;">No risks defined yet.</p>';
+                    return;
+                }
+
+                const rows = risks.map(function (risk, i) {
+                    const objTotal = getRiskObjectTotal(risk);
+                    const rate = getRiskRatePerMilTotal(risk);
+                    const premium = objTotal * (rate / 1000);
+                    const isActive = i === activeRiskIndex;
+                    const rowBg = isActive ? 'background:#dbeafe;' : (i % 2 === 0 ? 'background:#f8fafc;' : 'background:#ffffff;');
+                    const cellStyle = isActive ? 'font-weight:700;' : '';
+                    return [
+                        '<tr style="' + rowBg + '">',
+                        '<td style="padding:0.45rem 0.65rem;text-align:center;' + cellStyle + 'white-space:nowrap;">' +
+                            (isActive ? '<i class="fas fa-caret-right" style="color:#2563eb;margin-right:3px;"></i>' : '') +
+                            'Risk ' + (i + 1) + '</td>',
+                        '<td style="padding:0.45rem 0.65rem;text-align:right;font-family:monospace;' + cellStyle + '">' + formatMoney(objTotal) + '</td>',
+                        '<td style="padding:0.45rem 0.65rem;text-align:right;font-family:monospace;' + cellStyle + '">' + formatRate(rate) + '</td>',
+                        '<td style="padding:0.45rem 0.65rem;text-align:right;font-family:monospace;color:#1d4ed8;font-weight:700;">' + formatMoney(premium) + '</td>',
+                        '<td style="padding:0.45rem 0.65rem;font-size:0.78rem;color:#64748b;font-family:monospace;white-space:nowrap;">' +
+                            formatMoney(objTotal) + ' × (' + formatRate(rate) + ' / 1000)</td>',
+                        '</tr>'
+                    ].join('');
+                }).join('');
+
+                container.innerHTML = [
+                    '<table style="width:100%;border-collapse:collapse;font-size:0.88rem;">',
+                    '<thead><tr style="background:#1e3a8a;color:#ffffff;">',
+                    '<th style="padding:0.5rem 0.65rem;text-align:center;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap;">Risk No</th>',
+                    '<th style="padding:0.5rem 0.65rem;text-align:right;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap;">Object Total</th>',
+                    '<th style="padding:0.5rem 0.65rem;text-align:right;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap;">Rate (permil)</th>',
+                    '<th style="padding:0.5rem 0.65rem;text-align:right;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap;">Premium</th>',
+                    '<th style="padding:0.5rem 0.65rem;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.3px;">Formula</th>',
+                    '</tr></thead>',
+                    '<tbody>' + rows + '</tbody>',
+                    '</table>'
+                ].join('');
+            }
+
+            function renderAllActiveRiskViews() {
+                renderRiskList();
+                renderRiskFields();
+                renderObjectRows();
+                renderCoverageRows();
+                recalculateAll();
+            }
+
+            function validateRiskData(risk) {
+                if (!risk.address || !risk.address.trim()) {
+                    return 'Address is required.';
+                }
+
+                if (!risk.city || !risk.city.trim()) {
+                    return 'City is required.';
+                }
+
+                if (!risk.postalCode || !risk.postalCode.trim()) {
+                    return 'Postal Code is required.';
+                }
+
+                if (!risk.occupation || !risk.occupation.trim()) {
+                    return 'Occupation is required.';
+                }
+
+                if (!risk.classConstruction || !risk.classConstruction.trim()) {
+                    return 'Class Construction is required.';
+                }
+
+                for (let i = 0; i < risk.objects.length; i += 1) {
+                    const objectRow = risk.objects[i];
+                    if (!objectRow.objectGroup) {
+                        return 'Object Group is required on Object row ' + (i + 1) + '.';
+                    }
+                    if (parseNumber(objectRow.value) <= 0) {
+                        return 'Object Value must be greater than 0 on Object row ' + (i + 1) + '.';
+                    }
+                }
+
+                for (let i = 0; i < risk.coverages.length; i += 1) {
+                    const coverageRow = risk.coverages[i];
+                    if (!coverageRow.coverage) {
+                        return 'Coverage is required on Coverage row ' + (i + 1) + '.';
+                    }
+                    if (parseNumber(coverageRow.ratePerMil) <= 0) {
+                        return 'Rate (in permil) must be greater than 0 on Coverage row ' + (i + 1) + '.';
+                    }
+                }
+
+                return '';
+            }
+
+            function validateAllRisks() {
+                for (let i = 0; i < risks.length; i += 1) {
+                    const message = validateRiskData(risks[i]);
+                    if (message) {
+                        return { valid: false, riskIndex: i, message: message };
+                    }
+                }
+
+                return { valid: true, riskIndex: -1, message: '' };
+            }
+
+            tabButtons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    tabButtons.forEach(function (btn) {
+                        btn.classList.remove('active');
+                        btn.setAttribute('aria-selected', 'false');
+                    });
+
+                    tabPanels.forEach(function (panel) {
+                        panel.classList.remove('active');
+                        panel.setAttribute('aria-hidden', 'true');
+                    });
+
+                    button.classList.add('active');
+                    button.setAttribute('aria-selected', 'true');
+
+                    const activePanel = document.getElementById(button.dataset.target);
+                    if (activePanel) {
+                        activePanel.classList.add('active');
+                        activePanel.setAttribute('aria-hidden', 'false');
+                    }
+                });
+            });
+
+            riskList.addEventListener('click', function (event) {
+                const target = event.target.closest('.risk-pill');
+                if (!target) {
+                    return;
+                }
+
+                const selectedIndex = parseInt(target.dataset.riskIndex, 10);
+                if (!Number.isInteger(selectedIndex) || selectedIndex < 0 || selectedIndex >= risks.length) {
+                    return;
+                }
+
+                activeRiskIndex = selectedIndex;
+                renderAllActiveRiskViews();
+            });
+
+            addRiskBtn.addEventListener('click', function () {
+                risks.push(createDefaultRisk());
+                activeRiskIndex = risks.length - 1;
+                renderAllActiveRiskViews();
+            });
+
+            saveBtn.addEventListener('click', function () {
+                const validation = validateAllRisks();
+                if (!validation.valid) {
+                    activeRiskIndex = validation.riskIndex;
+                    renderAllActiveRiskViews();
+                    alert('Validation failed on Risk ' + (validation.riskIndex + 1) + ': ' + validation.message);
+                    return;
+                }
+
+                try {
+                    localStorage.setItem('gibsysnet_property_risks', JSON.stringify(risks));
+                } catch (e) {
+                    alert('Failed to save data. Please try again.');
+                    return;
+                }
+
+                window.location.href = 'quotation.html';
+            });
+
+            addressInput.addEventListener('input', function () {
+                const risk = getActiveRisk();
+                if (risk) risk.address = addressInput.value;
+            });
+
+            provinceSelect.addEventListener('change', function () {
+                const risk = getActiveRisk();
+                if (!risk) return;
+                risk.province = provinceSelect.value;
+                risk.city = '';
+                risk.district = '';
+                risk.village = '';
+                risk.postalCode = '';
+                loadCities(provinceSelect.value, '');
+            });
+
+            citySelect.addEventListener('change', function () {
+                const risk = getActiveRisk();
+                if (!risk) return;
+                risk.city = citySelect.value;
+                risk.district = '';
+                risk.village = '';
+                risk.postalCode = '';
+                loadDistricts(citySelect.value, '');
+            });
+
+            districtSelect.addEventListener('change', function () {
+                const risk = getActiveRisk();
+                if (!risk) return;
+                risk.district = districtSelect.value;
+                risk.village = '';
+                risk.postalCode = '';
+                loadVillages(districtSelect.value, '');
+            });
+
+            villageSelect.addEventListener('change', function () {
+                const risk = getActiveRisk();
+                if (!risk) return;
+                risk.village = villageSelect.value;
+                risk.postalCode = '';
+                loadPostalCodes(villageSelect.value, '');
+            });
+
+            postalCodeSelect.addEventListener('change', function () {
+                const risk = getActiveRisk();
+                if (risk) risk.postalCode = postalCodeSelect.value;
+            });
+
+            occupationSelect.addEventListener('change', function () {
+                const risk = getActiveRisk();
+                if (!risk) {
+                    return;
+                }
+                risk.occupation = occupationSelect.value;
+            });
+
+            classConstructionSelect.addEventListener('change', function () {
+                const risk = getActiveRisk();
+                if (!risk) {
+                    return;
+                }
+                risk.classConstruction = classConstructionSelect.value;
+            });
+
+            addObjectRowBtn.addEventListener('click', function () {
+                const risk = getActiveRisk();
+                if (!risk) {
+                    return;
+                }
+
+                risk.objects.push({ objectGroup: '', value: '' });
+                renderObjectRows();
+                recalculateAll();
+            });
+
+            addCoverageRowBtn.addEventListener('click', function () {
+                const risk = getActiveRisk();
+                if (!risk) {
+                    return;
+                }
+
+                risk.coverages.push({ coverage: '', ratePerMil: '' });
+                renderCoverageRows();
+                recalculateAll();
+            });
+
+            objectRowsContainer.addEventListener('input', function (event) {
+                const input = event.target;
+                const row = input.closest('.entry-row');
+                if (!row) {
+                    return;
+                }
+
+                const index = parseInt(row.dataset.index, 10);
+                const risk = getActiveRisk();
+                if (!risk || !risk.objects[index]) {
+                    return;
+                }
+
+                if (input.classList.contains('object-value-input')) {
+                    risk.objects[index].value = input.value;
+                    recalculateAll();
+                }
+            });
+
+            objectRowsContainer.addEventListener('change', function (event) {
+                const input = event.target;
+                const row = input.closest('.entry-row');
+                if (!row) {
+                    return;
+                }
+
+                const index = parseInt(row.dataset.index, 10);
+                const risk = getActiveRisk();
+                if (!risk || !risk.objects[index]) {
+                    return;
+                }
+
+                if (input.classList.contains('object-group-select')) {
+                    risk.objects[index].objectGroup = input.value;
+                    recalculateAll();
+                }
+            });
+
+            objectRowsContainer.addEventListener('focusout', function (event) {
+                const input = event.target;
+                if (input.classList.contains('object-value-input')) {
+                    formatFieldNumeric(input, 2);
+                }
+            });
+
+            objectRowsContainer.addEventListener('click', function (event) {
+                const removeBtn = event.target.closest('.remove-object-row');
+                if (!removeBtn) {
+                    return;
+                }
+
+                const risk = getActiveRisk();
+                if (!risk || risk.objects.length <= 1) {
+                    return;
+                }
+
+                const row = removeBtn.closest('.entry-row');
+                if (!row) {
+                    return;
+                }
+
+                const index = parseInt(row.dataset.index, 10);
+                if (!Number.isInteger(index) || index < 0 || index >= risk.objects.length) {
+                    return;
+                }
+
+                risk.objects.splice(index, 1);
+                renderObjectRows();
+                recalculateAll();
+            });
+
+            coverageRowsContainer.addEventListener('input', function (event) {
+                const input = event.target;
+                const row = input.closest('.entry-row');
+                if (!row) {
+                    return;
+                }
+
+                const index = parseInt(row.dataset.index, 10);
+                const risk = getActiveRisk();
+                if (!risk || !risk.coverages[index]) {
+                    return;
+                }
+
+                if (input.classList.contains('coverage-rate-input')) {
+                    risk.coverages[index].ratePerMil = input.value;
+                    recalculateAll();
+                }
+            });
+
+            coverageRowsContainer.addEventListener('change', function (event) {
+                const input = event.target;
+                const row = input.closest('.entry-row');
+                if (!row) {
+                    return;
+                }
+
+                const index = parseInt(row.dataset.index, 10);
+                const risk = getActiveRisk();
+                if (!risk || !risk.coverages[index]) {
+                    return;
+                }
+
+                if (input.classList.contains('coverage-select')) {
+                    risk.coverages[index].coverage = input.value;
+                    recalculateAll();
+                }
+            });
+
+            coverageRowsContainer.addEventListener('focusout', function (event) {
+                const input = event.target;
+                if (input.classList.contains('coverage-rate-input')) {
+                    // Keep exactly what user typed for rate, only trim surrounding spaces.
+                    input.value = String(input.value || '').trim();
+                }
+            });
+
+            coverageRowsContainer.addEventListener('click', function (event) {
+                const removeBtn = event.target.closest('.remove-coverage-row');
+                if (!removeBtn) {
+                    return;
+                }
+
+                const risk = getActiveRisk();
+                if (!risk || risk.coverages.length <= 1) {
+                    return;
+                }
+
+                const row = removeBtn.closest('.entry-row');
+                if (!row) {
+                    return;
+                }
+
+                const index = parseInt(row.dataset.index, 10);
+                if (!Number.isInteger(index) || index < 0 || index >= risk.coverages.length) {
+                    return;
+                }
+
+                risk.coverages.splice(index, 1);
+                renderCoverageRows();
+                recalculateAll();
+            });
+
+            const [objectGroupData, coveragesData, occupationsData] = await Promise.all([
+                loadLookupData('object_group', fallbackObjectGroups, []),
+                loadLookupData('coverages', fallbackCoverages, ['coverage']),
+                loadLookupData('occupation', fallbackOccupations, ['occupations']),
+                loadProvinces('')
+            ]);
+
+            objectLookupList = objectGroupData;
+            coverageLookupList = coveragesData;
+            occupationLookupList = occupationsData;
+
+            risks.push(createDefaultRisk());
+            activeRiskIndex = 0;
+            renderAllActiveRiskViews();
+        });
+    </script>
+</body>
+</html>
+

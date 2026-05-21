@@ -1,0 +1,187 @@
+/* Critical CSS for initial render */
+:root {
+    --primary-blue: #2563eb;
+    --dark-blue: #1e3a8a;
+    --light-blue: #3b82f6;
+    --accent-emerald: #10b981;
+    --text-dark: #1f2937;
+    --text-gray: #6b7280;
+}
+
+* {
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    background-color: #f9fafb;
+}
+
+/* Button Styles - Fixed Contrast Issues */
+.nav-button {
+    background: linear-gradient(135deg, var(--dark-blue), var(--primary-blue));
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    border: 1px solid rgba(37, 99, 235, 0.5);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.nav-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(135deg, #1e40af, #1d4ed8);
+}
+
+.nav-button:active {
+    transform: translateY(0);
+}
+
+.hero-button-primary {
+    background: white;
+    color: var(--primary-blue);
+    padding: 1rem 2.5rem;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    font-size: 1.125rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.hero-button-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    background: #f9fafb;
+}
+
+.hero-button-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 1rem 2.5rem;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    font-size: 1.125rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.hero-button-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-3px);
+}
+
+/* Animation Classes */
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.floating {
+    animation: float 3s ease-in-out infinite;
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* Gradient Text */
+.gradient-text {
+    background: linear-gradient(135deg, var(--dark-blue), var(--primary-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Glass Effect */
+.glass-effect {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Card Hover Effects */
+.feature-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e5e7eb;
+}
+
+.feature-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    border-color: #d1d5db;
+}
+
+/* Stat Card in About Section */
+.stat-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: var(--dark-blue);
+}
+
+.stat-number {
+    color: var(--dark-blue);
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.stat-label {
+    color: var(--text-gray);
+    font-weight: 500;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+}
+
+/* About Section Text Contrast */
+.about-text {
+    color: var(--text-dark);
+    line-height: 1.7;
+}
+
+.about-text-bold {
+    color: var(--text-dark);
+    font-weight: 600;
+    line-height: 1.7;
+}
+
+/* Loading Optimization */
+.lazy-load {
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.lazy-loaded {
+    opacity: 1;
+}
+
+/* Background Pattern for Hero Section */
+.hero-background-pattern {
+    background-image: url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%239C92AC" fill-opacity="0.1"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
+}
+
+/* Animation Delays for Floating Elements */
+.floating-delay-0 {
+    animation-delay: 0s;
+}
+
+.floating-delay-0_2 {
+    animation-delay: 0.2s;
+}
+
+.floating-delay-0_4 {
+    animation-delay: 0.4s;
+}
+
+.floating-delay-0_6 {
+    animation-delay: 0.6s;
+}

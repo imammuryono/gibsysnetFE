@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard User - GIBSYSNET</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- PERBAIKAN PATH: dari ../assets/css/custom.css ke ../../assets/css/custom.css -->
+    <link rel="stylesheet" href="../../assets/css/custom.css">
+    <style>
+        /* (Styles tetap sama) */
+        .user-dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: 70px 40px 1fr;
+            grid-template-areas: 
+                "header"
+                "status-bar"
+                "main-content";
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+
+        @media (min-width: 768px) {
+            .user-dashboard {
+                grid-template-columns: 220px 1fr;
+                grid-template-rows: 70px 40px 1fr;
+                grid-template-areas: 
+                    "header header"
+                    "status-bar status-bar"
+                    "sidebar main-content";
+            }
+        }
+
+        .dashboard-header {
+            grid-area: header;
+            background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-bar {
+            grid-area: status-bar;
+            background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+
+        .user-sidebar {
+            grid-area: sidebar;
+            background: white;
+            border-right: 1px solid #e2e8f0;
+            display: none;
+        }
+
+        @media (min-width: 768px) {
+            .user-sidebar {
+                display: block;
+            }
+        }
+
+        .user-main {
+            grid-area: main-content;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .user-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .user-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-info {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .mobile-menu-btn {
+            display: block;
+        }
+
+        @media (min-width: 768px) {
+            .mobile-menu-btn {
+                display: none;
+            }
+        }
+
+        .mobile-sidebar {
+            position: fixed;
+            top: 110px;
+            left: 0;
+            width: 280px;
+            height: calc(100vh - 110px);
+            background: white;
+            z-index: 40;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .mobile-sidebar.show {
+            transform: translateX(0);
+        }
+
+        .overlay {
+            position: fixed;
+            top: 110px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 30;
+            display: none;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+
+        .nav-item {
+            padding: 12px 16px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-item:hover {
+            background-color: #f1f5f9;
+        }
+
+        .nav-item.active {
+            background-color: #dbeafe;
+            color: #1e40af;
+            font-weight: 600;
+        }
+
+        .nav-item i {
+            width: 24px;
+            margin-right: 12px;
+            text-align: center;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .table-responsive table {
+            min-width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <!-- User Dashboard Container -->
+    <div class="user-dashboard">
+        <!-- Header -->
+        <header class="dashboard-header text-white">
+            <div class="flex items-center justify-between h-full px-4">
+                <!-- Left: Logo and Menu Button -->
+                <div class="flex items-center space-x-4">
+                    <!-- Mobile Menu Button -->
+                    <button id="mobileMenuBtn" class="mobile-menu-btn p-2 hover:bg-white/10 rounded-lg">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    
+                    <!-- Logo -->
+                    <div class="flex items-center space-x-2">
+                        <!-- PERBAIKAN 1: Logo sekarang mengarah ke dashboard-user.html (tetap di folder yang sama) -->
+                        <a href="dashboard-user.html" class="flex items-center space-x-2 no-underline">
+                            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div>
+                                <h1 class="font-bold text-lg">GIBSYSNET</h1>
+                                <p class="text-xs text-blue-200">User Dashboard</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Right: User Info and Actions -->
+                <div class="flex items-center space-x-4">
+                    <!-- Notifications -->
+                    <div class="relative">
+                        <button class="relative p-2 hover:bg-white/10 rounded-full">
+                            <i class="fas fa-bell text-lg"></i>
+                            <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">2</span>
+                        </button>
+                    </div>
+
+                    <!-- User Profile -->
+                    <div class="relative">
+                        <button id="userProfileBtn" class="flex items-center space-x-2 hover:bg-white/10 px-3 py-2 rounded-lg">
+                            <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                                <span id="userInitial" class="font-bold">U</span>
+                            </div>
+                            <div class="hidden md:block text-left">
+                                <p class="text-sm font-medium" id="userNameDisplay">User</p>
+                                <p class="text-xs text-blue-200" id="userRoleDisplay">Regular User</p>
+                            </div>
+                            <i class="fas fa-chevron-down text-xs hidden md:block"></i>
+                        </button>
+                        
+                        <!-- User Dropdown Menu -->
+                        <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg z-50 hidden border border-gray-200">
+                            <div class="px-4 py-3 border-b">
+                                <p class="font-semibold text-gray-800" id="dropdownUserName">User</p>
+                                <p class="text-sm text-gray-600" id="dropdownUserEmail">user@gibsysnet.com</p>
+                            </div>
+                            <!-- PERBAIKAN PATH: dari ../profile.html ke ../../profile.html -->
+                            <a href="../../profile.html" class="block px-4 py-2 hover:bg-gray-50 text-gray-700">
+                                <i class="fas fa-user-circle mr-2"></i>My Profile
+                            </a>
+                            <!-- PERBAIKAN PATH: dari ../settings.html ke ../../settings.html -->
+                            <a href="../../settings.html" class="block px-4 py-2 hover:bg-gray-50 text-gray-700">
+                                <i class="fas fa-cog mr-2"></i>Settings
+                            </a>
+                            <div class="border-t my-1"></div>
+                            <a href="#" onclick="logout()" class="block px-4 py-2 hover:bg-red-50 text-red-600">
+                                <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Status Bar -->
+        <div class="status-bar text-white text-sm">
+            <div class="flex justify-between items-center h-full px-4">
+                <div class="flex items-center space-x-6 overflow-x-auto">
+                    <span><i class="fas fa-id-card mr-1"></i> <span id="userId">ID: Loading...</span></span>
+                    <span><i class="fas fa-user mr-1"></i> <span id="userFullName">User Name: Loading...</span></span>
+                    <span><i class="fas fa-user-shield mr-1"></i> <span id="userLevel">Level: Loading...</span></span>
+                    <span><i class="fas fa-calendar-alt mr-1"></i> Member Since: <span id="memberSince">2024</span></span>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <span><i class="fas fa-calendar mr-1"></i> <span id="currentDate">Loading...</span></span>
+                    <span><i class="fas fa-clock mr-1"></i> <span id="currentTime">Loading...</span></span>
+                    <span id="onlineStatus"><i class="fas fa-wifi text-green-500"></i> Online</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Sidebar Overlay -->
+        <div id="mobileOverlay" class="overlay"></div>
+
+        <!-- Mobile Sidebar -->
+        <div id="mobileSidebar" class="mobile-sidebar">
+            <div class="p-4">
+                <!-- User Info -->
+                <div class="flex items-center p-4 bg-blue-50 rounded-lg mb-6">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                        <span id="mobileUserInitial" class="font-bold text-blue-700 text-lg">U</span>
+                    </div>
+                    <div>
+                        <p class="font-bold text-gray-800" id="mobileUserName">Regular User</p>
+                        <p class="text-sm text-gray-600" id="mobileUserEmail">user@gibsysnet.com</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Menu -->
+                <nav class="space-y-1">
+                    <!-- PERBAIKAN 2: Dashboard link sudah benar (tetap di folder yang sama) -->
+                    <a href="dashboard-user.html" class="nav-item active" onclick="setActiveNav(this); return false;">
+                        <i class="fas fa-tachometer-alt text-blue-600"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <!-- PERBAIKAN PATH: dari ../my-policies.html ke ../../my-policies.html -->
+                    <a href="my-policies.html" class="nav-item" onclick="setActiveNav(this)">
+                        <i class="fas fa-file-contract text-green-600"></i>
+                        <span>My Policies</span>
+                           </a>
+                    <!-- PERBAIKAN PATH: dari ../clints.html ke ../../clients.html -->
+                    <a href="clients.html" class="nav-item" onclick="setActiveNav(this)">
+                        <i class="fas fa-file-alt text-purple-600"></i>
+                        <span>Clients</span>
+                    </a>
+                    </a>
+                    <!-- PERBAIKAN PATH: dari ../my-policies.html ke ../../documents.html -->
+                    <a href="../my-policies.html" class="nav-item" onclick="setActiveNav(this)">
+                        <i class="fas fa-file-alt text-purple-600"></i>
+                        <span>My-Policies</span>
+                    </a>
+                    <!-- PERBAIKAN PATH: dari ../reports.html ke ../../reports.html -->
+                    <a href="../reports/index.html" class="nav-item" onclick="setActiveNav(this)">
+                        <i class="fas fa-chart-bar text-yellow-600"></i>
+                        <span>Reports</span>
+                    </a>
+                    <!-- PERBAIKAN PATH: dari ../support.html ke ../../support.html -->
+                    <a href="../../support.html" class="nav-item" onclick="setActiveNav(this)">
+                        <i class="fas fa-headset text-red-600"></i>
+                        <span>Support</span>
+                    </a>
+                    <!-- PERBAIKAN PATH: dari ../settings.html ke ../../settings.html -->
+                    <a href="../../settings.html" class="nav-item" onclick="setActiveNav(this)">
+                        <i class="fas fa-cog text-gray-600"></i>
+                        <span>Settings</span>
+                    </a>
+                </nav>
+
+                <!-- Quick Stats -->
+                <div class="mt-8 p-4 bg-gray-50 rounded-lg">
+                    <h3 class="font-bold text-gray-700 text-sm mb-3">Quick Stats</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Active Policies</span>
+                            <span class="font-bold">3</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Pending Documents</span>
+                            <span class="font-bold text-yellow-600">2</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Messages</span>
+                            <span class="font-bold text-blue-600">5</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desktop Sidebar -->
+        <aside class="user-sidebar">
+            <div class="p-4">
+                <!-- User Info -->
+                <div class="flex items-center p-4 bg-blue-50 rounded-lg mb-6">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                        <span id="desktopUserInitial" class="font-bold text-blue-700 text-lg">U</span>
+                    </div>
+                    <div>
+                        <p class="font-bold text-gray-800" id="desktopUserName">Regular User</p>
+                        <p class="text-sm text-gray-600" id="desktopUserEmail">user@gibsysnet.com</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Menu -->
+                <nav class="space-y-1">
+                    <!-- PERBAIKAN 3: Dashboard link sudah benar (tetap di folder yang sama) -->
+                    <a href="dashboard-user.html" class="nav-item active" onclick="setActiveNav(this); return false;">
+                        <i class="fas fa-tachometer-alt text-blue-600"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <!-- PERBAIKAN PATH: dari ../my-policies.html ke ../../my-policies.html -->
+                    <a href="../../my-policies.html" class="nav-item" onclick="setActiveNav(this)">
+                        <i class="fas fa-file-contract text-green-600"></i>
+                        <span>My Policies</span>
+                    </a>
+                    <!-- PERBAIKAN PATH: dari ../documents.html ke ../../documents.html -->
+                    <a href="../../documents.html" class="nav-item" onclick="setActiveNav(this)">
+                        <i class="fas fa-file-alt text-purple-600"></i>
+                        <span>Documents</span>
+                    </a>
+                    <!-- PERBAIKAN PATH: dari ../reports.html ke ../../reports.html -->
+                    <a href="../../reports.html" class="nav-item" onclick="setActiveNav(this)">
+                        <i class="fas fa-chart-bar text-yellow-600"></i>
+                        <span>Reports</span>
+                    </a>
+                    <!-- PERBAIKAN PATH: dari ../support.html ke ../../support.html -->
+                    <a href="../../support.html" class="nav-item" onclick="setActiveNav(this)">
+                        <i class="fas fa-headset text-red-600"></i>
+                        <span>Support</span>
+                    </a>
+                    <!-- PERBAIKAN PATH: dari ../settings.html ke ../../settings.html -->
+                    <a href="../../settings.html" class="nav-item" onclick="setActiveNav(this)">
+                        <i class="fas fa-cog text-gray-600"></i>
+                        <span>Settings</span>
+                    </a>
+                </nav>
+
+                <!-- Quick Stats -->
+                <div class="mt-8 p-4 bg-gray-50 rounded-lg">
+                    <h3 class="font-bold text-gray-700 text-sm mb-3">Quick Stats</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Active Policies</span>
+                            <span class="font-bold">3</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Pending Documents</span>
+                            <span class="font-bold text-yellow-600">2</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Messages</span>
+                            <span class="font-bold text-blue-600">5</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Help Section -->
+                <div class="mt-8 p-4 bg-blue-50 rounded-lg">
+                    <h3 class="font-bold text-blue-700 text-sm mb-2">Need Help?</h3>
+                    <p class="text-sm text-gray-600 mb-3">Contact our support team for assistance</p>
+                    <button class="w-full bg-blue-600 text-white text-sm py-2 px-4 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-question-circle mr-2"></i>Get Help
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="user-main">
+            <!-- Welcome Section -->
+            <div class="mb-8">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800" id="welcomeMessage">Welcome back!</h1>
+                        <p class="text-gray-600 mt-2">Here's an overview of your insurance policies and activities.</p>
+                    </div>
+                    <div class="mt-4 md:mt-0">
+                        <div class="flex space-x-3">
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
+                                <i class="fas fa-plus mr-2"></i> New Request
+                            </button>
+                            <button class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center">
+                                <i class="fas fa-download mr-2"></i> Export
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Active Policies -->
+                <div class="user-card p-5">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm">Active Policies</p>
+                            <h3 class="text-2xl font-bold text-gray-800 mt-1">3</h3>
+                            <p class="text-green-600 text-sm mt-2">
+                                <i class="fas fa-check-circle mr-1"></i> All active
+                            </p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-lg">
+                            <i class="fas fa-file-contract text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <!-- PERBAIKAN PATH: dari ../my-policies.html ke ../../my-policies.html -->
+                        <a href="../../my-policies.html" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                            View Details <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Premium Due -->
+                <div class="user-card p-5">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm">Premium Due</p>
+                            <h3 class="text-2xl font-bold text-gray-800 mt-1">Rp 8.5M</h3>
+                            <p class="text-yellow-600 text-sm mt-2">
+                                <i class="fas fa-clock mr-1"></i> Due in 15 days
+                            </p>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-lg">
+                            <i class="fas fa-money-bill-wave text-yellow-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button class="text-blue-600 hover:text-blue-800 text-sm font-medium" onclick="payNow()">
+                            <i class="fas fa-credit-card mr-1"></i> Pay Now
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Claims Pending -->
+                <div class="user-card p-5">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm">Claims Pending</p>
+                            <h3 class="text-2xl font-bold text-gray-800 mt-1">1</h3>
+                            <p class="text-blue-600 text-sm mt-2">
+                                <i class="fas fa-hourglass-half mr-1"></i> Under review
+                            </p>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-lg">
+                            <i class="fas fa-file-medical text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <!-- PERBAIKAN PATH: dari ../claims.html ke ../../claims.html -->
+                        <a href="../../claims.html" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                            Track Claim <i class="fas fa-external-link-alt ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Documents -->
+                <div class="user-card p-5">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm">Documents</p>
+                            <h3 class="text-2xl font-bold text-gray-800 mt-1">12</h3>
+                            <p class="text-purple-600 text-sm mt-2">
+                                <i class="fas fa-file-upload mr-1"></i> 2 new
+                            </p>
+                        </div>
+                        <div class="bg-purple-100 p-3 rounded-lg">
+                            <i class="fas fa-folder text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <!-- PERBAIKAN PATH: dari ../documents.html ke ../../documents.html -->
+                        <a href="../../documents.html" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                            View All <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activities and Policies -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Recent Activities -->
+                <div class="user-card">
+                    <div class="px-5 py-4 border-b">
+                        <h3 class="font-bold text-gray-800">Recent Activities</h3>
+                    </div>
+                    <div class="p-5">
+                        <div class="space-y-4">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-file-upload text-blue-600"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-3 flex-1">
+                                    <p class="text-sm font-medium">Document Uploaded</p>
+                                    <p class="text-xs text-gray-600">Proof of loss submitted for claim #CL-2025-001</p>
+                                    <p class="text-xs text-gray-500 mt-1">2 hours ago</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-check-circle text-green-600"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-3 flex-1">
+                                    <p class="text-sm font-medium">Premium Payment</p>
+                                    <p class="text-xs text-gray-600">Payment confirmed for policy #POL-2025-0123</p>
+                                    <p class="text-xs text-gray-500 mt-1">1 day ago</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-bell text-yellow-600"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-3 flex-1">
+                                    <p class="text-sm font-medium">Renewal Reminder</p>
+                                    <p class="text-xs text-gray-600">Policy #POL-2024-0456 expires in 30 days</p>
+                                    <p class="text-xs text-gray-500 mt-1">2 days ago</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <!-- PERBAIKAN PATH: dari ../activities.html ke ../../activities.html -->
+                            <a href="../../activities.html" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                View All Activities <i class="fas fa-arrow-right ml-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- My Active Policies -->
+                <div class="user-card">
+                    <div class="px-5 py-4 border-b flex justify-between items-center">
+                        <h3 class="font-bold text-gray-800">My Active Policies</h3>
+                        <!-- PERBAIKAN PATH: dari ../my-policies.html ke ../../my-policies.html -->
+                        <a href="../../my-policies.html" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                            View All
+                        </a>
+                    </div>
+                    <div class="p-5">
+                        <div class="table-responsive">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Policy No</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Expiry</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-3 py-3">
+                                            <div class="font-medium text-blue-600">POL-2025-0123</div>
+                                        </td>
+                                        <td class="px-3 py-3">
+                                            <div class="text-sm">Property</div>
+                                        </td>
+                                        <td class="px-3 py-3">
+                                            <div class="text-sm">Dec 15, 2025</div>
+                                        </td>
+                                        <td class="px-3 py-3">
+                                            <span class="stat-badge badge-success">Active</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-3 py-3">
+                                            <div class="font-medium text-blue-600">POL-2025-0124</div>
+                                        </td>
+                                        <td class="px-3 py-3">
+                                            <div class="text-sm">Vehicle</div>
+                                        </td>
+                                        <td class="px-3 py-3">
+                                            <div class="text-sm">Jan 20, 2026</div>
+                                        </td>
+                                        <td class="px-3 py-3">
+                                            <span class="stat-badge badge-success">Active</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-3 py-3">
+                                            <div class="font-medium text-blue-600">POL-2024-0456</div>
+                                        </td>
+                                        <td class="px-3 py-3">
+                                            <div class="text-sm">Health</div>
+                                        </td>
+                                        <td class="px-3 py-3">
+                                            <div class="text-sm">Aug 15, 2025</div>
+                                        </td>
+                                        <td class="px-3 py-3">
+                                            <span class="stat-badge badge-warning">Renewal Due</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions and Support -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Quick Actions -->
+                <div class="user-card">
+                    <div class="px-5 py-4 border-b">
+                        <h3 class="font-bold text-gray-800">Quick Actions</h3>
+                    </div>
+                    <div class="p-5">
+                        <div class="grid grid-cols-2 gap-4">
+                            <!-- PERBAIKAN PATH: dari ../claims.html ke ../../claims.html -->
+                            <a href="../../claims.html" class="flex flex-col items-center justify-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition duration-300">
+                                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                                    <i class="fas fa-file-medical text-blue-600 text-xl"></i>
+                                </div>
+                                <span class="text-sm font-medium text-gray-800">File Claim</span>
+                            </a>
+                            <button onclick="payNow()" class="flex flex-col items-center justify-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition duration-300">
+                                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-2">
+                                    <i class="fas fa-credit-card text-green-600 text-xl"></i>
+                                </div>
+                                <span class="text-sm font-medium text-gray-800">Make Payment</span>
+                            </button>
+                            <!-- PERBAIKAN PATH: dari ../documents.html ke ../../documents.html -->
+                            <a href="../../documents.html" class="flex flex-col items-center justify-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition duration-300">
+                                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-2">
+                                    <i class="fas fa-upload text-purple-600 text-xl"></i>
+                                </div>
+                                <span class="text-sm font-medium text-gray-800">Upload Document</span>
+                            </a>
+                            <!-- PERBAIKAN PATH: dari ../support.html ke ../../support.html -->
+                            <a href="../../support.html" class="flex flex-col items-center justify-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition duration-300">
+                                <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mb-2">
+                                    <i class="fas fa-headset text-yellow-600 text-xl"></i>
+                                </div>
+                                <span class="text-sm font-medium text-gray-800">Contact Support</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Support Center -->
+                <div class="user-card">
+                    <div class="px-5 py-4 border-b">
+                        <h3 class="font-bold text-gray-800">Support Center</h3>
+                    </div>
+                    <div class="p-5">
+                        <div class="bg-blue-50 rounded-lg p-4 mb-4">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-info-circle text-blue-600 text-xl"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-blue-800">
+                                        Need help? Our support team is available Monday to Friday, 9 AM - 5 PM.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                    <i class="fas fa-phone text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium">Phone Support</p>
+                                    <p class="text-xs text-gray-600">+62 21 1234 5678</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                                    <i class="fas fa-envelope text-green-600"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium">Email Support</p>
+                                    <p class="text-xs text-gray-600">support@gibsysnet.com</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                                    <i class="fas fa-comments text-purple-600"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium">Live Chat</p>
+                                    <p class="text-xs text-gray-600">Available during business hours</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button onclick="startLiveChat()" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                                <i class="fas fa-headset mr-2"></i> Start Live Chat
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Note -->
+            <div class="mt-8 text-center text-gray-500 text-sm">
+                <p>GIBSYSNET User Dashboard v2.1 • Last updated: <span id="lastUpdated">Loading...</span></p>
+                <p class="mt-1">For assistance, please contact your system administrator or support team.</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- PERBAIKAN PATH: dari ../assets/js/api.js ke ../../assets/js/api.js -->
+    <script src="../../assets/js/api.js"></script>
+    <!-- PERBAIKAN PATH: dari ../assets/js/main.js ke ../../assets/js/main.js -->
+    <script src="../../assets/js/main.js"></script>
+    
+    <!-- User Dashboard Specific JavaScript -->
+    <script>
+        // Debug: Log current URL
+        console.log('Current URL:', window.location.href);
+        console.log('Current file: dashboard/dashboard-user.html');
+
+        // User data from localStorage
+        let userData = null;
+        
+        // PERBAIKAN: Enhanced checkLogin function untuk path baru
+        function checkLogin() {
+            const user = JSON.parse(localStorage.getItem('gibsysnet_user'));
+            const token = localStorage.getItem('gibsysnet_token');
+
+            console.log('Checking login status from dashboard/dashboard-user.html');
+            console.log('User data:', user);
+            console.log('Token exists:', !!token);
+
+            if (!user || !token) {
+                console.log('Not logged in, redirecting to login page');
+                // PERBAIKAN PATH: dari ../login.html ke ../../login.html (naik 2 level)
+                window.location.href = '../../login.html';
+                return false;
+            }
+            
+            // Check if user is admin, redirect to admin dashboard
+            if (user.user_level === 'super_admin' || user.user_level === 'admin') {
+                console.log('Admin user detected, redirecting to admin dashboard');
+                // File admin dashboard mungkin ada di folder yang sama
+                window.location.href = 'dashboard-admin.html';
+                return false;
+            }
+            
+            console.log('Regular user, staying on user dashboard');
+            return user;
+        }
+        
+        // Initialize user data
+        userData = checkLogin();
+
+        // Update user information - TAMBAH INFORMASI USER DI STATUS BAR
+        function updateUserInfo() {
+            if (!userData) {
+                console.log('No user data available');
+                // Set default values
+                document.getElementById('userId').textContent = 'ID: N/A';
+                document.getElementById('userFullName').textContent = 'User Name: Guest';
+                document.getElementById('userLevel').textContent = 'Level: GUEST';
+                document.getElementById('memberSince').textContent = '2024';
+                return;
+            }
+            
+            console.log('Updating user info with:', userData);
+            
+            const initials = userData.full_name ? 
+                userData.full_name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
+            
+            // Update all instances of user info
+            const elements = [
+                { id: 'userInitial', value: initials.charAt(0) },
+                { id: 'userNameDisplay', value: userData.full_name || 'User' },
+                { id: 'userRoleDisplay', value: userData.user_level === 'user' ? 'Regular User' : userData.user_level || 'User' },
+                { id: 'dropdownUserName', value: userData.full_name || 'User' },
+                { id: 'dropdownUserEmail', value: userData.email || 'user@gibsysnet.com' },
+                { id: 'mobileUserInitial', value: initials.charAt(0) },
+                { id: 'mobileUserName', value: userData.full_name || 'User' },
+                { id: 'mobileUserEmail', value: userData.email || 'user@gibsysnet.com' },
+                { id: 'desktopUserInitial', value: initials.charAt(0) },
+                { id: 'desktopUserName', value: userData.full_name || 'User' },
+                { id: 'desktopUserEmail', value: userData.email || 'user@gibsysnet.com' }
+            ];
+            
+            elements.forEach(element => {
+                const el = document.getElementById(element.id);
+                if (el) {
+                    console.log(`Updating ${element.id} to: ${element.value}`);
+                    el.textContent = element.value;
+                }
+            });
+            
+            // Update status bar with user data - INI UNTUK STATUS BAR
+            document.getElementById('userId').textContent = `ID: ${userData.user_id || 'N/A'}`;
+            document.getElementById('userFullName').textContent = `User Name: ${userData.full_name || 'User'}`;
+            document.getElementById('userLevel').textContent = `Level: ${(userData.user_level || 'user').toUpperCase()}`;
+            document.getElementById('memberSince').textContent = userData.created_at ? 
+                new Date(userData.created_at).getFullYear() : '2024';
+            
+            // Update welcome message
+            updateWelcomeMessage();
+        }
+
+        // Update welcome message
+        function updateWelcomeMessage() {
+            const welcomeMsg = document.getElementById('welcomeMessage');
+            if (welcomeMsg) {
+                const hour = new Date().getHours();
+                let greeting = 'Welcome back';
+                
+                if (hour < 12) greeting = 'Good morning';
+                else if (hour < 18) greeting = 'Good afternoon';
+                else greeting = 'Good evening';
+                
+                const firstName = userData && userData.full_name ? userData.full_name.split(' ')[0] : 'User';
+                welcomeMsg.textContent = `${greeting}, ${firstName}!`;
+            }
+        }
+
+        // Update date and time in status bar
+        function updateDateTime() {
+            const now = new Date();
+            const dateOptions = { 
+                weekday: 'long',
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            const timeOptions = { 
+                hour12: false, 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            };
+            
+            document.getElementById('currentDate').textContent = 
+                now.toLocaleDateString('id-ID', dateOptions);
+            document.getElementById('currentTime').textContent = 
+                now.toLocaleTimeString('id-ID', timeOptions);
+        }
+
+        // PERBAIKAN: Fungsi untuk auto-fix semua link yang salah
+        function fixAllLinks() {
+            console.log('Auto-fixing links for new folder structure...');
+            
+            // Perbaiki semua link yang mengarah ke dashboard.html
+            const allLinks = document.querySelectorAll('a[href]');
+            allLinks.forEach(link => {
+                let href = link.getAttribute('href');
+                
+                if (href && href.includes('dashboard.html')) {
+                    // Ganti dashboard.html dengan dashboard-user.html
+                    const newHref = href.replace('dashboard.html', 'dashboard-user.html');
+                    console.log(`Fixed dashboard link: ${href} -> ${newHref}`);
+                    link.setAttribute('href', newHref);
+                }
+                
+                // Perbaiki path yang salah (dari ../ ke ../../)
+                if (href && href.startsWith('../') && !href.startsWith('../../')) {
+                    // Hanya perbaiki jika bukan link ke file di folder yang sama
+                    if (!href.includes('dashboard-user.html') && !href.includes('dashboard-admin.html')) {
+                        const newHref = '../../' + href.substring(3);
+                        console.log(`Fixed path: ${href} -> ${newHref}`);
+                        link.setAttribute('href', newHref);
+                    }
+                }
+            });
+        }
+
+        // PERBAIKAN: Intercept semua link yang mengarah ke dashboard.html
+        function interceptBrokenLinks() {
+            console.log('Intercepting broken links...');
+            
+            // Intercept semua klik pada link
+            document.addEventListener('click', function(e) {
+                let target = e.target;
+                
+                // Cari elemen anchor terdekat
+                while (target && target.tagName !== 'A') {
+                    target = target.parentElement;
+                }
+                
+                if (target && target.tagName === 'A') {
+                    const href = target.getAttribute('href');
+                    
+                    // Debug log
+                    console.log('Link clicked:', href);
+                    
+                    // PERBAIKAN UTAMA: Jika link mengarah ke dashboard.html, alihkan ke dashboard-user.html
+                    if (href === 'dashboard.html' || href === '/dashboard.html' || 
+                        href.includes('dashboard.html') && !href.includes('dashboard-user.html')) {
+                        e.preventDefault();
+                        console.warn('Intercepted broken link to dashboard.html, redirecting to dashboard-user.html');
+                        window.location.href = 'dashboard-user.html';
+                        return false;
+                    }
+                }
+            }, true); // Use capture phase
+        }
+
+        // PERBAIKAN: Cegah form submission yang salah
+        function preventFormIssues() {
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    const action = this.getAttribute('action');
+                    if (action && action.includes('dashboard.html')) {
+                        e.preventDefault();
+                        console.warn('Prevented form submission to dashboard.html');
+                        alert('Form submission error: Invalid action URL');
+                    }
+                });
+            });
+        }
+
+        // Mobile menu functionality
+        function initializeMobileMenu() {
+            const menuBtn = document.getElementById('mobileMenuBtn');
+            const mobileSidebar = document.getElementById('mobileSidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            
+            if (menuBtn && mobileSidebar && overlay) {
+                menuBtn.addEventListener('click', function() {
+                    mobileSidebar.classList.toggle('show');
+                    overlay.classList.toggle('show');
+                });
+                
+                overlay.addEventListener('click', function() {
+                    mobileSidebar.classList.remove('show');
+                    overlay.classList.remove('show');
+                });
+                
+                // Close menu when clicking on a nav item
+                document.querySelectorAll('#mobileSidebar .nav-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        mobileSidebar.classList.remove('show');
+                        overlay.classList.remove('show');
+                    });
+                });
+            }
+        }
+
+        // User dropdown functionality
+        function initializeUserDropdown() {
+            const profileBtn = document.getElementById('userProfileBtn');
+            const dropdown = document.getElementById('userDropdown');
+            
+            if (profileBtn && dropdown) {
+                profileBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function() {
+                    dropdown.classList.add('hidden');
+                });
+                
+                // Prevent dropdown from closing when clicking inside
+                dropdown.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
+        }
+
+        // Navigation functionality
+        function setupNavigation() {
+            // Handle navigation clicks
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    // Check if this is the dashboard link
+                    const href = this.getAttribute('href');
+                    console.log('Nav item clicked:', href);
+                    
+                    if (href === 'dashboard-user.html') {
+                        // Already on dashboard, just update active state
+                        e.preventDefault();
+                        setActiveNav(this);
+                        console.log('Dashboard link clicked, staying on page');
+                        return;
+                    }
+                    
+                    // For demo purposes, show alert for pages that don't exist
+                    if (href && (href === '#' || href.includes('#'))) {
+                        e.preventDefault();
+                        alert(`Page ${href.substring(1)} is under development`);
+                    }
+                });
+            });
+        }
+
+        // Set active navigation item
+        function setActiveNav(element) {
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Add active class to clicked item
+            element.classList.add('active');
+            
+            // Also update the corresponding item in mobile sidebar if needed
+            const href = element.getAttribute('href');
+            document.querySelectorAll(`.nav-item[href="${href}"]`).forEach(item => {
+                item.classList.add('active');
+            });
+        }
+
+        // Update last updated time
+        function updateLastUpdated() {
+            const now = new Date();
+            const options = { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            const element = document.getElementById('lastUpdated');
+            if (element) {
+                element.textContent = now.toLocaleDateString('en-US', options);
+            }
+        }
+
+        // Helper functions for quick actions
+        function payNow() {
+            alert('Payment functionality will be implemented soon. Redirecting to payment page...');
+            // window.location.href = '../../payment.html';
+        }
+        
+        function startLiveChat() {
+            alert('Live chat will open in a new window. This feature is coming soon!');
+            // window.open('../../live-chat.html', '_blank');
+        }
+
+        // PERBAIKAN: Logout function dengan path baru
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                // Clear localStorage
+                localStorage.removeItem('gibsysnet_user');
+                localStorage.removeItem('gibsysnet_token');
+                
+                // PERBAIKAN PATH: dari ../login.html ke ../../login.html
+                window.location.href = '../../login.html';
+            }
+        }
+
+        // Load user data
+        async function loadUserData() {
+            try {
+                // You can load additional user data here if needed
+                console.log('User data loaded:', userData);
+            } catch (error) {
+                console.error('Error loading user data:', error);
+            }
+        }
+
+        // PERBAIKAN: Fungsi untuk redirect otomatis jika URL salah
+        function checkCurrentURL() {
+            const currentPath = window.location.pathname;
+            console.log('Current path:', currentPath);
+            
+            // Jika URL mengandung dashboard.html (typo atau link salah)
+            if (currentPath.includes('dashboard.html') && !currentPath.includes('dashboard-user.html')) {
+                console.warn('Wrong URL detected, redirecting to correct dashboard');
+                const newPath = currentPath.replace('dashboard.html', 'dashboard/dashboard-user.html');
+                window.location.href = newPath;
+                return;
+            }
+            
+            // Jika file ini adalah dashboard-user.html, pastikan URL benar
+            if (currentPath.includes('dashboard-user.html')) {
+                console.log('Correct dashboard URL detected');
+                // Update browser history untuk menghindari back button issues
+                if (window.history && window.history.replaceState) {
+                    const correctURL = window.location.pathname;
+                    window.history.replaceState({}, document.title, correctURL);
+                }
+            }
+        }
+
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing dashboard...');
+            
+            // Check current URL
+            checkCurrentURL();
+            
+            // Auto-fix semua link
+            fixAllLinks();
+            
+            // Update user information (termasuk status bar)
+            updateUserInfo();
+            
+            // Update date time in status bar
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            
+            // PERBAIKAN: Intercept broken links
+            interceptBrokenLinks();
+            
+            // PERBAIKAN: Prevent form issues
+            preventFormIssues();
+            
+            // Initialize mobile menu
+            initializeMobileMenu();
+            
+            // Initialize user dropdown
+            initializeUserDropdown();
+            
+            // Update last updated time
+            updateLastUpdated();
+            
+            // Set up navigation
+            setupNavigation();
+            
+            // Load user data
+            loadUserData();
+            
+            // Handle responsive behavior
+            window.addEventListener('resize', function() {
+                const mobileSidebar = document.getElementById('mobileSidebar');
+                const overlay = document.getElementById('mobileOverlay');
+                
+                // Close mobile menu on larger screens
+                if (window.innerWidth >= 768) {
+                    if (mobileSidebar) mobileSidebar.classList.remove('show');
+                    if (overlay) overlay.classList.remove('show');
+                }
+            });
+            
+            // PERBAIKAN: Tambahkan event listener untuk logo
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.logo-link') || 
+                    (e.target.closest('h1') && e.target.closest('h1').textContent === 'GIBSYSNET')) {
+                    e.preventDefault();
+                    console.log('Logo clicked, staying on dashboard-user.html');
+                    setActiveNav(document.querySelector('.nav-item[href="dashboard-user.html"]'));
+                }
+            });
+            
+            console.log('Dashboard initialization complete');
+        });
+        
+        // PERBAIKAN: Tambahkan global error handler
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+        });
+        
+        // Debug: Log jika ada link yang mengarah ke dashboard.html
+        setTimeout(function() {
+            const allLinks = document.querySelectorAll('a[href]');
+            allLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && href.includes('dashboard.html')) {
+                    console.error('Found link to dashboard.html:', link);
+                }
+            });
+        }, 1000);
+    </script>
+</body>
+</html>

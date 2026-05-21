@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - GIBSYSNET</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        .sidebar {
+            transition: all 0.3s ease;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .content-area {
+            transition: all 0.3s ease;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .stat-card {
+            transition: all 0.3s ease;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .menu-card {
+            transition: all 0.3s ease;
+            border-radius: 10px;
+        }
+        
+        .menu-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Role colors for sidebar */
+        .role-superadmin { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .role-admin { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .role-manager { background: linear-gradient(135deg, #10b981, #059669); }
+        .role-broker { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .role-user { background: linear-gradient(135deg, #6b7280, #4b5563); }
+        .role-compliance { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Main Container -->
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="sidebar bg-white shadow-lg w-64 flex flex-col">
+            <!-- Logo -->
+            <div class="p-6 border-b flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-shield-alt text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-gray-800">GIBSYSNET</h1>
+                    <p class="text-xs text-gray-500">Insurance Management</p>
+                </div>
+            </div>
+            
+            <!-- User Profile -->
+            <div class="p-4 border-b">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center" id="userAvatar">
+                        <span class="text-white font-bold" id="userInitials">U</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800" id="userName">Loading...</h3>
+                        <p class="text-xs text-gray-500" id="userRole">Loading role...</p>
+                        <p class="text-xs text-gray-400" id="userEmail">Loading email...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Navigation -->
+            <nav class="flex-1 p-4">
+                <ul class="space-y-1">
+                    <!-- Dashboard (Active) -->
+                    <li>
+                        <a href="../dashboard/dashboard-user.html" class="flex items-center space-x-3 p-3 rounded-lg bg-blue-50 text-blue-600 border-l-4 border-blue-600">
+                            <i class="fas fa-home w-5 text-center"></i>
+                            <span class="font-semibold">Dashboard</span>
+                        </a>
+                    </li>
+                    
+                    <!-- My Policies -->
+                    <li>
+                        <a href="my-policies.html" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+                            <i class="fas fa-file-contract w-5 text-center"></i>
+                            <span>My Policies</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Claims -->
+                    <li>
+                        <a href="claims.html" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+                            <i class="fas fa-clipboard-check w-5 text-center"></i>
+                            <span>Claims</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Clients -->
+                    <li>
+                        <a href="clients.html" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+                            <i class="fas fa-users w-5 text-center"></i>
+                            <span>Clients</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Reports -->
+                    <li>
+                        <a href="../docs/reports/index.html" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+                            <i class="fas fa-chart-bar w-5 text-center"></i>
+                            <span>Reports</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Payments -->
+                    <li>
+                        <a href="payments.html" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+                            <i class="fas fa-credit-card w-5 text-center"></i>
+                            <span>Payments</span>
+                        </a> 
+                    </li>
+                    
+                    <!-- Calendar -->
+                    <li>
+                        <a href="calendar.html" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+                            <i class="fas fa-calendar-alt w-5 text-center"></i>
+                            <span>Calendar</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Admin Menu (Only show for admin users) -->
+                    <div id="adminMenu" style="display: none;">
+                        <li class="pt-4">
+                            <div class="text-xs uppercase text-gray-400 font-semibold px-3 mb-2">Administration</div>
+                        </li>
+                        
+                        <li>
+                            <a href="administration.html" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+                                <i class="fas fa-user-shield w-5 text-center"></i>
+                                <span>Admin Dashboard</span>
+                            </a>
+                        </li>
+                    </div>
+                    
+                    <!-- Divider -->
+                    <li class="pt-4">
+                        <div class="text-xs uppercase text-gray-400 font-semibold px-3 mb-2">Settings</div>
+                    </li>
+                    
+                    <!-- Profile -->
+                    <li>
+                        <a href="profile.html" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+                            <i class="fas fa-user-cog w-5 text-center"></i>
+                            <span>Profile</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Settings -->
+                    <li>
+                        <a href="settings.html" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+                            <i class="fas fa-cog w-5 text-center"></i>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Logout -->
+                    <li>
+                        <a href="#" onclick="userLogout()" class="flex items-center space-x-3 p-3 rounded-lg text-red-600 hover:bg-red-50 transition mt-8">
+                            <i class="fas fa-sign-out-alt w-5 text-center"></i>
+                            <span>Logout</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="content-area flex-1 flex flex-col">
+            <!-- Header -->
+            <header class="bg-white shadow-sm border-b px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
+                        <p class="text-gray-600" id="welcomeMessage">Welcome back, Loading...</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <input type="text" placeholder="Search..." class="border rounded-lg px-4 py-2 pl-10 w-64">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        </div>
+                        <button class="relative p-2 rounded-full hover:bg-gray-100">
+                            <i class="fas fa-bell text-gray-600"></i>
+                            <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Main Content -->
+            <main class="flex-1 p-6">
+                <!-- Welcome Section -->
+                <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-8 text-white mb-8">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-3xl font-bold mb-2" id="mainWelcome">Welcome to GIBSYSNET</h2>
+                            <p class="opacity-90" id="userSpecificMessage">Manage all your insurance policies in one place</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm opacity-90">Today is</p>
+                            <p class="text-xl font-bold" id="currentDate">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="stat-card bg-white rounded-xl shadow p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">Total Policies</p>
+                                <h3 class="text-3xl font-bold text-gray-800 mt-1">24</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-file-contract text-blue-600 text-xl"></i>
+                            </div>
+                        </div>
+                        <a href="my-policies.html" class="text-blue-600 text-sm mt-2 inline-block hover:underline">
+                            View all →
+                        </a>
+                    </div>
+                    
+                    <div class="stat-card bg-white rounded-xl shadow p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">Active Claims</p>
+                                <h3 class="text-3xl font-bold text-gray-800 mt-1">8</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-clipboard-check text-green-600 text-xl"></i>
+                            </div>
+                        </div>
+                        <a href="claims.html" class="text-green-600 text-sm mt-2 inline-block hover:underline">
+                            View claims →
+                        </a>
+                    </div>
+                    
+                    <div class="stat-card bg-white rounded-xl shadow p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">Total Clients</p>
+                                <h3 class="text-3xl font-bold text-gray-800 mt-1">42</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-users text-purple-600 text-xl"></i>
+                            </div>
+                        </div>
+                        <a href="clients.html" class="text-purple-600 text-sm mt-2 inline-block hover:underline">
+                            View clients →
+                        </a>
+                    </div>
+                    
+                    <div class="stat-card bg-white rounded-xl shadow p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">Pending Payments</p>
+                                <h3 class="text-3xl font-bold text-gray-800 mt-1">5</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-yellow-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-credit-card text-yellow-600 text-xl"></i>
+                            </div>
+                        </div>
+                        <a href="payments.html" class="text-yellow-600 text-sm mt-2 inline-block hover:underline">
+                            View payments →
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    <!-- Sales Performance Chart -->
+                    <div class="bg-white rounded-xl shadow p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Sales Performance</h3>
+                        <div class="h-64">
+                            <canvas id="salesChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Policy Distribution Chart -->
+                    <div class="bg-white rounded-xl shadow p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Policy Distribution</h3>
+                        <div class="h-64">
+                            <canvas id="policyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Access Menu -->
+                <div class="mb-8">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Quick Access</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- My Policies Card -->
+                        <a href="my-policies.html" class="menu-card bg-white border rounded-xl p-6 hover:border-blue-300 hover:shadow-md">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                                    <i class="fas fa-file-contract text-blue-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-800">My Policies</h3>
+                                    <p class="text-sm text-gray-600">Manage insurance policies</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-500 text-sm">View, create, and manage all your insurance policies in one place.</p>
+                            <div class="mt-4 text-blue-600 font-medium">
+                                Go to My Policies →
+                            </div>
+                        </a>
+                        
+                        <!-- Claims Card -->
+                        <a href="claims.html" class="menu-card bg-white border rounded-xl p-6 hover:border-green-300 hover:shadow-md">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                                    <i class="fas fa-clipboard-check text-green-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-800">Claims</h3>
+                                    <p class="text-sm text-gray-600">Process insurance claims</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-500 text-sm">Submit, track, and manage insurance claims efficiently.</p>
+                            <div class="mt-4 text-green-600 font-medium">
+                                Go to Claims →
+                            </div>
+                        </a>
+                        
+                        <!-- Clients Card -->
+                        <a href="clients.html" class="menu-card bg-white border rounded-xl p-6 hover:border-blue-300 hover:shadow-md">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                                    <i class="fas fa-users text-blue-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-800">Client Management</h3>
+                                    <p class="text-sm text-gray-600">Manage client database</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-500 text-sm">View, add, and manage all your insurance clients in one centralized system.</p>
+                            <div class="mt-4 text-blue-600 font-medium">
+                                Go to Clients →
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Recent Activity</h2>
+                    <div class="space-y-4">
+                        <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                                <i class="fas fa-file-contract text-blue-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium">New policy created</p>
+                                <p class="text-sm text-gray-500">Comprehensive Health Plan for John Smith</p>
+                            </div>
+                            <span class="text-sm text-gray-500">2 hours ago</span>
+                        </div>
+                        
+                        <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg">
+                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                                <i class="fas fa-clipboard-check text-green-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium">Claim approved</p>
+                                <p class="text-sm text-gray-500">Auto accident claim #CL-2023-045</p>
+                            </div>
+                            <span class="text-sm text-gray-500">Yesterday</span>
+                        </div>
+                        
+                        <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg">
+                            <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center mr-4">
+                                <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium">Policy renewal reminder</p>
+                                <p class="text-sm text-gray-500">3 policies expiring in 30 days</p>
+                            </div>
+                            <span class="text-sm text-gray-500">2 days ago</span>
+                        </div>
+                    </div>
+                    <div class="mt-6 text-center">
+                        <a href="my-policies.html" class="text-blue-600 hover:underline">View all activity →</a>
+                    </div>
+                </div>
+            </main>
+            
+            <!-- Footer -->
+            <footer class="bg-white border-t px-6 py-4">
+                <div class="text-center text-sm text-gray-500">
+                    <p>GIBSYSNET v2.1.0 • © 2024 Insurance Management System • <span id="footerDate">Loading...</span></p>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // ============================================
+        // USER PROFILE MANAGEMENT (SAME AS CLAIMS.HTML)
+        // ============================================
+        
+        // Data user demo (sama dengan di login.html)
+        const demoUsers = [
+            {
+                username: 'superadmin',
+                password: 'password123',
+                user_id: 'SU001',
+                full_name: 'Super Administrator',
+                user_level: 'super_admin',
+                email: 'superadmin@gibsysnet.com',
+                badge_class: 'badge-superadmin',
+                badge_text: 'Super Admin',
+                description: 'Akses penuh ke semua fitur sistem'
+            },
+            {
+                username: 'admin',
+                password: 'password123',
+                user_id: 'AD001',
+                full_name: 'System Administrator',
+                user_level: 'admin',
+                email: 'admin@gibsysnet.com',
+                badge_class: 'badge-admin',
+                badge_text: 'Admin',
+                description: 'Akses administrator dengan kontrol penuh'
+            },
+            {
+                username: 'manager',
+                password: 'password123',
+                user_id: 'MN001',
+                full_name: 'Sales Manager',
+                user_level: 'manager',
+                email: 'manager@gibsysnet.com',
+                badge_class: 'badge-manager',
+                badge_text: 'Manager',
+                description: 'Manajemen tim sales dan laporan'
+            },
+            {
+                username: 'broker1',
+                password: 'password123',
+                user_id: 'BR001',
+                full_name: 'John Broker',
+                user_level: 'broker',
+                email: 'john.broker@gibsysnet.com',
+                badge_class: 'badge-broker',
+                badge_text: 'Broker',
+                description: 'Broker aktif dengan klien portfolio'
+            },
+            {
+                username: 'broker2',
+                password: 'password123',
+                user_id: 'BR002',
+                full_name: 'Sarah Broker',
+                user_level: 'broker',
+                email: 'sarah.broker@gibsysnet.com',
+                badge_class: 'badge-broker',
+                badge_text: 'Broker',
+                description: 'Broker spesialis asuransi properti'
+            },
+            {
+                username: 'user',
+                password: 'password123',
+                user_id: 'US001',
+                full_name: 'Regular User',
+                user_level: 'user',
+                email: 'user@gibsysnet.com',
+                badge_class: 'badge-user',
+                badge_text: 'User',
+                description: 'Akses terbatas untuk view data'
+            },
+            {
+                username: 'compliance',
+                password: 'password123',
+                user_id: 'CO001',
+                full_name: 'Compliance Officer',
+                user_level: 'admin',
+                email: 'compliance@gibsysnet.com',
+                badge_class: 'badge-admin',
+                badge_text: 'Compliance',
+                description: 'Officer compliance dan regulasi'
+            }
+        ];
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Dashboard loading...');
+            
+            // Load user data
+            loadUserData();
+            
+            // Initialize charts
+            initializeCharts();
+            
+            // Update date/time
+            updateDateTime();
+        });
+        
+        function loadUserData() {
+            // Try multiple storage locations for backward compatibility
+            const gibsysnetUser = localStorage.getItem('gibsysnet_user');
+            const currentUserEmail = localStorage.getItem('current_user_email');
+            const userEmail = localStorage.getItem('user_email');
+            
+            let currentUser = {};
+            
+            // Priority 1: Check gibsysnet_user (from claims.html system)
+            if (gibsysnetUser) {
+                try {
+                    currentUser = JSON.parse(gibsysnetUser);
+                } catch (error) {
+                    console.error('Error parsing gibsysnet_user:', error);
+                    currentUser = getDefaultUser();
+                }
+            } 
+            // Priority 2: Check email from login and build user object
+            else if (currentUserEmail || userEmail) {
+                const email = currentUserEmail || userEmail;
+                const nameFromStorage = localStorage.getItem('current_user_name') || 
+                                        localStorage.getItem('user_name') || 
+                                        email.split('@')[0];
+                
+                // Determine role from email pattern
+                let role = 'User';
+                let roleText = 'User';
+                if (email.includes('admin') || email.includes('super')) {
+                    role = 'super_admin';
+                    roleText = 'Super Administrator';
+                } else if (email.includes('manager')) {
+                    role = 'manager';
+                    roleText = 'Manager';
+                } else if (email.includes('broker')) {
+                    role = 'broker';
+                    roleText = 'Broker';
+                } else if (email.includes('compliance')) {
+                    role = 'admin';
+                    roleText = 'Compliance Officer';
+                }
+                
+                currentUser = {
+                    username: email.split('@')[0],
+                    full_name: nameFromStorage,
+                    user_level: role,
+                    email: email,
+                    badge_text: roleText
+                };
+                
+                // Save to gibsysnet_user for consistency
+                localStorage.setItem('gibsysnet_user', JSON.stringify(currentUser));
+            } 
+            // Priority 3: Default user
+            else {
+                currentUser = getDefaultUser();
+                localStorage.setItem('gibsysnet_user', JSON.stringify(currentUser));
+            }
+            
+            updateUserProfile(currentUser);
+        }
+        
+        function getDefaultUser() {
+            return {
+                username: 'superadmin',
+                full_name: 'Super Administrator',
+                user_level: 'super_admin',
+                email: 'superadmin@gibsysnet.com',
+                badge_text: 'Super Admin'
+            };
+        }
+        
+        function updateUserProfile(currentUser) {
+            // Get DOM elements
+            const userNameEl = document.getElementById('userName');
+            const userRoleEl = document.getElementById('userRole');
+            const userEmailEl = document.getElementById('userEmail');
+            const userInitialsEl = document.getElementById('userInitials');
+            const userAvatarEl = document.getElementById('userAvatar');
+            const welcomeMessageEl = document.getElementById('welcomeMessage');
+            const mainWelcomeEl = document.getElementById('mainWelcome');
+            const userSpecificMessageEl = document.getElementById('userSpecificMessage');
+            
+            // Set user name
+            if (currentUser.full_name) {
+                userNameEl.textContent = currentUser.full_name;
+            } else if (currentUser.name) {
+                userNameEl.textContent = currentUser.name;
+            } else if (currentUser.username) {
+                userNameEl.textContent = currentUser.username.charAt(0).toUpperCase() + currentUser.username.slice(1);
+            } else {
+                userNameEl.textContent = 'User';
+            }
+            
+            // Set user role
+            if (currentUser.badge_text) {
+                userRoleEl.textContent = currentUser.badge_text;
+            } else if (currentUser.user_level === 'super_admin') {
+                userRoleEl.textContent = 'Super Admin';
+            } else if (currentUser.user_level === 'admin') {
+                userRoleEl.textContent = 'Administrator';
+            } else if (currentUser.user_level === 'manager') {
+                userRoleEl.textContent = 'Sales Manager';
+            } else if (currentUser.user_level === 'broker') {
+                userRoleEl.textContent = 'Broker';
+            } else if (currentUser.user_level === 'user') {
+                userRoleEl.textContent = 'Regular User';
+            } else if (currentUser.role) {
+                userRoleEl.textContent = currentUser.role;
+            } else {
+                userRoleEl.textContent = 'User';
+            }
+            
+            // Set user email
+            if (currentUser.email) {
+                userEmailEl.textContent = currentUser.email;
+            } else {
+                userEmailEl.textContent = currentUser.username + '@gibsysnet.com';
+            }
+            
+            // Set user initials
+            let initials = 'U';
+            if (currentUser.full_name) {
+                const nameParts = currentUser.full_name.split(' ');
+                if (nameParts.length >= 2) {
+                    initials = (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+                } else {
+                    initials = currentUser.full_name.substring(0, 2).toUpperCase();
+                }
+            } else if (currentUser.username) {
+                initials = currentUser.username.substring(0, 2).toUpperCase();
+            }
+            userInitialsEl.textContent = initials;
+            
+            // Set avatar color based on role
+            const roleClass = getRoleClass(currentUser.user_level || currentUser.role);
+            userAvatarEl.className = `w-10 h-10 rounded-full flex items-center justify-center ${roleClass}`;
+            
+            // Update welcome message
+            if (welcomeMessageEl) {
+                welcomeMessageEl.textContent = `Welcome back, ${userNameEl.textContent}`;
+            }
+            
+            // Update main welcome
+            if (mainWelcomeEl) {
+                mainWelcomeEl.textContent = `Welcome to GIBSYSNET, ${userNameEl.textContent}`;
+            }
+            
+            // Update user-specific message
+            if (userSpecificMessageEl) {
+                const roleMessages = {
+                    'super_admin': 'Manage the entire insurance brokerage system',
+                    'admin': 'Manage system administration and settings',
+                    'manager': 'Oversee policies, claims, and team performance',
+                    'broker': 'Manage your clients and insurance policies',
+                    'compliance': 'Monitor regulatory compliance and reports',
+                    'user': 'Manage your insurance policies and claims'
+                };
+                
+                userSpecificMessageEl.textContent = roleMessages[currentUser.user_level] || 
+                                                  'Manage all your insurance policies in one place';
+            }
+            
+            // Show/hide admin menu based on role
+            const adminMenu = document.getElementById('adminMenu');
+            if (adminMenu) {
+                const adminRoles = ['super_admin', 'admin', 'manager'];
+                if (adminRoles.includes(currentUser.user_level)) {
+                    adminMenu.style.display = 'block';
+                }
+            }
+            
+            console.log('User profile updated:', {
+                name: userNameEl.textContent,
+                role: userRoleEl.textContent,
+                email: userEmailEl.textContent
+            });
+        }
+        
+        function getRoleClass(userLevel) {
+            switch(userLevel) {
+                case 'super_admin':
+                case 'superadmin':
+                    return 'role-superadmin';
+                case 'admin':
+                    return 'role-admin';
+                case 'manager':
+                    return 'role-manager';
+                case 'broker':
+                    return 'role-broker';
+                case 'user':
+                    return 'role-user';
+                case 'compliance':
+                    return 'role-compliance';
+                default:
+                    return 'role-user';
+            }
+        }
+        
+        function userLogout() {
+            // Clear all user-related storage
+            const storageKeys = [
+                'gibsysnet_user',
+                'current_user_email', 'current_user_name', 'current_user_role',
+                'user_email', 'user_name', 'user_role',
+                'userEmail', 'userName', 'userRole',
+                'logged_in', 'user_session'
+            ];
+            
+            storageKeys.forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
+            
+            // Redirect to login
+            window.location.href = 'login.html';
+        }
+        
+        // ============================================
+        // CHART FUNCTIONS
+        // ============================================
+        function initializeCharts() {
+            // Sales Performance Chart
+            const salesCtx = document.getElementById('salesChart').getContext('2d');
+            const salesChart = new Chart(salesCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [
+                        {
+                            label: 'Policies Sold',
+                            data: [45, 52, 60, 55, 65, 70, 75, 80, 85, 90, 88, 95],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Premium Collected',
+                            data: [22500, 26000, 30000, 27500, 32500, 35000, 37500, 40000, 42500, 45000, 44000, 47500],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Amount ($)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Policy Distribution Chart
+            const policyCtx = document.getElementById('policyChart').getContext('2d');
+            const policyChart = new Chart(policyCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Health', 'Auto', 'Property', 'Life', 'Travel'],
+                    datasets: [{
+                        data: [35, 25, 20, 15, 5],
+                        backgroundColor: [
+                            '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#06b6d4'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        function updateDateTime() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            
+            // Update current date in welcome section
+            const currentDateEl = document.getElementById('currentDate');
+            if (currentDateEl) {
+                currentDateEl.textContent = now.toLocaleDateString('en-US', options);
+            }
+            
+            // Update footer date
+            const footerDateEl = document.getElementById('footerDate');
+            if (footerDateEl) {
+                footerDateEl.textContent = now.toLocaleDateString();
+            }
+        }
+        
+        // Function to navigate to My Policies
+        function goToMyPolicies() {
+            window.location.href = 'my-policies.html';
+        }
+    </script>
+</body>
+</html>
