@@ -1,0 +1,581 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Occupation Management - GIBSYSNET</title>
+    <link href="../assets/css/output.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a'
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/custom.css">
+    <link rel="stylesheet" href="../assets/css/administration.css">
+    <link rel="stylesheet" href="../assets/css/partners.css">
+</head>
+<body class="bg-gray-50">
+    <div id="loadingIndicator" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p class="text-gray-700">Loading occupation data...</p>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="menu-bar text-white">
+            <div class="flex items-center justify-between h-full px-4">
+                <div class="flex items-center space-x-6">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-white/20 rounded flex items-center justify-center">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <span class="font-bold text-lg">GIBSYSNET</span>
+                    </div>
+
+                    <div class="hidden md:flex items-center space-x-1">
+                        <div class="relative menu-container">
+                            <button class="menu-btn px-3 py-2 hover:bg-white/10 rounded flex items-center space-x-1">
+                                <i class="fas fa-file"></i>
+                                <span>File</span>
+                                <i class="fas fa-chevron-down text-xs ml-1"></i>
+                            </button>
+                            <div class="menu-dropdown">
+                                <a href="#" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-sign-in-alt mr-2"></i>Sign In</a>
+                                <a href="#" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-sign-out-alt mr-2"></i>Sign Out</a>
+                                <div class="border-t my-1"></div>
+                                <a href="#" onclick="handleLogout()" class="block px-4 py-2 hover:bg-red-50 text-red-600"><i class="fas fa-power-off mr-2"></i>Exit</a>
+                            </div>
+                        </div>
+
+                        <div class="relative menu-container">
+                            <button class="menu-btn px-3 py-2 hover:bg-white/10 rounded flex items-center space-x-1">
+                                <i class="fas fa-database"></i>
+                                <span>Master</span>
+                                <i class="fas fa-chevron-down text-xs ml-1"></i>
+                            </button>
+                            <div class="menu-dropdown w-64">
+                                <a href="company.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-building mr-2"></i>Company Profile</a>
+                                <a href="partners.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-handshake mr-2"></i>Partners</a>
+                                <a href="cob.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-list-alt mr-2"></i>COB</a>
+                                <a href="subcob.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-layer-group mr-2"></i>Sub COB</a>
+                                <a href="currency.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-money-bill-wave mr-2"></i>Currency</a>
+                                <a href="#" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-exclamation-triangle mr-2"></i>Default Quotation</a>
+                                <a href="modelrisk.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-chart-line mr-2"></i>Model Risks</a>
+                                <a href="occupations.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-user-tie mr-2"></i>Occupations</a>
+                                <a href="class.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-hard-hat mr-2"></i>Class Construction</a>
+                                <a href="coverages.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-umbrella mr-2"></i>Coverage</a>
+                                <a href="objectgroup.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-object-group mr-2"></i>Object Group</a>
+                                <a href="#" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-hand-holding-usd mr-2"></i>Contribution</a>
+                                <a href="target.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-bullseye mr-2"></i>Production Target</a>
+                            </div>
+                        </div>
+
+                        <div class="relative menu-container">
+                            <button class="menu-btn px-3 py-2 hover:bg-white/10 rounded flex items-center space-x-1">
+                                <i class="fas fa-exchange-alt"></i>
+                                <span>Transactions</span>
+                                <i class="fas fa-chevron-down text-xs ml-1"></i>
+                            </button>
+                            <div class="menu-dropdown w-64">
+                                <a href="transactions.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-file-invoice-dollar mr-2"></i>Quotation</a>
+                                <a href="quotation.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-edit mr-2"></i>Quotation Registration</a>
+                                <a href="transactions.html?action=renewal" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-search mr-2"></i>Renewal Quotation</a>
+                                <a href="transactions.html?action=endorsement" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-gem mr-2"></i>Endorsement Quotation</a>
+                                <a href="transactions.html?action=closed" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-times-circle mr-2"></i>Closed Quotations</a>
+                                <a href="transactions.html?action=delete" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-window-maximize mr-2"></i>Delete Quotation</a>
+                                <a href="transactions.html?action=rollback" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-undo mr-2"></i>Rollback Quotation</a>
+                                <a href="transactions.html?action=note" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-circle mr-2"></i>Note</a>
+                            </div>
+                        </div>
+
+                        <div class="relative menu-container">
+                            <button class="menu-btn px-3 py-2 hover:bg-white/10 rounded flex items-center space-x-1">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Reports</span>
+                                <i class="fas fa-chevron-down text-xs ml-1"></i>
+                            </button>
+                            <div class="menu-dropdown">
+                                <a href="reports.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-chart-line mr-2"></i>Monthly Production</a>
+                                <a href="reports.html?type=renewal" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-bell mr-2"></i>Renewal Reminder</a>
+                                <a href="reports.html?type=renewal-notes" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-sticky-note mr-2"></i>Renewal Notice</a>
+                                <a href="reports.html?type=earning" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-money-check-alt mr-2"></i>Earned - Unearned Premium</a>
+                            </div>
+                        </div>
+
+                        <div class="relative menu-container">
+                            <button class="menu-btn px-3 py-2 hover:bg-white/10 rounded flex items-center space-x-1">
+                                <i class="fas fa-clipboard-check"></i>
+                                <span>Compliance</span>
+                                <i class="fas fa-chevron-down text-xs ml-1"></i>
+                            </button>
+                            <div class="menu-dropdown w-64">
+                                <a href="compliance.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-file-export mr-2"></i>e-Reporting</a>
+                                <a href="compliance.html?module=sipo" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-shield-alt mr-2"></i>Sippo</a>
+                                <a href="compliance.html?module=symogga" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-balance-scale mr-2"></i>Sprint</a>
+                                <a href="compliance.html?module=sagap" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-handshake mr-2"></i>Apolo</a>
+                                <a href="compliance.html?module=saap" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-file-contract mr-2"></i>Sigap</a>
+                                <a href="compliance.html?module=lsppi" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-industry mr-2"></i>Apparindo</a>
+                                <a href="compliance.html?module=apollo" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-rocket mr-2"></i>Siap Apari</a>
+                                <a href="compliance.html?module=sapoari" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-file-signature mr-2"></i>OJK</a>
+                            </div>
+                        </div>
+
+                        <div class="relative menu-container">
+                            <button class="menu-btn px-3 py-2 hover:bg-white/10 rounded flex items-center space-x-1">
+                                <i class="fas fa-cogs"></i>
+                                <span>Administrations</span>
+                                <i class="fas fa-chevron-down text-xs ml-1"></i>
+                            </button>
+                            <div class="menu-dropdown">
+                                <a href="administration.html?action=password" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-key mr-2"></i>Change Password</a>
+                                <a href="administration.html?action=users" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-users-cog mr-2"></i>User Management</a>
+                            </div>
+                        </div>
+
+                        <div class="relative menu-container">
+                            <button class="menu-btn px-3 py-2 hover:bg-white/10 rounded flex items-center space-x-1">
+                                <i class="fas fa-tools"></i>
+                                <span>Utilities</span>
+                                <i class="fas fa-chevron-down text-xs ml-1"></i>
+                            </button>
+                            <div class="menu-dropdown">
+                                <a href="#" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-sign-in-alt mr-2"></i>Log On Local</a>
+                                <a href="#" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-upload mr-2"></i>Upload Local</a>
+                            </div>
+                        </div>
+
+                        <div class="relative menu-container">
+                            <button class="menu-btn px-3 py-2 hover:bg-white/10 rounded flex items-center space-x-1">
+                                <i class="fas fa-question-circle"></i>
+                                <span>Help</span>
+                                <i class="fas fa-chevron-down text-xs ml-1"></i>
+                            </button>
+                            <div class="menu-dropdown">
+                                <a href="#" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-life-ring mr-2"></i>Usage Help</a>
+                                <a href="#" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-book mr-2"></i>Documentation</a>
+                                <a href="#" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-phone-alt mr-2"></i>Contact Support</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <button id="notificationBtn" class="relative p-1 hover:bg-white/10 rounded-full">
+                            <i class="fas fa-bell text-lg"></i>
+                            <span id="notificationBadge" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center hidden">0</span>
+                        </button>
+                        <div id="notificationDropdown" class="menu-dropdown right-0 mt-2 w-80 max-h-96 overflow-y-auto hidden"></div>
+                    </div>
+
+                    <div class="relative">
+                        <button id="userMenuBtn" class="flex items-center space-x-2 hover:bg-white/10 px-3 py-1 rounded-lg">
+                            <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                                <span id="userInitial" class="font-bold">A</span>
+                            </div>
+                            <span id="userDisplayName" class="font-medium hidden md:inline">Admin</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="userMenu" class="menu-dropdown right-0 w-48 hidden">
+                            <div class="px-4 py-3 border-b">
+                                <p class="font-semibold text-gray-800" id="menuUserName">Administrator</p>
+                                <p class="text-sm text-gray-600" id="menuUserEmail">admin@gibsysnet.com</p>
+                            </div>
+                            <a href="administration.html?action=profile" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-user-circle mr-2"></i>My Profile</a>
+                            <a href="administration.html?action=password" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-key mr-2"></i>Change Password</a>
+                            <div class="border-t my-1"></div>
+                            <a href="#" onclick="handleLogout()" class="block px-4 py-2 hover:bg-red-50 text-red-600"><i class="fas fa-sign-out-alt mr-2"></i>Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar text-white text-sm">
+            <div class="flex justify-between items-center h-full px-4">
+                <div class="flex items-center space-x-6 overflow-x-auto">
+                    <span><i class="fas fa-id-card mr-1"></i> <span id="userId">ID: N/A</span></span>
+                    <span><i class="fas fa-user mr-1"></i> <span id="userFullName">User Name: Administrator</span></span>
+                    <span><i class="fas fa-user-shield mr-1"></i> <span id="userLevel">Level: ADMIN</span></span>
+                    <span><i class="fas fa-building mr-1"></i> Department: <span id="userDept">Administration</span></span>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <span><i class="fas fa-calendar mr-1"></i> <span id="currentDate">-</span></span>
+                    <span><i class="fas fa-clock mr-1"></i> <span id="currentTime">-</span></span>
+                    <span id="onlineStatus"><i class="fas fa-wifi text-green-500"></i> Online</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="p-4 border-b">
+                <h2 class="font-bold text-lg text-gray-800 flex items-center">
+                    <i class="fas fa-user-tie mr-2 text-blue-600"></i> Occupation Management
+                </h2>
+            </div>
+            <div class="p-4 space-y-6">
+                <div>
+                    <h3 class="font-medium text-gray-700 text-sm uppercase mb-3">Quick Actions</h3>
+                    <div class="space-y-2">
+                        <button id="newBtnSidebar" class="menu-item active flex items-center p-3 rounded-lg w-full text-left">
+                            <i class="fas fa-file-circle-plus mr-3 text-green-600"></i><span>New</span>
+                        </button>
+                        <button id="saveBtnSidebar" class="menu-item flex items-center p-3 rounded-lg w-full text-left">
+                            <i class="fas fa-save mr-3 text-blue-600"></i><span>Save</span>
+                        </button>
+                        <button id="deleteBtnSidebar" class="menu-item flex items-center p-3 rounded-lg w-full text-left">
+                            <i class="fas fa-trash mr-3 text-red-600"></i><span>Delete</span>
+                        </button>
+                        <button id="exportBtnSidebar" class="menu-item flex items-center p-3 rounded-lg w-full text-left">
+                            <i class="fas fa-file-export mr-3 text-purple-600"></i><span>Export Data</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-700 text-sm uppercase mb-3">Governance Modules</h3>
+                    <div class="space-y-2 text-sm text-gray-700">
+                        <div class="module-chip"><i class="fas fa-microscope"></i><span>Tool Impact Analysis</span></div>
+                        <div class="module-chip"><i class="fas fa-code-branch"></i><span>Data Versioning</span></div>
+                        <div class="module-chip"><i class="fas fa-trash-restore"></i><span>Soft Delete</span></div>
+                        <div class="module-chip"><i class="fas fa-project-diagram"></i><span>Smart Dependency Control</span></div>
+                        <div class="module-chip"><i class="fas fa-robot"></i><span>AI Suggestion (Future Ready)</span></div>
+                        <div class="module-chip"><i class="fas fa-heartbeat"></i><span>Data Health Dashboard</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="mb-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">Occupation Management</h1>
+                        <p class="text-gray-600">Manage occupation tariffs with integrated governance and control</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="health-grid mb-6">
+                <div class="health-card"><p class="health-label">Impact Score</p><p class="health-value" id="metricImpact">0</p></div>
+                <div class="health-card"><p class="health-label">Data Versions</p><p class="health-value" id="metricVersions">0</p></div>
+                <div class="health-card"><p class="health-label">Soft Deleted</p><p class="health-value" id="metricSoftDelete">0</p></div>
+                <div class="health-card"><p class="health-label">Dependency Health</p><p class="health-value" id="metricDependency">0%</p></div>
+                <div class="health-card"><p class="health-label">Data Quality</p><p class="health-value" id="metricQuality">0%</p></div>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+                <div class="xl:col-span-2 bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b flex justify-between items-center">
+                        <h3 class="font-bold text-gray-800"><i class="fas fa-id-card mr-2 text-blue-600"></i>Occupation Tariff Information</h3>
+                    </div>
+                    <form id="occupationForm" class="p-6 space-y-5">
+                        <input type="hidden" id="recordId" name="id">
+                        <input type="hidden" id="occupId" name="occup_id">
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="form-label">Occup.Code (2 digits) <span class="text-red-500">*</span></label>
+                                <select id="occCode2" class="form-input" required>
+                                    <option value="">Select Occup.Code (2 digits)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label">Occup.Code (3 digits) <span class="text-red-500">*</span></label>
+                                <select id="occCode3" class="form-input" required>
+                                    <option value="">Select Occup.Code (3 digits)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label">Occup.Code (4-6 digits) <span class="text-red-500">*</span></label>
+                                <select id="occCode46" class="form-input" required>
+                                    <option value="">Select Occup.Code (4-6 digits)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label">Description <span class="text-red-500">*</span></label>
+                                <input type="text" id="description" class="form-input" placeholder="Occupation description" required>
+                            </div>
+                        </div>
+
+                        <div class="border rounded-lg p-4 bg-gray-50">
+                            <p class="text-sm font-semibold text-gray-700 mb-4">Tariff Premium / Contribution (‰)</p>
+                            <table class="w-full border-collapse">
+                                <thead>
+                                    <tr>
+                                        <th colspan="2" class="text-center text-sm font-medium text-gray-700 pb-3 border-b">Constr. Class 1</th>
+                                        <th colspan="2" class="text-center text-sm font-medium text-gray-700 pb-3 border-b">Constr. Class 2</th>
+                                        <th colspan="2" class="text-center text-sm font-medium text-gray-700 pb-3 border-b">Constr. Class 3</th>
+                                    </tr>
+                                    <tr>
+                                        <th class="text-center text-xs font-medium text-gray-600 pb-2 w-1/6">Lower</th>
+                                        <th class="text-center text-xs font-medium text-gray-600 pb-2 w-1/6">Upper</th>
+                                        <th class="text-center text-xs font-medium text-gray-600 pb-2 w-1/6">Lower</th>
+                                        <th class="text-center text-xs font-medium text-gray-600 pb-2 w-1/6">Upper</th>
+                                        <th class="text-center text-xs font-medium text-gray-600 pb-2 w-1/6">Lower</th>
+                                        <th class="text-center text-xs font-medium text-gray-600 pb-2 w-1/6">Upper</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="px-1">
+                                            <input type="number" step="0.001" min="0" id="class1Lower" class="form-input w-full" placeholder="0.000" required>
+                                        </td>
+                                        <td class="px-1">
+                                            <input type="number" step="0.001" min="0" id="class1Upper" class="form-input w-full" placeholder="0.000" required>
+                                        </td>
+                                        <td class="px-1">
+                                            <input type="number" step="0.001" min="0" id="class2Lower" class="form-input w-full" placeholder="0.000" required>
+                                        </td>
+                                        <td class="px-1">
+                                            <input type="number" step="0.001" min="0" id="class2Upper" class="form-input w-full" placeholder="0.000" required>
+                                        </td>
+                                        <td class="px-1">
+                                            <input type="number" step="0.001" min="0" id="class3Lower" class="form-input w-full" placeholder="0.000" required>
+                                        </td>
+                                        <td class="px-1">
+                                            <input type="number" step="0.001" min="0" id="class3Upper" class="form-input w-full" placeholder="0.000" required>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b">
+                        <h3 class="font-bold text-gray-800"><i class="fas fa-microscope mr-2 text-indigo-600"></i>Tool Impact Analysis</h3>
+                    </div>
+                    <div class="p-4">
+                        <table class="w-full text-sm" id="impactTable">
+                            <thead class="text-gray-500">
+                                <tr><th class="text-left py-2">Tool</th><th class="text-left py-2">Impact</th><th class="text-left py-2">Risk</th></tr>
+                            </thead>
+                            <tbody id="impactTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b"><h3 class="font-bold text-gray-800"><i class="fas fa-code-branch mr-2 text-green-600"></i>Data Versioning</h3></div>
+                    <div class="p-4" id="versionList"></div>
+                </div>
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b"><h3 class="font-bold text-gray-800"><i class="fas fa-trash-restore mr-2 text-red-500"></i>Soft Delete</h3></div>
+                    <div class="p-4" id="softDeleteList"></div>
+                </div>
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b"><h3 class="font-bold text-gray-800"><i class="fas fa-project-diagram mr-2 text-purple-600"></i>Smart Dependency Control</h3></div>
+                    <div class="p-4" id="dependencyList"></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
+                <div class="px-6 py-4 border-b"><h3 class="font-bold text-gray-800"><i class="fas fa-robot mr-2 text-sky-600"></i>AI Suggestion (Future Ready)</h3></div>
+                <div class="p-4" id="aiSuggestionList"></div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-6 py-4 border-b flex justify-between items-center">
+                    <h3 class="font-bold text-gray-800"><i class="fas fa-list mr-2 text-blue-600"></i>Occupation List</h3>
+                    <div class="flex gap-2">
+                        <input type="text" id="searchInput" class="form-input" placeholder="Search occupations...">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="min-w-full divide-y divide-gray-200" id="occupationTable">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase" rowspan="2">No</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" rowspan="2">Occup.Code (2)</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" rowspan="2">Occup.Code (3)</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" rowspan="2">Occup.Code (4-6)</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" rowspan="2">Description</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase" colspan="2">Class 1</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase" colspan="2">Class 2</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase" colspan="2">Class 3</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" rowspan="2">Actions</th>
+                            </tr>
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Low</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">High</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Low</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">High</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Low</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">High</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="tableBody"></tbody>
+                    </table>
+                </div>
+                <div class="px-6 py-4 border-t bg-gray-50 flex justify-between items-center">
+                    <div class="text-sm text-gray-700">Showing <span id="rowCount">0</span> occupations</div>
+                    <div class="flex items-center gap-3">
+                        <button id="prevBtn" class="btn-secondary py-2 px-3"><i class="fas fa-chevron-left"></i></button>
+                        <span id="pageInfo" class="text-sm text-gray-700">Page 1 of 1</span>
+                        <button id="nextBtn" class="btn-secondary py-2 px-3"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="modal">
+        <div class="modal-content p-6">
+            <h3 class="text-lg font-bold mb-3"><i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>Confirm Action</h3>
+            <p id="confirmMessage" class="text-gray-700 mb-6">Are you sure you want to delete this occupation?</p>
+            <div class="flex justify-end gap-3">
+                <button id="confirmCancel" class="btn-secondary">Cancel</button>
+                <button id="confirmOk" class="btn-primary">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="messageModal" class="modal">
+        <div class="modal-content p-6">
+            <h3 class="text-lg font-bold mb-3"><i class="fas fa-check-circle text-green-500 mr-2"></i>Information</h3>
+            <p id="messageText" class="text-gray-700 mb-6">Operation completed.</p>
+            <div class="flex justify-end"><button id="messageOk" class="btn-primary">OK</button></div>
+        </div>
+    </div>
+
+    <script src="../assets/js/main.js"></script>
+    <script src="../assets/js/occupation.js"></script>
+    <script>
+        function handleLogout() {
+            if (window.Auth && typeof window.Auth.logout === 'function') {
+                window.Auth.logout();
+                return;
+            }
+            localStorage.removeItem('gibsysnet_token');
+            localStorage.removeItem('gibsysnet_user');
+            window.location.href = 'login.html';
+        }
+
+        function updateStatusBarUserInfo() {
+            const userData = localStorage.getItem('gibsysnet_user');
+            const user = userData ? JSON.parse(userData) : null;
+
+            const userId = document.getElementById('userId');
+            const userFullName = document.getElementById('userFullName');
+            const userLevel = document.getElementById('userLevel');
+            const userDept = document.getElementById('userDept');
+            const userInitial = document.getElementById('userInitial');
+            const userDisplayName = document.getElementById('userDisplayName');
+            const menuUserName = document.getElementById('menuUserName');
+            const menuUserEmail = document.getElementById('menuUserEmail');
+
+            const fullName = user?.full_name || 'Administrator';
+            const email = user?.email || 'admin@gibsysnet.com';
+            const level = (user?.user_level || 'admin').toUpperCase();
+            const department = user?.department || 'Administration';
+            const id = user?.user_id || 'N/A';
+
+            if (userId) userId.textContent = `ID: ${id}`;
+            if (userFullName) userFullName.textContent = `User Name: ${fullName}`;
+            if (userLevel) userLevel.textContent = `Level: ${level}`;
+            if (userDept) userDept.textContent = department;
+            if (userDisplayName) userDisplayName.textContent = fullName;
+            if (menuUserName) menuUserName.textContent = fullName;
+            if (menuUserEmail) menuUserEmail.textContent = email;
+
+            if (userInitial) {
+                const initials = fullName.split(' ').map((name) => name[0]).join('').toUpperCase();
+                userInitial.textContent = initials.charAt(0) || 'A';
+            }
+        }
+
+        (function initializeLayoutInteractions() {
+            const menuButtons = document.querySelectorAll('.menu-btn');
+            const userMenuBtn = document.getElementById('userMenuBtn');
+            const userMenu = document.getElementById('userMenu');
+            const notificationBtn = document.getElementById('notificationBtn');
+            const notificationDropdown = document.getElementById('notificationDropdown');
+            const currentDate = document.getElementById('currentDate');
+            const currentTime = document.getElementById('currentTime');
+
+            function updateDateTime() {
+                const now = new Date();
+                if (currentDate) {
+                    currentDate.textContent = now.toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                }
+                if (currentTime) {
+                    currentTime.textContent = now.toLocaleTimeString('en-US', {
+                        hour12: false,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                }
+            }
+
+            if (userMenuBtn && userMenu) {
+                userMenuBtn.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    userMenu.classList.toggle('show');
+                    if (notificationDropdown) notificationDropdown.classList.remove('show');
+                });
+            }
+
+            if (notificationBtn && notificationDropdown) {
+                notificationBtn.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    notificationDropdown.classList.toggle('show');
+                    if (userMenu) userMenu.classList.remove('show');
+                });
+            }
+
+            menuButtons.forEach(button => {
+                const container = button.closest('.menu-container');
+                if (!container) return;
+                const dropdown = container.querySelector('.menu-dropdown');
+                if (!dropdown) return;
+
+                button.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    document.querySelectorAll('.menu-dropdown').forEach(menu => {
+                        if (menu !== dropdown) menu.classList.remove('show');
+                    });
+                    dropdown.classList.toggle('show');
+                });
+            });
+
+            document.addEventListener('click', function () {
+                document.querySelectorAll('.menu-dropdown').forEach(dropdown => dropdown.classList.remove('show'));
+            });
+
+            updateDateTime();
+            updateStatusBarUserInfo();
+            setInterval(updateDateTime, 1000);
+        })();
+    </script>
+</body>
+</html>
+

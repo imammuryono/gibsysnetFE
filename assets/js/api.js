@@ -9,11 +9,14 @@
 	window.GibsyNetApi = {
 		baseUrl,
 		endpoints: {
+			cob: `${baseUrl}/cob`,
 			quotation: `${baseUrl}/quotations`,
+			currencies: `${baseUrl}/currencies`,
 			modelRisk: `${baseUrl}/modelrisk`,
 			modelRiskLookup: `${baseUrl}/modelrisk`,
 			partners: `${baseUrl}/partners`,
-			riskVehicle: `${baseUrl}/risk-vehicle`
+			riskVehicle: `${baseUrl}/risk-vehicle`,
+			classConstruction: `${baseUrl}/class-construction`
 		}
 	};
 })();

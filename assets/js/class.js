@@ -5,14 +5,14 @@ let selectedClassId = null;
 let currentPage = 1;
 const rowsPerPage = 10;
 
-// API endpoint - Node.js API (port 3001)
-const API_URL = 'http://localhost:3001/api/classes';
-const CLASS_CREATE_API_URL = 'http://localhost:3001/api/classes';
-const CLASS_DELETE_API_BASE_URL = 'http://localhost:3001/api/classes';
+// API endpoint - Node.js/Express API
+const API_URL = 'http://localhost:3001/api/class-construction';
+const SOFT_DELETE_STORAGE_KEY = 'gibsysnet_class_soft_deleted_cache';
 
 // DOM Elements
 const classIdInput = document.getElementById('classId');
 const classCodeInput = document.getElementById('classCode');
+const classCategoryInput = document.getElementById('classCategory');
 const classNameInput = document.getElementById('className');
 const classNameEngInput = document.getElementById('classNameEng');
 const classTableBody = document.getElementById('classTableBody');
@@ -122,27 +122,134 @@ function setupEventListeners() {
     });
 }
 
-// Load data (simulasi API, ganti dengan fetch jika perlu)
+function normalizeClass(item) {
+    return {
+        id: Number(item.id),
+        classCode: item.classCode || item.class_code || '',
+        classCategory: item.classCategory || item.class_category || '',
+        className: item.className || item.class_name || '',
+        classNameEng: item.classNameEng || item.class_name_eng || '',
+        status: item.status || 'active',
+        deletedAt: item.deletedAt || item.deleted_at || '',
+        updatedAt: item.updatedAt || item.updated_at || new Date().toISOString()
+    };
+}
+
+function getRowsFromPayload(payload) {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data)) return payload.data;
+    if (Array.isArray(payload?.classes)) return payload.classes;
+    return [];
+}
+
+function loadSoftDeleteCache() {
+    try {
+        const raw = localStorage.getItem(SOFT_DELETE_STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed.map(normalizeClass) : [];
+    } catch (_) {
+        return [];
+    }
+}
+
+function saveSoftDeleteCache(records) {
+    const byId = new Map();
+    records.map(normalizeClass).forEach((record) => {
+        if (!record.id) return;
+        byId.set(String(record.id), record);
+    });
+    localStorage.setItem(SOFT_DELETE_STORAGE_KEY, JSON.stringify(Array.from(byId.values())));
+}
+
+function upsertSoftDeleteCache(record) {
+    const normalized = normalizeClass({ ...record, status: 'inactive' });
+    const records = loadSoftDeleteCache().filter((item) => String(item.id) !== String(normalized.id));
+    records.unshift(normalized);
+    saveSoftDeleteCache(records);
+}
+
+function removeSoftDeleteCache(classId) {
+    saveSoftDeleteCache(loadSoftDeleteCache().filter((item) => String(item.id) !== String(classId)));
+}
+
+function mergeClassRecords(primaryRecords, secondaryRecords) {
+    const byId = new Map();
+    [...primaryRecords, ...secondaryRecords].forEach((record) => {
+        const normalized = normalizeClass(record);
+        if (!normalized.id) return;
+        byId.set(String(normalized.id), {
+            ...(byId.get(String(normalized.id)) || {}),
+            ...normalized
+        });
+    });
+    return Array.from(byId.values());
+}
+
+function getRecordFromPayload(payload) {
+    if (Array.isArray(payload?.data)) return payload.data[0] || null;
+    const record = payload?.data || payload?.class || payload || null;
+    if (!record || typeof record !== 'object') return null;
+    if (record.classCode || record.class_code || record.className || record.class_name) return record;
+    return null;
+}
+
+async function parseApiError(response, fallbackMessage) {
+    try {
+        const payload = await response.json();
+        return payload?.message || payload?.error || fallbackMessage;
+    } catch (_) {
+        return fallbackMessage;
+    }
+}
+
+async function requestJson(url, options = {}) {
+    const response = await fetch(url, {
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            ...(options.headers || {})
+        },
+        cache: 'no-store',
+        ...options
+    });
+
+    if (!response.ok) {
+        throw new Error(await parseApiError(response, `API request failed. Status ${response.status}`));
+    }
+
+    return response.json().catch(() => null);
+}
+
+async function loadSoftDeletedClassesFromApi() {
+    try {
+        const payload = await requestJson(`${API_URL}/soft-delete`);
+        return getRowsFromPayload(payload).map(normalizeClass);
+    } catch (_) {
+        return [];
+    }
+}
+
 async function loadClasses() {
     showLoading(true);
     try {
-        // Simulasi data dummy, ganti dengan fetch ke API
-        // const response = await fetch(API_URL);
-        // classes = await response.json();
-        
-        // Data dummy
-        classes = [
-            { id: 1, classCode: 'CLS001', className: '1st Class Construction', classNameEng: 'First Class Construction', status: 'active', deletedAt: '', updatedAt: new Date().toISOString() },
-            { id: 2, classCode: 'CLS002', className: '2nd Class Construction', classNameEng: 'Second Class Construction', status: 'active', deletedAt: '', updatedAt: new Date().toISOString() },
-            { id: 3, classCode: 'CLS003', className: '3rd Class Construction', classNameEng: 'Third Class Construction', status: 'active', deletedAt: '', updatedAt: new Date().toISOString() },
-            { id: 4, classCode: 'CLS004', className: '4th Class Construction', classNameEng: 'Fourth Class Construction', status: 'active', deletedAt: '', updatedAt: new Date().toISOString() },
-            { id: 5, classCode: 'CLS005', className: 'Market Risk', classNameEng: 'Market Risk', status: 'active', deletedAt: '', updatedAt: new Date().toISOString() },
-        ];
-        
+        const payload = await requestJson(API_URL);
+        const apiRows = getRowsFromPayload(payload).map(normalizeClass);
+        const activeApiIds = new Set(apiRows.filter((item) => item.status !== 'inactive').map((item) => String(item.id)));
+        const apiSoftDeleted = apiRows.filter((item) => item.status === 'inactive');
+        const endpointSoftDeleted = await loadSoftDeletedClassesFromApi();
+        const cachedSoftDeleted = loadSoftDeleteCache().filter((item) => !activeApiIds.has(String(item.id)));
+        const softDeleted = mergeClassRecords(apiSoftDeleted, mergeClassRecords(endpointSoftDeleted, cachedSoftDeleted));
+
+        if (softDeleted.length) {
+            saveSoftDeleteCache(softDeleted);
+        }
+
+        classes = mergeClassRecords(apiRows, softDeleted);
         renderTable();
         renderGovernancePanels();
     } catch (error) {
-        showMessage('Failed to load class data.', 'error');
+        console.error('Failed to load class data:', error);
+        showMessage(error.message || 'Failed to load class data.', 'error');
     } finally {
         showLoading(false);
     }
@@ -155,8 +262,9 @@ function filteredClasses() {
         const isActive = item.status !== 'inactive';
         if (!isActive) return false;
 
-        return item.classCode.toLowerCase().includes(keyword) ||
-            item.className.toLowerCase().includes(keyword) ||
+        return (item.classCode || '').toLowerCase().includes(keyword) ||
+            (item.classCategory || '').toLowerCase().includes(keyword) ||
+            (item.className || '').toLowerCase().includes(keyword) ||
             (item.classNameEng && item.classNameEng.toLowerCase().includes(keyword));
     });
 }
@@ -178,60 +286,83 @@ function generateNextClassCode() {
     return `CLS${String(nextNumber).padStart(3, '0')}`;
 }
 
+function incrementClassCode(classCode) {
+    const numericPart = parseInt(String(classCode || '').replace(/\D/g, ''), 10);
+    const nextNumber = Number.isNaN(numericPart) ? 1 : numericPart + 1;
+    return `CLS${String(nextNumber).padStart(3, '0')}`;
+}
+
+function isDuplicateClassCodeError(error) {
+    const message = String(error?.message || '').toLowerCase();
+    return message.includes('duplicate entry') ||
+        message.includes('already exists') ||
+        message.includes('class code');
+}
+
 function getCreateClassPayload(classData) {
     return {
         class_code: classData.classCode,
-        class_name: classData.className
+        class_category: classData.classCategory,
+        class_name: classData.className,
+        class_name_eng: classData.classNameEng,
+        status: classData.status
     };
 }
 
+function getUpdateClassPayload(classData) {
+    return getCreateClassPayload(classData);
+}
+
 async function createClassOnApi(payload) {
-    const response = await fetch(CLASS_CREATE_API_URL, {
-        method: 'PUT',
-        headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json'
-        },
+    return requestJson(API_URL, {
+        method: 'POST',
         body: JSON.stringify(payload)
     });
+}
 
-    let responsePayload = null;
-    try {
-        responsePayload = await response.json();
-    } catch (_) {
-        responsePayload = null;
+async function createClassWithAvailableCode(classData) {
+    let payload = getCreateClassPayload(classData);
+    let lastError = null;
+
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+        try {
+            return await createClassOnApi(payload);
+        } catch (error) {
+            if (!isDuplicateClassCodeError(error)) {
+                throw error;
+            }
+
+            lastError = error;
+            classData.classCode = incrementClassCode(classData.classCode);
+            classCodeInput.value = classData.classCode;
+            payload = getCreateClassPayload(classData);
+        }
     }
 
-    if (!response.ok) {
-        const message = responsePayload?.message || `Failed to create class data. Status ${response.status}`;
-        throw new Error(message);
-    }
+    throw lastError || new Error('Unable to generate an available Class Code.');
+}
 
-    return responsePayload;
+async function updateClassOnApi(classId, payload) {
+    return requestJson(`${API_URL}/${encodeURIComponent(String(classId))}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+    });
 }
 
 async function deleteClassOnApi(classId) {
-    const endpoint = `${CLASS_DELETE_API_BASE_URL}/${encodeURIComponent(String(classId))}`;
-    const response = await fetch(endpoint, {
-        method: 'DELETE',
-        headers: {
-            Accept: 'application/json'
-        }
+    return requestJson(`${API_URL}/${encodeURIComponent(String(classId))}`, {
+        method: 'DELETE'
     });
+}
 
-    let responsePayload = null;
+async function restoreClassOnApi(classId, payload) {
     try {
-        responsePayload = await response.json();
+        return await requestJson(`${API_URL}/${encodeURIComponent(String(classId))}/restore`, {
+            method: 'PUT'
+        });
     } catch (_) {
-        responsePayload = null;
+        return updateClassOnApi(classId, payload);
     }
-
-    if (!response.ok) {
-        const message = responsePayload?.message || `Failed to delete class data. Status ${response.status}`;
-        throw new Error(message);
-    }
-
-    return responsePayload;
 }
 
 // Render tabel dengan pagination
@@ -252,6 +383,7 @@ function renderTable() {
         
         row.innerHTML = `
             <td class="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">${cls.classCode}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">${cls.classCategory || '-'}</td>
             <td class="px-4 py-3 text-sm text-gray-700">${cls.className}</td>
             <td class="px-4 py-3 text-sm text-gray-700">${cls.classNameEng || '-'}</td>
             <td class="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
@@ -343,7 +475,7 @@ function renderSoftDeletePanel() {
         .map((item) => `
             <div class="dependency-item">
                 <div class="font-semibold text-sm text-gray-800">${item.classCode} - ${item.className}</div>
-                <div class="dependency-meta">Deleted at: ${item.deletedAt}</div>
+                <div class="dependency-meta">Deleted at: ${formatDisplayDate(item.deletedAt)}</div>
                 <button class="action-link mt-1" data-restore="${item.id}">Restore</button>
             </div>
         `)
@@ -435,6 +567,7 @@ function selectRow(id) {
     if (cls) {
         classIdInput.value = cls.id;
         classCodeInput.value = cls.classCode;
+        classCategoryInput.value = cls.classCategory || '';
         classNameInput.value = cls.className;
         classNameEngInput.value = cls.classNameEng || '';
     }
@@ -445,6 +578,7 @@ function selectRow(id) {
 function resetForm() {
     classIdInput.value = '';
     classCodeInput.value = '';
+    classCategoryInput.value = '';
     classNameInput.value = '';
     classNameEngInput.value = '';
     selectedClassId = null;
@@ -453,6 +587,11 @@ function resetForm() {
 
 // Validasi form
 function validateForm() {
+    if (!classCategoryInput.value.trim()) {
+        showMessage('Class Category is required.', 'error');
+        return false;
+    }
+
     if (!classNameInput.value.trim()) {
         showMessage('Class Name is required.', 'error');
         return false;
@@ -478,6 +617,7 @@ async function handleEdit() {
     
     const classData = {
         classCode: generatedClassCode,
+        classCategory: classCategoryInput.value.trim(),
         className: classNameInput.value.trim(),
         classNameEng: classNameEngInput.value.trim() || null,
         status: 'active',
@@ -487,35 +627,35 @@ async function handleEdit() {
     
     try {
         if (selectedClassId) {
-            // Update
-            // await fetch(`${API_URL}/${selectedClassId}`, {
-            //     method: 'PUT',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify(classData)
-            // });
-            // Simulasi update
+            const payload = getUpdateClassPayload(classData);
+            const updateResult = await updateClassOnApi(selectedClassId, payload);
+            const updatedRecord = getRecordFromPayload(updateResult);
+
             const index = classes.findIndex(c => c.id === selectedClassId);
             if (index !== -1) {
-                classes[index] = { ...classes[index], ...classData };
+                classes[index] = updatedRecord
+                    ? normalizeClass(updatedRecord)
+                    : { ...classes[index], ...classData };
                 addVersionHistory('Updated', classes[index]);
                 showMessage('Class has been updated successfully.');
             }
         } else {
-            // Create
-            const payload = getCreateClassPayload(classData);
-            await createClassOnApi(payload);
+            const createResult = await createClassWithAvailableCode(classData);
+            const createdRecord = getRecordFromPayload(createResult);
 
-            const newId = classes.length ? Math.max(...classes.map(c => c.id)) + 1 : 1;
-            const newClass = { id: newId, ...classData };
+            const newClass = createdRecord
+                ? normalizeClass(createdRecord)
+                : { id: classes.length ? Math.max(...classes.map(c => c.id)) + 1 : 1, ...classData };
             classes.push(newClass);
             addVersionHistory('Created', newClass);
             showMessage('Class has been added successfully.');
         }
-        
-        renderTable();
+
+        await loadClasses();
         resetForm();
     } catch (error) {
-        showMessage('Failed to save class data.', 'error');
+        console.error('Failed to save class data:', error);
+        showMessage(error.message || 'Failed to save class data.', 'error');
     }
 }
 
@@ -542,20 +682,24 @@ async function confirmDelete() {
     showLoading(true);
     
     try {
-        await deleteClassOnApi(selectedClassId);
+        const deleteResult = await deleteClassOnApi(selectedClassId);
+        const deletedRecord = getRecordFromPayload(deleteResult);
 
         // Keep local state in soft delete panel after backend delete call.
         const target = classes.find(c => c.id === selectedClassId);
         if (target) {
-            target.status = 'inactive';
-            target.deletedAt = new Date().toISOString();
-            target.updatedAt = new Date().toISOString();
+            Object.assign(target, deletedRecord ? normalizeClass(deletedRecord) : {
+                status: 'inactive',
+                deletedAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            });
+            upsertSoftDeleteCache(target);
             addVersionHistory('Deleted', target);
         }
         
         showMessage('Class moved to Soft Delete successfully.');
+        await loadClasses();
         resetForm();
-        renderTable();
     } catch (error) {
         showMessage(error.message || 'Failed to delete class data.', 'error');
     } finally {
@@ -563,18 +707,38 @@ async function confirmDelete() {
     }
 }
 
-function restoreSoftDeletedClass(classId) {
+async function restoreSoftDeletedClass(classId) {
     const softDeletedClasses = getSoftDeletedClasses();
     const index = softDeletedClasses.findIndex((item) => item.id === classId);
     if (index === -1) return;
 
     const restored = softDeletedClasses[index];
-    restored.status = 'active';
-    restored.deletedAt = '';
-    restored.updatedAt = new Date().toISOString();
-    addVersionHistory('Restored', restored);
-    showMessage(`Class ${restored.classCode} has been restored successfully.`);
-    renderTable();
+    showLoading(true);
+
+    try {
+        const payload = getUpdateClassPayload({
+            ...restored,
+            status: 'active',
+            deletedAt: '',
+            updatedAt: new Date().toISOString()
+        });
+        const restoreResult = await restoreClassOnApi(classId, payload);
+        const restoredRecord = getRecordFromPayload(restoreResult);
+
+        Object.assign(restored, restoredRecord ? normalizeClass(restoredRecord) : {
+            status: 'active',
+            deletedAt: '',
+            updatedAt: new Date().toISOString()
+        });
+        removeSoftDeleteCache(classId);
+        addVersionHistory('Restored', restored);
+        showMessage(`Class ${restored.classCode} has been restored successfully.`);
+        await loadClasses();
+    } catch (error) {
+        showMessage(error.message || 'Failed to restore class data.', 'error');
+    } finally {
+        showLoading(false);
+    }
 }
 
 function exportClasses() {
@@ -585,8 +749,8 @@ function exportClasses() {
     }
 
     const rows = [
-        ['Class Code', 'Class Name', 'Class Name (Eng)'],
-        ...filtered.map((item) => [item.classCode, item.className, item.classNameEng || ''])
+        ['Class Code', 'Class Category', 'Class Name', 'Class Name (Eng)'],
+        ...filtered.map((item) => [item.classCode, item.classCategory || '', item.className, item.classNameEng || ''])
     ];
 
     const csvContent = rows
@@ -604,6 +768,19 @@ function exportClasses() {
     URL.revokeObjectURL(url);
 
     showMessage('Class data exported successfully.');
+}
+
+function formatDisplayDate(value) {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleString('id-ID', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 }
 
 // Utility: show message

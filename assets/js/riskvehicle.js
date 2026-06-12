@@ -1,50 +1,17 @@
 // riskvehicle.js
-// FIXED: Backend on port 3001 only, no alternates
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[RiskVehicle] DOMContentLoaded fired - initializing...');
+    const riskVehicleApiUrl = new URL('../backend/risk_vehicle.php', window.location.href).href;
+    let hasShownModelRiskError = false;
 
-    const apiConfig = window.GibsyNetApi || {};
-    const configuredRiskVehicleApiUrl = String(apiConfig.endpoints?.riskVehicle || '').trim();
-    const riskVehicleApiCandidates = [
-        configuredRiskVehicleApiUrl,
-        'http://localhost:3001/api/risk-vehicle',
-        'http://localhost:3001/api/riskvehicle'
-    ].filter((url, index, arr) => Boolean(url) && arr.indexOf(url) === index);
-    let activeRiskVehicleApiUrl = riskVehicleApiCandidates[0] || 'http://localhost:3001/api/riskvehicle';
-    const modelRiskDataApiUrl = 'http://localhost:3001/api/modelrisk';
-    const urlParams = new URLSearchParams(window.location.search);
-    const requestedRegNo = String(urlParams.get('regNo') || urlParams.get('reg_no') || '').trim();
-    const requestedQuotationId = String(urlParams.get('quotationId') || urlParams.get('quotation_id') || '').trim();
+    function showConnectionWarning(message) {
+        if (hasShownModelRiskError) return;
+        hasShownModelRiskError = true;
 
-    async function requestRiskVehicleApi(fetchOptions) {
-        const tried = new Set();
-        const fallbackOrder = [activeRiskVehicleApiUrl, ...riskVehicleApiCandidates];
-        let last404Response = null;
-        let lastError = null;
-
-        for (const url of fallbackOrder) {
-            if (!url || tried.has(url)) continue;
-            tried.add(url);
-
-            try {
-                const response = await fetch(url, fetchOptions);
-                if (response.status === 404) {
-                    last404Response = response;
-                    continue;
-                }
-
-                activeRiskVehicleApiUrl = url;
-                return response;
-            } catch (error) {
-                lastError = error;
-            }
-        }
-
-        if (last404Response) {
-            return last404Response;
-        }
-
-        throw lastError || new Error('Risk vehicle API tidak dapat diakses');
+        const notice = document.createElement('div');
+        notice.className = 'api-warning-toast';
+        notice.textContent = message;
+        notice.style.cssText = 'position:fixed;top:12px;right:12px;z-index:9999;background:#fee2e2;color:#991b1b;padding:10px 14px;border:1px solid #fecaca;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.12);font-size:13px;max-width:380px;line-height:1.4;';
+        document.body.appendChild(notice);
     }
 
     // ---------- DOM Elements ----------
@@ -57,13 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const addCoverageRowBtn = document.getElementById('addCoverageRowBtn');
     const objectRowsContainer = document.getElementById('objectRows');
     const addObjectRowBtn = document.getElementById('addObjectRowBtn');
-
-    console.log('[RiskVehicle] DOM Elements loaded:', {
-        addRiskBtn: !!addRiskBtn,
-        addCoverageRowBtn: !!addCoverageRowBtn,
-        addObjectRowBtn: !!addObjectRowBtn,
-        saveBtn: !!saveBtn
-    });
 
     const activeSumInsuredDisplay = document.getElementById('activeSumInsuredDisplay');
     const activeRateDisplay = document.getElementById('activeRateDisplay');
@@ -90,11 +50,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let vehicleTypes = [];
     const fallbackVehicleTypes = ['Sedan', 'SUV', 'MPV', 'Pickup', 'Truck', 'Motorcycle'];
 
-    let modelRiskRows = [];
-    let modelRiskLoaded = false;
-
     // Brand lookup
     let brandLookup = [];
+    const fallbackBrands = [
+        { code: 'TOY', name: 'Toyota' }, { code: 'HON', name: 'Honda' },
+        { code: 'DAI', name: 'Daihatsu' }, { code: 'MIT', name: 'Mitsubishi' },
+        { code: 'SUS', name: 'Suzuki' }, { code: 'NIS', name: 'Nissan' },
+        { code: 'IAU', name: 'Isuzu' }, { code: 'BMW', name: 'BMW' },
+        { code: 'MBZ', name: 'Mercedes-Benz' }, { code: 'HYU', name: 'Hyundai' },
+        { code: 'KIA', name: 'KIA' }, { code: 'WUL', name: 'Wuling' }
+    ];
     // Cascading lookup caches keyed by full parent chain to avoid cross-branch collisions.
     const modelLookupCache = {};     // { brand: [{code, name}] }
     const typeLookupCache = {};      // { brand||model: [{code, name}] }
@@ -117,14 +82,32 @@ document.addEventListener('DOMContentLoaded', () => {
     // Region lookup (will be loaded from API)
     let regionLookup = [];
     const fallbackRegions = [
-        { code: 'REG1', name: 'Region 1: Sumatera and Surrounding Island' },
-        { code: 'REG2', name: 'Region 2: DKI Jakarta, West Java, and Banten' },
-        { code: 'REG3', name: 'Region 3: The rest of Region 1 and Region 2' }
+        { code: 'JAK', name: 'Jakarta' },
+        { code: 'BGR', name: 'Bogor / Depok / Tangerang / Bekasi' },
+        { code: 'JBR', name: 'Jawa Barat' },
+        { code: 'JTG', name: 'Jawa Tengah' },
+        { code: 'JTM', name: 'Jawa Timur' },
+        { code: 'SUM', name: 'Sumatera' },
+        { code: 'KAL', name: 'Kalimantan' },
+        { code: 'SUL', name: 'Sulawesi' },
+        { code: 'BAL', name: 'Bali & Nusa Tenggara' },
+        { code: 'PAP', name: 'Papua & Maluku' }
     ];
 
     // Load region lookup from static fallback
     async function loadRegionLookup() {
         regionLookup = fallbackRegions;
+    }
+
+    function getModelRiskRowsFromLocalStorage() {
+        try {
+            const raw = localStorage.getItem('modelRiskEntries');
+            const parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+            console.warn('Invalid modelRiskEntries in localStorage:', error);
+            return [];
+        }
     }
 
     function uniqueLookupRows(values = []) {
@@ -144,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function buildModelRiskFallbackLookup(field, queryParams = {}) {
-        const rows = Array.isArray(modelRiskRows) ? modelRiskRows : [];
+        const rows = getModelRiskRowsFromLocalStorage();
         const brand = String(queryParams.brand || '').trim();
         const model = String(queryParams.model || '').trim();
         const type = String(queryParams.type || '').trim();
@@ -194,67 +177,53 @@ document.addEventListener('DOMContentLoaded', () => {
         return [];
     }
 
-    function normalizeModelRiskRows(rows = []) {
-        if (!Array.isArray(rows)) return [];
-
-        return rows
-            .filter((row) => row && typeof row === 'object')
-            .map((row) => ({
-                brand: String(row.brand ?? row.merkName ?? row.merk_name ?? '').trim(),
-                model: String(row.model ?? row.modelName ?? row.model_name ?? '').trim(),
-                type: String(row.type ?? row.typeName ?? row.type_name ?? row.vehicleType ?? row.vehicle_type ?? '').trim(),
-                series: String(row.series ?? row.seriesName ?? row.series_name ?? row.series_code ?? '').trim(),
-                sub_series: String(row.sub_series ?? row.subSeries ?? row.subSeriesName ?? row.sub_series_name ?? '').trim()
-            }))
-            .filter((row) => row.brand || row.model || row.type || row.series || row.sub_series);
-    }
-
-    function extractModelRiskRows(payload) {
-        if (Array.isArray(payload)) return payload;
-        if (Array.isArray(payload?.data)) return payload.data;
-        if (Array.isArray(payload?.rows)) return payload.rows;
-        return [];
-    }
-
-    async function loadModelRiskDataset(forceReload = false) {
-        if (!forceReload && modelRiskLoaded && modelRiskRows.length) {
-            return modelRiskRows;
-        }
+    async function fetchModelRiskLookup(field, queryParams = {}) {
+        const apiUrl = new URL('../backend/modelrisk.php', window.location.href);
+        apiUrl.searchParams.append('field', field);
+        Object.entries(queryParams).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && String(value).trim() !== '') {
+                apiUrl.searchParams.append(key, String(value));
+            }
+        });
 
         try {
-            const response = await fetch(modelRiskDataApiUrl, {
-                method: 'GET',
-                headers: {
-                    Accept: 'application/json'
-                },
-                cache: 'no-store'
-            });
-
+            const response = await fetch(apiUrl.href);
             if (!response.ok) {
-                throw new Error(`ModelRisk dataset failed: ${response.status}`);
+                throw new Error(`ModelRisk lookup failed: ${response.status}`);
             }
 
-            const payload = await response.json();
-            const rows = extractModelRiskRows(payload);
-            modelRiskRows = normalizeModelRiskRows(rows);
-            modelRiskLoaded = true;
-            return modelRiskRows;
-        } catch (error) {
-            console.error('[RiskVehicle] Failed to load modelrisk dataset from backend:', error);
-            modelRiskRows = [];
-            modelRiskLoaded = false;
-            return [];
-        }
-    }
+            const result = await response.json();
+            if (!Array.isArray(result)) {
+                return [];
+            }
 
-    async function fetchModelRiskLookup(field, queryParams = {}) {
-        await loadModelRiskDataset();
-        return buildModelRiskFallbackLookup(field, queryParams);
+            const mapped = result.map(item => ({
+                code: String(item.code ?? item.value ?? '').trim(),
+                name: String(item.name ?? item.value ?? '').trim()
+            })).filter((item) => item.code || item.name);
+
+            return mapped;
+        } catch (error) {
+            showConnectionWarning('Lookup ModelRisk API gagal. Menggunakan fallback dari data Model Risk lokal (localStorage).');
+            const fallback = buildModelRiskFallbackLookup(field, queryParams);
+            if (fallback.length) {
+                return fallback;
+            }
+            throw error;
+        }
     }
 
     async function loadBrandLookup() {
-        const rows = await fetchModelRiskLookup('brand');
-        brandLookup = rows;
+        try {
+            const rows = await fetchModelRiskLookup('brand');
+            if (rows.length) {
+                brandLookup = rows;
+                return;
+            }
+        } catch (error) {
+            console.warn('Failed to load brand lookup from database:', error);
+        }
+        brandLookup = fallbackBrands;
     }
 
     // Load object group lookup from static fallback
@@ -276,7 +245,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const coverages = safeParseJson(row.coverages ?? row.coverage_list ?? row.coverage_data ?? '');
         return {
             id: row.id ?? row.vehicle_id ?? null,
-            regNo: row.reg_no ?? row.regNo ?? requestedRegNo,
             brand: row.brand ?? row.brand_code ?? '',
             model: row.model ?? row.model_code ?? '',
             vehicleType: row.vehicle_type ?? row.vehicleType ?? '',
@@ -294,73 +262,9 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function getVehicleLabel(index, total = risks.length) {
-        return total <= 1 ? 'Vehicle' : `Vehicle ${index + 1}`;
-    }
-
-    function getSharedRegNo() {
-        const fromRisks = risks.find((risk) => String(risk?.regNo || '').trim());
-        return String(requestedRegNo || fromRisks?.regNo || '').trim();
-    }
-
-    function normalizeRiskRegNo(risk) {
-        const sharedRegNo = getSharedRegNo();
-        if (risk) risk.regNo = sharedRegNo;
-        return risk;
-    }
-
-    function getQuotationReturnUrl() {
-        const quotationUrl = new URL('quotation.html', window.location.href);
-        const regNo = getSharedRegNo();
-        if (regNo) {
-            quotationUrl.searchParams.set('regNo', regNo);
-        }
-        return quotationUrl;
-    }
-
-    function returnToQuotation(action) {
-        const totals = getCurrentRiskTotals();
-        const quotationUrl = getQuotationReturnUrl().toString();
-        const payload = {
-            type: 'riskvehicle:returnToQuotation',
-            payload: {
-                action: action || 'return',
-                regNo: getSharedRegNo(),
-                totalSumInsured: totals.totalSumInsured,
-                totalPremium: totals.totalPremium
-            }
-        };
-
-        if (window.parent && window.parent !== window) {
-            window.parent.postMessage(payload, '*');
-            return;
-        }
-
-        window.location.href = quotationUrl;
-    }
-
-    function getCurrentRiskTotals() {
-        return risks.reduce((acc, risk) => {
-            const sumInsured = parseNumber(risk?.sumInsured);
-            const totalRate = Array.isArray(risk?.coverages)
-                ? risk.coverages.reduce((sum, cov) => sum + (parseFloat(cov?.ratePerMil) || 0), 0)
-                : 0;
-            const premium = sumInsured * (totalRate / 100);
-            acc.totalSumInsured += sumInsured;
-            acc.totalPremium += premium;
-            return acc;
-        }, { totalSumInsured: 0, totalPremium: 0 });
-    }
-
     async function loadRiskVehicles() {
-        if (!requestedRegNo) {
-            risks = [createDefaultRisk()];
-            activeRiskIndex = 0;
-            return;
-        }
-
         try {
-            const response = await requestRiskVehicleApi({
+            const response = await fetch(riskVehicleApiUrl, {
                 method: 'GET',
                 headers: {
                     Accept: 'application/json'
@@ -372,22 +276,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const payload = await response.json();
-            const rows = Array.isArray(payload)
-                ? payload
-                : (Array.isArray(payload?.data) ? payload.data : []);
+            const rows = Array.isArray(payload?.data) ? payload.data : [];
             if (rows.length > 0) {
-                const scopedRows = requestedRegNo
-                    ? rows.filter((row) => String(row?.reg_no ?? row?.regNo ?? '').trim() === requestedRegNo)
-                    : rows;
-
-                if (scopedRows.length > 0) {
-                    risks = scopedRows
-                        .sort((a, b) => Number(a?.risk_no || 0) - Number(b?.risk_no || 0))
-                        .map((row) => mapDbRowToRisk(row));
-                } else {
-                    // Keep initial view in single vehicle mode for a brand-new reg_no.
-                    risks = [createDefaultRisk()];
-                }
+                risks = rows.map(mapDbRowToRisk);
                 activeRiskIndex = 0;
                 saveRiskVehiclesToLocalStorage();
                 return;
@@ -401,12 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const parsed = JSON.parse(stored);
                 if (Array.isArray(parsed) && parsed.length) {
-                    risks = requestedRegNo
-                        ? parsed.filter((row) => String(row?.regNo || '').trim() === requestedRegNo)
-                        : parsed;
-                    if (!risks.length) {
-                        risks = [createDefaultRisk()];
-                    }
+                    risks = parsed;
                     activeRiskIndex = 0;
                     return;
                 }
@@ -423,467 +309,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function saveRiskVehiclesToApi() {
-        const ensureVehicleIdsForPayload = async () => {
-            const usedIds = new Set(
-                risks
-                    .map((risk) => Number(risk?.id))
-                    .filter((id) => Number.isFinite(id) && id > 0)
-            );
-
-            let nextVehicleId = usedIds.size ? Math.max(...usedIds) + 1 : 1;
-
-            try {
-                const currentRegNo = String(getSharedRegNo()).trim();
-                if (currentRegNo) {
-                    const lookupResponse = await requestRiskVehicleApi({
-                        method: 'GET',
-                        headers: {
-                            Accept: 'application/json'
-                        }
-                    });
-
-                    if (lookupResponse.ok) {
-                        const lookupPayload = await lookupResponse.json().catch(() => ({}));
-                        const lookupRows = Array.isArray(lookupPayload)
-                            ? lookupPayload
-                            : (Array.isArray(lookupPayload?.data) ? lookupPayload.data : []);
-
-                        const scopedRows = lookupRows.filter((row) => String(row?.reg_no ?? row?.regNo ?? '').trim() === currentRegNo);
-                        const idByRiskNo = new Map(
-                            scopedRows
-                                .map((row) => [Number(row?.risk_no), Number(row?.vehicle_id ?? row?.id)])
-                                .filter(([riskNo, vehicleId]) => Number.isFinite(riskNo) && Number.isFinite(vehicleId) && vehicleId > 0)
-                        );
-
-                        const maxExistingVehicleId = lookupRows.reduce((max, row) => {
-                            const id = Number(row?.vehicle_id ?? row?.id);
-                            return Number.isFinite(id) && id > max ? id : max;
-                        }, 0);
-
-                        if (maxExistingVehicleId > 0) {
-                            nextVehicleId = Math.max(nextVehicleId, maxExistingVehicleId + 1);
-                        }
-
-                        risks.forEach((risk, index) => {
-                            const currentId = Number(risk?.id);
-                            if (Number.isFinite(currentId) && currentId > 0) {
-                                usedIds.add(currentId);
-                                return;
-                            }
-
-                            const foundId = Number(idByRiskNo.get(index + 1));
-                            if (Number.isFinite(foundId) && foundId > 0) {
-                                risk.id = foundId;
-                                usedIds.add(foundId);
-                                return;
-                            }
-
-                            while (usedIds.has(nextVehicleId)) {
-                                nextVehicleId += 1;
-                            }
-                            risk.id = nextVehicleId;
-                            usedIds.add(nextVehicleId);
-                            nextVehicleId += 1;
-                        });
-                        return;
-                    }
-                }
-            } catch (error) {
-                console.warn('[RiskVehicle] Unable to pre-resolve existing vehicle IDs:', error);
-            }
-
-            risks.forEach((risk) => {
-                const currentId = Number(risk?.id);
-                if (Number.isFinite(currentId) && currentId > 0) {
-                    usedIds.add(currentId);
-                    return;
-                }
-
-                while (usedIds.has(nextVehicleId)) {
-                    nextVehicleId += 1;
-                }
-                risk.id = nextVehicleId;
-                usedIds.add(nextVehicleId);
-                nextVehicleId += 1;
-            });
-        };
-
-        await ensureVehicleIdsForPayload();
-
-        // Resolve existing IDs by reg_no + risk_no so save updates instead of inserting duplicates.
-        try {
-            const currentRegNo = String(getSharedRegNo()).trim();
-            if (currentRegNo) {
-                const lookupResponse = await requestRiskVehicleApi({
-                    method: 'GET',
-                    headers: {
-                        Accept: 'application/json'
-                    }
-                });
-
-                if (lookupResponse.ok) {
-                    const lookupPayload = await lookupResponse.json().catch(() => ({}));
-                    const lookupRows = Array.isArray(lookupPayload)
-                        ? lookupPayload
-                        : (Array.isArray(lookupPayload?.data) ? lookupPayload.data : []);
-
-                    const idByRiskNo = new Map(
-                        lookupRows
-                            .filter((row) => String(row?.reg_no ?? row?.regNo ?? '').trim() === currentRegNo)
-                            .map((row) => [Number(row?.risk_no), Number(row?.vehicle_id ?? row?.id)])
-                            .filter(([riskNo, vehicleId]) => Number.isFinite(riskNo) && Number.isFinite(vehicleId) && vehicleId > 0)
-                    );
-
-                    risks.forEach((risk, index) => {
-                        if (!Number.isFinite(Number(risk?.id)) || Number(risk.id) <= 0) {
-                            const foundId = idByRiskNo.get(index + 1);
-                            if (Number.isFinite(foundId) && foundId > 0) {
-                                risk.id = foundId;
-                            }
-                        }
-                    });
-                }
-            }
-        } catch (error) {
-            console.warn('[RiskVehicle] Unable to pre-resolve existing vehicle IDs:', error);
-        }
-
         const payloadRows = risks.map((risk, index) => {
-            const sharedRegNo = getSharedRegNo();
             const totalRatePercent = (risk.coverages || []).reduce((sum, cov) => sum + (parseFloat(cov.ratePerMil) || 0), 0);
             const sumInsured = parseNumber(risk.sumInsured);
             const premiumAmount = sumInsured * (totalRatePercent / 100);
-            const regNo = String(risk.regNo || sharedRegNo).trim();
-            const resolvedVehicleId = Number(risk.id);
-            const hasVehicleId = Number.isFinite(resolvedVehicleId) && resolvedVehicleId > 0;
-            const vehicleId = hasVehicleId ? resolvedVehicleId : (index + 1);
 
-            const payload = {
-                id: vehicleId,
-                vehicle_id: vehicleId,
-                quotation_id: requestedQuotationId || '',
-                reg_no: regNo,
+            return {
+                vehicle_id: risk.id || undefined,
                 risk_no: index + 1,
                 plate_no: risk.plateNo || '',
-                brand_code: String(risk.brand || '-').trim() || '-',
-                model_code: String(risk.model || '-').trim() || '-',
-                vehicle_type: String(risk.vehicleType || '-').trim() || '-',
-                series_code: String(risk.series || '-').trim() || '-',
-                sub_series_code: String(risk.subSeries || '-').trim() || '-',
-                chassis_no: String(risk.chassisNo || '-').trim() || '-',
-                engine_no: String(risk.engineNo || '-').trim() || '-',
-                color: String(risk.color || 'BLACK').trim() || 'BLACK',
-                region_code: String(risk.region || 'REG2').trim() || 'REG2',
+                brand_code: risk.brand || '',
+                model_code: risk.model || '',
+                vehicle_type: risk.vehicleType || '',
+                series_code: risk.series || '',
+                sub_series_code: risk.subSeries || '',
+                chassis_no: risk.chassisNo || '',
+                engine_no: risk.engineNo || '',
+                color: risk.color || '',
+                region_code: risk.region || '',
                 vehicle_year: parseInt(risk.year, 10) || new Date().getFullYear(),
                 sum_insured: sumInsured,
                 total_rate_percent: totalRatePercent,
                 premium_amount: premiumAmount,
-                status_record: 'ACTIVE',
-                objects: Array.isArray(risk.objects) ? risk.objects.map((obj, objectIndex) => {
-                    return {
-                        id: vehicleId,
-                        vehicle_id: hasVehicleId ? resolvedVehicleId : (index + 1),
-                        reg_no: regNo,
-                        object_no: objectIndex + 1,
-                        group: obj.group || '',
-                        objectGroup: obj.group || '',
-                        description: obj.description || '',
-                        objectDescription: obj.description || '',
-                        value: parseNumber(obj.value) || 0,
-                        objectValue: parseNumber(obj.value) || 0
-                    };
-                }) : [],
-                coverages: Array.isArray(risk.coverages) ? risk.coverages.map((cov, coverageIndex) => {
-                    return {
-                        id: vehicleId,
-                        vehicle_id: hasVehicleId ? resolvedVehicleId : (index + 1),
-                        reg_no: regNo,
-                        coverage_no: coverageIndex + 1,
-                        coverage: cov.coverage || '',
-                        coverageCode: cov.coverage || '',
-                        ratePerMil: parseNumber(cov.ratePerMil) || 0,
-                        rate_per_mil: parseNumber(cov.ratePerMil) || 0,
-                        ratePercent: parseNumber(cov.ratePerMil) || 0
-                    };
-                }) : []
+                status_record: 'ACTIVE'
             };
-
-            console.log(`[RiskVehicle] Risk ${index + 1} Payload:`, payload);
-            return payload;
         });
 
-        const resolveVehicleIdForPayload = async (rowPayload) => {
-            const regNo = String(rowPayload?.reg_no || '').trim();
-            const riskNo = Number(rowPayload?.risk_no);
-
-            if (!regNo || !Number.isFinite(riskNo)) {
-                return null;
-            }
-
-            const response = await requestRiskVehicleApi({
-                method: 'GET',
-                headers: {
-                    Accept: 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                return null;
-            }
-
-            const payload = await response.json().catch(() => ({}));
-            const rows = Array.isArray(payload)
-                ? payload
-                : (Array.isArray(payload?.data) ? payload.data : []);
-
-            const exactMatch = rows.find((row) => {
-                const rowRegNo = String(row?.reg_no ?? row?.regNo ?? '').trim();
-                const rowRiskNo = Number(row?.risk_no ?? row?.riskNo);
-                return rowRegNo === regNo && Number.isFinite(rowRiskNo) && rowRiskNo === riskNo;
-            });
-
-            const existingId = Number(exactMatch?.vehicle_id ?? exactMatch?.id);
-            if (Number.isFinite(existingId) && existingId > 0) {
-                return existingId;
-            }
-
-            const maxId = rows.reduce((max, row) => {
-                const id = Number(row?.vehicle_id ?? row?.id);
-                if (Number.isFinite(id) && id > max) {
-                    return id;
-                }
-                return max;
-            }, 0);
-
-            return maxId > 0 ? maxId + 1 : 1;
-        };
-
-        const applyVehicleIdToPayload = (rowPayload, vehicleId) => {
-            rowPayload.vehicle_id = vehicleId;
-            if (Array.isArray(rowPayload.objects)) {
-                rowPayload.objects = rowPayload.objects.map((obj) => ({
-                    ...obj,
-                    vehicle_id: vehicleId
-                }));
-            }
-            if (Array.isArray(rowPayload.coverages)) {
-                rowPayload.coverages = rowPayload.coverages.map((cov) => ({
-                    ...cov,
-                    vehicle_id: vehicleId
-                }));
-            }
-        };
-
-        const getApiFailureMessage = (response, payload) => {
-            const apiErrors = Array.isArray(payload?.errors)
-                ? payload.errors.map((item) => String(item || '').trim()).filter(Boolean)
-                : [];
-            const processedCount = Number(payload?.processed);
-            const hasErrorArrayFailure = apiErrors.length > 0 && (!Number.isFinite(processedCount) || processedCount === 0);
-
-            if (!response.ok || payload?.status === 'error' || payload?.error || hasErrorArrayFailure) {
-                return String(payload?.message || payload?.error || apiErrors[0] || `Failed to save API data: ${response.status}`);
-            }
-
-            return '';
-        };
-
-        const isVehicleIdRequiredError = (message = '') => {
-            const normalized = String(message || '').toLowerCase();
-            return normalized.includes('vehicle_id') && normalized.includes('required');
-        };
-
-        const isDuplicateRegRiskError = (message = '') => {
-            const normalized = String(message || '').toLowerCase();
-            const hasRegRiskKey = normalized.includes('reg_no') && normalized.includes('risk_no');
-            const hasDuplicateKeyword = normalized.includes('duplikat')
-                || normalized.includes('duplicate')
-                || normalized.includes('already exists')
-                || normalized.includes('nilai yang unik')
-                || normalized.includes('unique');
-            return hasRegRiskKey && hasDuplicateKeyword;
-        };
-
-        let processed = 0;
-        const errors = [];
-        const rows = [];
-
-        for (let index = 0; index < payloadRows.length; index += 1) {
-            const rowPayload = payloadRows[index];
-            try {
-                console.log(`[RiskVehicle] Sending row ${index} to API:`, rowPayload);
-                let response = await requestRiskVehicleApi({
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Accept: 'application/json'
-                    },
-                    body: JSON.stringify({ data: [rowPayload] })
-                });
-
-                let payload = await response.json().catch(() => ({}));
-                let failureMessage = getApiFailureMessage(response, payload);
-
-                if (failureMessage && isVehicleIdRequiredError(failureMessage)) {
-                    // Compatibility: some legacy APIs expect a single object payload, not an array.
-                    response = await requestRiskVehicleApi({
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            Accept: 'application/json'
-                        },
-                        body: JSON.stringify(rowPayload)
-                    });
-                    payload = await response.json().catch(() => ({}));
-                    failureMessage = getApiFailureMessage(response, payload);
-                }
-
-                if (failureMessage && (isVehicleIdRequiredError(failureMessage) || isDuplicateRegRiskError(failureMessage))) {
-                    const ensuredVehicleId = await resolveVehicleIdForPayload(rowPayload);
-                    if (Number.isFinite(ensuredVehicleId) && ensuredVehicleId > 0) {
-                        applyVehicleIdToPayload(rowPayload, ensuredVehicleId);
-                        console.warn(`[RiskVehicle] Retrying row ${index} with resolved vehicle_id=${ensuredVehicleId}`);
-                        response = await requestRiskVehicleApi({
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                Accept: 'application/json'
-                            },
-                            body: JSON.stringify(rowPayload)
-                        });
-                        payload = await response.json().catch(() => ({}));
-                        failureMessage = getApiFailureMessage(response, payload);
-                    }
-                }
-
-                console.log(`[RiskVehicle] API Response for row ${index}:`, payload);
-                if (failureMessage) {
-                    throw new Error(String(failureMessage));
-                }
-
-                const persistedVehicleId = Number(
-                    payload?.rows?.[0]?.vehicle_id
-                    ?? payload?.data?.vehicle_id
-                    ?? rowPayload.vehicle_id
-                    ?? 0
-                ) || rowPayload.vehicle_id;
-
-                rowPayload.vehicle_id = persistedVehicleId;
-
-                rows.push({
-                    index,
-                    vehicle_id: persistedVehicleId,
-                    reg_no: rowPayload.reg_no,
-                    risk_no: rowPayload.risk_no
-                });
-                processed += 1;
-            } catch (error) {
-                errors.push(`Row ${index + 1}: ${error.message}`);
-                console.error(`[RiskVehicle] Error saving row ${index}:`, error);
-            }
-        }
-
-        return { processed, errors, rows };
-    }
-
-    async function persistRiskVehicles(action = 'save') {
-        console.log('[RiskVehicle] persistRiskVehicles called with action:', action);
-        console.log('[RiskVehicle] Current risks:', JSON.stringify(risks, null, 2));
-        
-        const validation = validateAllRisks();
-        if (!validation.valid) {
-            activeRiskIndex = validation.index;
-            await renderAll();
-            alert(`Validation error on ${getVehicleLabel(validation.index)}: ${validation.message}`);
-            return false;
-        }
-
-        const effectiveRegNo = String(getActiveRisk()?.regNo || requestedRegNo || '').trim();
-        if (!effectiveRegNo) {
-            alert('Reg No tidak ditemukan. Buka risk vehicle dari Quotation agar parameter regNo ikut terkirim.');
-            return false;
-        }
-
-        risks.forEach((risk) => normalizeRiskRegNo(risk));
-
-        // Ensure objects and coverages are never empty
-        risks.forEach((risk, idx) => {
-            if (!Array.isArray(risk.objects) || risk.objects.length === 0) {
-                console.warn(`[RiskVehicle] Risk ${idx} has no objects, adding default`);
-                risk.objects = [{ group: 'VEH', description: 'Vehicle Body', value: 0 }];
-            }
-            if (!Array.isArray(risk.coverages) || risk.coverages.length === 0) {
-                console.warn(`[RiskVehicle] Risk ${idx} has no coverages, adding default`);
-                risk.coverages = [{ coverage: 'COMP', ratePerMil: 2.5 }];
-            }
-        });
-
-        console.log('[RiskVehicle] After ensuring objects/coverages:', JSON.stringify(risks, null, 2));
-
-        saveRiskVehiclesToLocalStorage();
-        recalculateAll();
-
-        try {
-            const result = await saveRiskVehiclesToApi();
-            console.log('[RiskVehicle] API save result:', result);
-            
-            if (Array.isArray(result?.rows)) {
-                result.rows.forEach((rowResult) => {
-                    const targetRisk = risks[rowResult.index];
-                    if (targetRisk && rowResult.vehicle_id !== undefined && rowResult.vehicle_id !== null) {
-                        targetRisk.id = rowResult.vehicle_id;
-                    }
-                    if (targetRisk && !String(targetRisk.regNo || '').trim() && rowResult.reg_no) {
-                        targetRisk.regNo = rowResult.reg_no;
-                    }
-                });
-            }
-
-            const processed = Number(result?.processed ?? 0);
-            const errors = Array.isArray(result?.errors) ? result.errors.filter(Boolean) : [];
-
-            if (processed > 0 && errors.length === 0) {
-                alert(`Data berhasil disimpan ke backend API. Total baris diproses: ${processed}.`);
-                returnToQuotation(action);
-                return true;
-            }
-
-            if (processed > 0 && errors.length > 0) {
-                alert(`Sebagian data tersimpan. Diproses: ${processed}, gagal: ${errors.length}. Detail: ${errors.slice(0, 3).join(' | ')}`);
-                returnToQuotation(action);
-                return true;
-            }
-
-            alert(`Tidak ada data yang diproses backend API. Detail: ${errors.slice(0, 3).join(' | ') || 'Unknown error'}`);
-            return false;
-        } catch (error) {
-            console.error('Failed to save risk_vehicle to API:', error);
-            alert(`Data disimpan di browser, tetapi gagal sinkron ke backend API. Detail: ${error.message}`);
-            return false;
-        }
-    }
-
-    async function deleteRiskVehicleFromApi(risk, riskIndex) {
-        const payloadRow = {
-            vehicle_id: risk?.id || undefined,
-            quotation_id: requestedQuotationId || undefined,
-            quotationId: requestedQuotationId || undefined,
-            reg_no: String(risk?.regNo || requestedRegNo || '').trim(),
-            risk_no: Number.isFinite(Number(riskIndex)) ? Number(riskIndex) + 1 : undefined
-        };
-
-        const response = await requestRiskVehicleApi({
-            method: 'DELETE',
+        const response = await fetch(riskVehicleApiUrl, {
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/json'
             },
-            body: JSON.stringify({ data: [payloadRow] })
+            body: JSON.stringify({ data: payloadRows })
         });
 
-        const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
-            throw new Error(payload?.message || payload?.error || `Failed to delete risk vehicle: ${response.status}`);
+            throw new Error(`Failed to save API data: ${response.status}`);
+        }
+
+        const payload = await response.json();
+        if (payload && payload.error) {
+            throw new Error(String(payload.error));
         }
 
         return payload;
@@ -904,67 +371,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Cascade refresh helpers — update only the target <select> in place
     async function refreshModelSelect(brandCode) {
-        if (!brandCode) {
-            const sel = document.getElementById('model');
-            if (sel) sel.innerHTML = '<option value="">-- Select Brand first --</option>';
-            return;
-        }
+        const sel = document.getElementById('model');
+        if (!sel) return;
+        if (!brandCode) { sel.innerHTML = '<option value="">-- Select Brand first --</option>'; return; }
         const cacheKey = buildCascadeKey(brandCode);
         const list = await loadModelRiskLookup(modelLookupCache, cacheKey, 'model', { brand: brandCode });
-        const sel = document.getElementById('model');
-        if (!sel) return;  // Cache already populated, element just doesn't exist yet
         const risk = getActiveRisk();
         sel.innerHTML = `<option value="">-- Select Model --</option>` +
             list.map(o => `<option value="${escapeHtml(o.code)}" ${risk && risk.model === o.code ? 'selected' : ''}>${escapeHtml(o.name)}</option>`).join('');
     }
 
     async function refreshTypeSelect(modelCode) {
+        const sel = document.getElementById('vehicleType');
+        if (!sel) return;
+        if (!modelCode) { sel.innerHTML = '<option value="">-- Select Model first --</option>'; return; }
         const risk = getActiveRisk();
         const brandCode = risk?.brand || '';
-        if (!modelCode || !brandCode) {
-            const sel = document.getElementById('vehicleType');
-            if (sel) sel.innerHTML = '<option value="">-- Select Model first --</option>';
-            return;
-        }
+        if (!brandCode) { sel.innerHTML = '<option value="">-- Select Brand first --</option>'; return; }
         const cacheKey = buildCascadeKey(brandCode, modelCode);
         const list = await loadModelRiskLookup(typeLookupCache, cacheKey, 'type', { brand: brandCode, model: modelCode });
-        const sel = document.getElementById('vehicleType');
-        if (!sel) return;  // Cache already populated, element just doesn't exist yet
         sel.innerHTML = `<option value="">-- Select Type --</option>` +
             list.map(o => `<option value="${escapeHtml(o.code)}" ${risk && risk.vehicleType === o.code ? 'selected' : ''}>${escapeHtml(o.name)}</option>`).join('');
     }
 
     async function refreshSeriesSelect(typeCode) {
+        const sel = document.getElementById('series');
+        if (!sel) return;
+        if (!typeCode) { sel.innerHTML = '<option value="">-- Select Type first --</option>'; return; }
         const risk = getActiveRisk();
         const brandCode = risk?.brand || '';
         const modelCode = risk?.model || '';
-        if (!typeCode || !brandCode || !modelCode) {
-            const sel = document.getElementById('series');
-            if (sel) sel.innerHTML = '<option value="">-- Select Type first --</option>';
-            return;
-        }
+        if (!brandCode || !modelCode) { sel.innerHTML = '<option value="">-- Select Model first --</option>'; return; }
         const cacheKey = buildCascadeKey(brandCode, modelCode, typeCode);
         const list = await loadModelRiskLookup(seriesLookupCache, cacheKey, 'series', { brand: brandCode, model: modelCode, type: typeCode });
-        const sel = document.getElementById('series');
-        if (!sel) return;  // Cache already populated, element just doesn't exist yet
         sel.innerHTML = `<option value="">-- Select Series --</option>` +
             list.map(o => `<option value="${escapeHtml(o.code)}" ${risk && risk.series === o.code ? 'selected' : ''}>${escapeHtml(o.name)}</option>`).join('');
     }
 
     async function refreshSubSeriesSelect(seriesCode) {
+        const sel = document.getElementById('subSeries');
+        if (!sel) return;
+        if (!seriesCode) { sel.innerHTML = '<option value="">-- Select Series first --</option>'; return; }
         const risk = getActiveRisk();
         const brandCode = risk?.brand || '';
         const modelCode = risk?.model || '';
         const typeCode = risk?.vehicleType || '';
-        if (!seriesCode || !brandCode || !modelCode || !typeCode) {
-            const sel = document.getElementById('subSeries');
-            if (sel) sel.innerHTML = '<option value="">-- Select Series first --</option>';
-            return;
-        }
+        if (!brandCode || !modelCode || !typeCode) { sel.innerHTML = '<option value="">-- Select Type first --</option>'; return; }
         const cacheKey = buildCascadeKey(brandCode, modelCode, typeCode, seriesCode);
         const list = await loadModelRiskLookup(subSeriesLookupCache, cacheKey, 'subSeries', { brand: brandCode, model: modelCode, type: typeCode, series: seriesCode });
-        const sel = document.getElementById('subSeries');
-        if (!sel) return;  // Cache already populated, element just doesn't exist yet
         sel.innerHTML = `<option value="">-- Select Sub Series --</option>` +
             list.map(o => `<option value="${escapeHtml(o.code)}" ${risk && risk.subSeries === o.code ? 'selected' : ''}>${escapeHtml(o.name)}</option>`).join('');
     }
@@ -982,7 +436,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create default risk object (single vehicle)
     function createDefaultRisk() {
         return {
-            regNo: requestedRegNo,
             brand: '',
             model: '',
             vehicleType: '',
@@ -995,9 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
             region: '',
             year: new Date().getFullYear(),
             sumInsured: 0,
-            objects: [
-                { group: 'VEH', description: 'Vehicle Body', value: 0 }
-            ],
+            objects: [],
             coverages: [
                 { coverage: 'COMP', ratePerMil: 2.5 }
             ]
@@ -1050,7 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
             riskPremiums.forEach(rp => {
                 const activeClass = (rp.idx === activeRiskIndex) ? ' style="background:#dbeafe;font-weight:bold"' : '';
                 html += `<tr${activeClass}>
-                            <td>${getVehicleLabel(rp.idx)}</td>
+                            <td>Vehicle ${rp.idx+1}</td>
                             <td align="right">${formatMoney(rp.sumIns)}</td>
                             <td align="right">${formatRate(rp.totalRate)}</td>
                             <td align="right">${formatMoney(rp.premium)}</td>
@@ -1075,7 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Render risk list pills
     function renderRiskList() {
-        riskListDiv.innerHTML = risks.map((_, idx) => `<button type="button" class="risk-pill ${idx === activeRiskIndex ? 'active' : ''}" data-risk-index="${idx}">${getVehicleLabel(idx)}</button>`).join('');
+        riskListDiv.innerHTML = risks.map((_, idx) => `<button type="button" class="risk-pill ${idx === activeRiskIndex ? 'active' : ''}" data-risk-index="${idx}">Vehicle ${idx+1}</button>`).join('');
     }
 
     // Build description string from vehicle identity fields
@@ -1145,12 +596,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const sync = () => {
             const r = getActiveRisk();
             if (!r) return;
-            r.brand       = document.getElementById('brand')?.value || '';
-            r.model       = document.getElementById('model')?.value || '';
             r.plateNo     = document.getElementById('plateNo')?.value || '';
             r.vehicleType = document.getElementById('vehicleType')?.value || '';
-            r.series      = document.getElementById('series')?.value || '';
-            r.subSeries   = document.getElementById('subSeries')?.value || '';
             r.chassisNo   = document.getElementById('chassisNo')?.value || '';
             r.engineNo    = document.getElementById('engineNo')?.value || '';
             r.color       = document.getElementById('color')?.value || '';
@@ -1160,7 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const plainIds = ['plateNo','chassisNo','engineNo','color','year'];
-        const selectIds = ['vehicleType','series','subSeries','region'];
+        const selectIds = ['vehicleType','region'];
         plainIds.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.addEventListener('input', sync);
@@ -1239,6 +686,19 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Restore cascade state for the currently active risk
+        refreshModelSelect(risk.brand).then(() => {
+            if (risk.model) {
+                refreshTypeSelect(risk.model).then(() => {
+                    if (risk.vehicleType) {
+                        refreshSeriesSelect(risk.vehicleType).then(() => {
+                            if (risk.series) refreshSubSeriesSelect(risk.series);
+                        });
+                    }
+                });
+            }
+        });
+
         sync();
     }
 
@@ -1305,7 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="field-group">
                     <label>Rate (%)</label>
-                    <input type="number" class="coverage-rate" value="${parseNumber(cov.ratePerMil).toFixed(2)}" placeholder="0.00" min="0" step="0.01">
+                    <input type="number" class="coverage-rate" value="${parseFloat(cov.ratePerMil).toFixed(2)}" placeholder="0.00" min="0" step="0.01">
                 </div>
                 <div class="row-action"><button class="btn-icon remove-coverage"><i class="fas fa-times"></i></button></div>
             </div>
@@ -1335,11 +795,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Render all UI for active risk
-    async function renderAll() {
+    function renderAll() {
         renderRiskList();
-        // CRITICAL: Populate cascade caches BEFORE rendering vehicle fields
-        // This ensures options are available so selected attributes work correctly
-        await hydrateVehicleCascadeForActiveRisk();
         renderVehicleFields();
         renderObjectRows();
         renderCoverageRows();
@@ -1347,37 +804,10 @@ document.addEventListener('DOMContentLoaded', () => {
         riskBadge.textContent = `Risk No: ${activeRiskIndex+1}/${risks.length}`;
     }
 
-    async function hydrateVehicleCascadeForActiveRisk() {
-        const risk = getActiveRisk();
-        console.log('[RiskVehicle] hydrateVehicleCascadeForActiveRisk - risk:', risk);
-        if (!risk) return;
-
-        if (risk.brand) {
-            console.log('[RiskVehicle] Hydrating model cache for brand:', risk.brand);
-            await refreshModelSelect(risk.brand);
-        }
-        if (risk.model) {
-            console.log('[RiskVehicle] Hydrating type cache for model:', risk.model);
-            await refreshTypeSelect(risk.model);
-        }
-        if (risk.vehicleType) {
-            console.log('[RiskVehicle] Hydrating series cache for type:', risk.vehicleType);
-            await refreshSeriesSelect(risk.vehicleType);
-        }
-        if (risk.series) {
-            console.log('[RiskVehicle] Hydrating subseries cache for series:', risk.series);
-            await refreshSubSeriesSelect(risk.series);
-        }
-        console.log('[RiskVehicle] Cascade hydration complete');
-    }
-
     // Validation
     function validateRisk(risk) {
         if (!risk.plateNo.trim()) return 'Plate No is required';
         if (!risk.brand.trim()) return 'Brand is required';
-        if (!risk.model.trim()) return 'Model is required';
-        if (!risk.vehicleType.trim()) return 'Type is required';
-        // Series/Sub Series can be unavailable for some model-risk datasets.
         if (!risk.region) return 'Region is required';
         if (parseNumber(risk.sumInsured) <= 0) return 'Sum Insured must be > 0';
         for (let cov of risk.coverages) {
@@ -1396,124 +826,55 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Event listeners
-    if (addRiskBtn) {
-        addRiskBtn.addEventListener('click', async () => {
-            try {
-                risks.push(normalizeRiskRegNo(createDefaultRisk()));
-                activeRiskIndex = risks.length-1;
-                await renderAll();
-                console.log('[RiskVehicle] Risk added, total:', risks.length);
-            } catch (e) {
-                console.error('[RiskVehicle] Error adding risk:', e);
-            }
-        });
-        console.log('[RiskVehicle] addRiskBtn listener registered');
-    } else {
-        console.warn('[RiskVehicle] addRiskBtn element not found');
-    }
+    addRiskBtn.addEventListener('click', () => {
+        risks.push(createDefaultRisk());
+        activeRiskIndex = risks.length-1;
+        renderAll();
+    });
 
-    if (saveBtn) {
-        saveBtn.addEventListener('click', async () => {
-            try {
-                await persistRiskVehicles('save');
-                console.log('[RiskVehicle] Save completed');
-            } catch (e) {
-                console.error('[RiskVehicle] Error saving:', e);
-            }
-        });
-        console.log('[RiskVehicle] saveBtn listener registered');
-    } else {
-        console.warn('[RiskVehicle] saveBtn element not found');
-    }
-
-    const editBtn = document.getElementById('editBtn');
-    if (editBtn) {
-        editBtn.addEventListener('click', async () => {
-            await persistRiskVehicles('edit');
-        });
-    }
-
-    const deleteBtn = document.getElementById('deleteBtn');
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', async () => {
-            const activeRisk = getActiveRisk();
-            if (!activeRisk) {
-                returnToQuotation('delete');
+    saveBtn.addEventListener('click', async () => {
+            const validation = validateAllRisks();
+            if (!validation.valid) {
+                activeRiskIndex = validation.index;
+                renderAll();
+                alert(`Validation error on Vehicle ${validation.index+1}: ${validation.message}`);
                 return;
             }
-
-            const confirmed = window.confirm(`Hapus ${getVehicleLabel(activeRiskIndex)} dari quotation ini?`);
-            if (!confirmed) return;
-
-            if (String(activeRisk.regNo || requestedRegNo || '').trim()) {
-                try {
-                    await deleteRiskVehicleFromApi(activeRisk, activeRiskIndex);
-                } catch (error) {
-                    console.error('Failed to delete risk_vehicle from API:', error);
-                    alert(`Gagal menghapus data backend. Detail: ${error.message}`);
-                    return;
-                }
-            }
-
-            risks.splice(activeRiskIndex, 1);
-            if (!risks.length) {
-                risks.push(normalizeRiskRegNo(createDefaultRisk()));
-            }
-
-            activeRiskIndex = Math.min(activeRiskIndex, risks.length - 1);
             saveRiskVehiclesToLocalStorage();
-            await renderAll();
-            returnToQuotation('delete');
-        });
-    }
+            recalculateAll();
 
-    riskListDiv.addEventListener('click', async (e) => {
+            try {
+                const result = await saveRiskVehiclesToApi();
+                const processed = Number(result?.processed ?? 0);
+                alert(`Data berhasil disimpan ke backend API. Total baris diproses: ${processed}.`);
+            } catch (error) {
+                console.error('Failed to save risk_vehicle to API:', error);
+                alert('Data disimpan di browser, tetapi gagal sinkron ke backend API. Cek koneksi atau endpoint backend/risk_vehicle.php.');
+            }
+    });
+
+    riskListDiv.addEventListener('click', (e) => {
         const btn = e.target.closest('.risk-pill');
         if (btn && btn.dataset.riskIndex !== undefined) {
             activeRiskIndex = parseInt(btn.dataset.riskIndex);
-            await renderAll();
+            renderAll();
         }
     });
 
-    if (addCoverageRowBtn) {
-        addCoverageRowBtn.addEventListener('click', () => {
-            try {
-                const r = getActiveRisk();
-                const newCov = { coverage: 'COMP', ratePerMil: 1.5 };
-                console.log('[RiskVehicle] Adding coverage:', newCov);
-                r.coverages.push(newCov);
-                console.log('[RiskVehicle] Coverages after add:', r.coverages);
-                renderCoverageRows();
-                recalculateAll();
-                console.log('[RiskVehicle] Coverage row added');
-            } catch (e) {
-                console.error('[RiskVehicle] Error adding coverage:', e);
-            }
-        });
-        console.log('[RiskVehicle] addCoverageRowBtn listener registered');
-    } else {
-        console.warn('[RiskVehicle] addCoverageRowBtn element not found');
-    }
+    addCoverageRowBtn.addEventListener('click', () => {
+        getActiveRisk().coverages.push({ coverage: 'COMP', ratePerMil: '1.5' });
+        renderCoverageRows();
+        recalculateAll();
+    });
 
     if (addObjectRowBtn) {
         addObjectRowBtn.addEventListener('click', () => {
-            try {
-                const r = getActiveRisk();
-                const desc = getVehicleDescription(r);
-                const newObj = { group: objectLookup[0]?.code || 'VEH', description: desc, value: 0 };
-                console.log('[RiskVehicle] Adding object:', newObj);
-                r.objects.push(newObj);
-                console.log('[RiskVehicle] Objects after add:', r.objects);
-                renderObjectRows();
-                recalculateAll();
-                console.log('[RiskVehicle] Object row added');
-            } catch (e) {
-                console.error('[RiskVehicle] Error adding object:', e);
-            }
+            const r = getActiveRisk();
+            const desc = getVehicleDescription(r);
+            r.objects.push({ group: objectLookup[0]?.code || '', description: desc, value: 0 });
+            renderObjectRows();
+            recalculateAll();
         });
-        console.log('[RiskVehicle] addObjectRowBtn listener registered');
-    } else {
-        console.warn('[RiskVehicle] addObjectRowBtn element not found');
     }
 
     // Tab switching
@@ -1531,12 +892,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load initial data
     risks.push(createDefaultRisk());
     activeRiskIndex = 0;
-    Promise.all([loadRegionLookup(), loadModelRiskDataset(), loadBrandLookup(), loadObjectGroups(), loadRiskVehicles()]).then(async () => {
-        await renderAll();
-
-        console.log('[RiskVehicle] Initialization complete - all event listeners ready');
-    }).catch(err => {
-        console.error('[RiskVehicle] Initialization error:', err);
+    Promise.all([loadRegionLookup(), loadBrandLookup(), loadObjectGroups(), loadRiskVehicles()]).then(async () => {
+        const risk = getActiveRisk();
+        if (risk) {
+            if (risk.brand) {
+                await refreshModelSelect(risk.brand);
+            }
+            if (risk.model) {
+                await refreshTypeSelect(risk.model);
+            }
+            if (risk.vehicleType) {
+                await refreshSeriesSelect(risk.vehicleType);
+            }
+            if (risk.series) {
+                await refreshSubSeriesSelect(risk.series);
+            }
+        }
+        renderAll();
     });
 });
 

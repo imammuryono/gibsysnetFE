@@ -1,11 +1,5 @@
 const productData = {
     LI: {
-        categories: [
-            { code: 'IL', name: 'Individual Life' },
-            { code: 'GL', name: 'Group Life' },
-            { code: 'SH', name: 'Sharia Life' },
-            { code: 'AP', name: 'Annuity & Pension' }
-        ],
         cob: {
             IL: { name: 'Individual Life', sub: ['Term Life', 'Whole Life', 'Endowment', 'Unit Link'] },
             GL: { name: 'Group Life', sub: ['Group Term Life', 'Group Credit Life', 'Employee Benefit Scheme'] },
@@ -14,11 +8,6 @@ const productData = {
         }
     },
     GI: {
-        categories: [
-            { code: 'IND', name: 'Individual' },
-            { code: 'COR', name: 'Corporate' },
-            { code: 'GOV', name: 'Government' }
-        ],
         cob: {
             PROP: { name: 'Property', sub: ['Fire Insurance', 'Property All Risks (PAR)', 'Industrial All Risks (IAR)'] },
             MAR: { name: 'Marine', sub: ['Marine Cargo', 'Marine Hull', 'Freight Insurance'] },
@@ -34,7 +23,7 @@ const productData = {
 };
 
 const STORAGE_KEY = 'cob_products_v4';
-const COB_PRODUCTS_API_URL = 'http://localhost:3001/api/cob-products';
+const COB_PRODUCTS_API_URL = 'http://localhost:3001/api/cob';
 
 let products = [];
 let versionHistory = [];
@@ -44,10 +33,11 @@ const rowsPerPage = 8;
 
 const productIdInput = document.getElementById('productId');
 const typeInput = document.getElementById('type');
-const categoryInput = document.getElementById('category');
 const cobInput = document.getElementById('cob');
 const subCobInput = document.getElementById('subCob');
+const cobCodeInput = document.getElementById('cobCode');
 const descriptionInput = document.getElementById('description');
+const typeLabelInput = document.getElementById('typeLabel');
 const productTableBody = document.getElementById('productTableBody');
 const searchInput = document.getElementById('searchInput');
 const rowCountSpan = document.getElementById('rowCount');
@@ -92,7 +82,11 @@ function closeModal(modal) {
 }
 
 function saveProductsToStorage() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+    const sanitized = products.map((item) => {
+        const { category, ...rest } = item;
+        return rest;
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
 }
 
 function loadProductsFromStorage() {
@@ -102,10 +96,13 @@ function loadProductsFromStorage() {
     try {
         const parsed = JSON.parse(raw);
         if (!Array.isArray(parsed)) return false;
-        products = parsed.map((item) => ({
-            ...item,
-            apiId: resolveCobApiId(item)
-        }));
+        products = parsed.map((item) => {
+            const { category, ...rest } = item;
+            return {
+                ...rest,
+                apiId: resolveCobApiId(item)
+            };
+        });
         return true;
     } catch {
         return false;
@@ -116,25 +113,8 @@ function getTypeLabel(type) {
     return type === 'LI' ? 'Life Insurance' : type === 'GI' ? 'General Insurance' : '-';
 }
 
-function getCategoryLabel(type, code) {
-    const category = productData[type]?.categories?.find((item) => item.code === code);
-    return category ? category.name : code || '-';
-}
-
 function getCobLabel(type, code) {
     return productData[type]?.cob?.[code]?.name || code || '-';
-}
-
-function getNextProductId(type, category) {
-    const prefix = `${type}-${category}`;
-    const maxIndex = products.reduce((max, item) => {
-        if (!String(item.productId || '').startsWith(prefix)) return max;
-        const match = String(item.productId).match(/-(\d{3,})$/);
-        const parsed = match ? parseInt(match[1], 10) : 0;
-        return Math.max(max, parsed);
-    }, 0);
-
-    return `${prefix}-${String(maxIndex + 1).padStart(3, '0')}`;
 }
 
 function getInitials(text, maxLen) {
@@ -143,6 +123,20 @@ function getInitials(text, maxLen) {
     const words = cleaned.split(/\s+/).filter(Boolean);
     if (words.length === 1) return words[0].toUpperCase().slice(0, maxLen || 3);
     return words.map((w) => w[0]).join('').toUpperCase().slice(0, maxLen || 6) || 'GEN';
+}
+
+function generateCobCode(type, cobName) {
+    const typeLabel = String(getTypeLabel(type) || type || '').trim();
+    const a = typeLabel.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 3).padEnd(3, 'X');
+    const b = String(cobName || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 3).padEnd(3, 'X');
+    return `${a}${b}`;
+}
+function normalizeCobCodeRaw(input) {
+    if (!input) return '';
+    const cleaned = String(input || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    if (!cleaned) return '';
+    if (cleaned.length >= 6) return cleaned.slice(0, 6);
+    return cleaned.padEnd(6, 'X');
 }
 
 function generateCobId(cob, subCob) {
@@ -189,52 +183,39 @@ function updateGeneratedProductId() {
     }
 }
 
-function updateCategoryOptions() {
-    if (!categoryInput || !typeInput) return;
-
-    categoryInput.innerHTML = '<option value="">Select Category</option>';
-    const type = typeInput.value;
-    const categories = productData[type]?.categories || [];
-
-    categories.forEach((item) => {
-        const option = document.createElement('option');
-        option.value = item.code;
-        option.textContent = item.name;
-        categoryInput.appendChild(option);
-    });
-
-    updateCobOptions();
-    updateGeneratedProductId();
-}
-
 function updateCobOptions() {
-    if (!cobInput || !typeInput || !categoryInput) return;
-
-    cobInput.innerHTML = '<option value="">Select COB</option>';
-    subCobInput.innerHTML = '<option value="">Select Sub COB</option>';
+    if (!cobInput || !typeInput) return;
 
     const type = typeInput.value;
-    const category = categoryInput.value;
-    if (!type) return;
-
-    if (type === 'LI') {
-        const lifeCob = productData.LI.cob[category];
-        if (lifeCob) {
-            const option = document.createElement('option');
-            option.value = category;
-            option.textContent = lifeCob.name;
-            cobInput.appendChild(option);
+    if (!type) {
+        if (cobInput.tagName === 'INPUT') {
+            cobInput.value = '';
+        } else {
+            cobInput.innerHTML = '<option value="">Select COB</option>';
         }
-    } else {
-        Object.entries(productData.GI.cob).forEach(([code, item]) => {
+        if (subCobInput) subCobInput.innerHTML = '<option value="">Select Sub COB</option>';
+        updateCobCode();
+        return;
+    }
+
+    if (cobInput.tagName === 'SELECT') {
+        cobInput.innerHTML = '<option value="">Select COB</option>';
+        Object.entries(productData[type]?.cob || {}).forEach(([code, item]) => {
             const option = document.createElement('option');
             option.value = code;
             option.textContent = item.name;
             cobInput.appendChild(option);
         });
+    } else {
+        // input: clear current value so user can type new COB name when type changes
+        cobInput.value = '';
     }
 
+    // If Sub COB input is present, update its options; otherwise skip.
+    if (subCobInput) updateSubCobOptions();
+    updateGeneratedProductId();
     updateDescription();
+    updateCobCode();
 }
 
 function updateSubCobOptions() {
@@ -244,7 +225,17 @@ function updateSubCobOptions() {
 
     const type = typeInput.value;
     const cob = cobInput.value;
-    const options = productData[type]?.cob?.[cob]?.sub || [];
+    // Resolve cob key: prefer direct key, otherwise match by name
+    let cobKey = cob;
+    if (!productData[type]?.cob?.[cobKey]) {
+        for (const [code, info] of Object.entries(productData[type]?.cob || {})) {
+            if (String(info.name || '').toLowerCase() === String(cob || '').toLowerCase()) {
+                cobKey = code;
+                break;
+            }
+        }
+    }
+    const options = productData[type]?.cob?.[cobKey]?.sub || [];
 
     options.forEach((item) => {
         const option = document.createElement('option');
@@ -260,20 +251,39 @@ function updateDescription() {
     if (!descriptionInput) return;
 
     const type = typeInput?.value || '';
-    const category = categoryInput?.value || '';
     const cob = cobInput?.value || '';
     const subCob = subCobInput?.value || '';
 
-    if (!type || !category || !cob) {
+    if (!type || !cob) {
         descriptionInput.value = '';
         return;
     }
 
     const typeLabel = getTypeLabel(type);
-    const categoryLabel = getCategoryLabel(type, category);
     const cobLabel = getCobLabel(type, cob);
 
-    descriptionInput.value = `${typeLabel} - ${categoryLabel}: ${cobLabel}${subCob ? ` (${subCob})` : ''}`;
+    if (typeLabelInput) typeLabelInput.value = typeLabel;
+    descriptionInput.value = `${cobLabel}${subCob ? ` (${subCob})` : ''}`;
+}
+
+function updateCobCode() {
+    if (!cobCodeInput) return;
+    const type = typeInput?.value || '';
+    let cobLabel = '';
+    if (cobInput) {
+        if (cobInput.tagName === 'SELECT') {
+            const selectedCobOption = cobInput.selectedOptions?.[0];
+            cobLabel = String(selectedCobOption?.textContent || cobInput?.value || '').trim();
+        } else {
+            cobLabel = String(cobInput.value || '').trim();
+        }
+    }
+    if (!type || !cobLabel) {
+        cobCodeInput.value = '';
+        return;
+    }
+    // ensure normalized consistent format
+    cobCodeInput.value = normalizeCobCodeRaw(generateCobCode(type, cobLabel));
 }
 
 function filteredProducts() {
@@ -282,12 +292,10 @@ function filteredProducts() {
         if (item.status === 'inactive') return false;
 
         const typeLabel = getTypeLabel(item.type).toLowerCase();
-        const categoryLabel = getCategoryLabel(item.type, item.category).toLowerCase();
         const cobLabel = getCobLabel(item.type, item.cob).toLowerCase();
 
         return String(item.productId || '').toLowerCase().includes(keyword) ||
             typeLabel.includes(keyword) ||
-            categoryLabel.includes(keyword) ||
             cobLabel.includes(keyword) ||
             String(item.subCob || '').toLowerCase().includes(keyword) ||
             String(item.description || '').toLowerCase().includes(keyword);
@@ -309,8 +317,8 @@ function renderTable() {
     if (!productTableBody) return;
     productTableBody.innerHTML = '';
 
-    if (!pageData.length) {
-        productTableBody.innerHTML = '<tr><td colspan="8" class="px-4 py-6 text-center text-sm text-gray-500">No data available.</td></tr>';
+            if (!pageData.length) {
+        productTableBody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-sm text-gray-500">No data available.</td></tr>';
     } else {
         pageData.forEach((item, index) => {
             const rowNumber = start + index + 1;
@@ -322,9 +330,9 @@ function renderTable() {
                 <td class="px-4 py-3 text-sm text-gray-700">${rowNumber}</td>
                 <td class="px-4 py-3 text-sm font-mono text-xs text-gray-700">${item.productId || '-'}</td>
                 <td class="px-4 py-3 text-sm text-gray-700">${getTypeLabel(item.type)}</td>
-                <td class="px-4 py-3 text-sm text-gray-700">${getCategoryLabel(item.type, item.category)}</td>
                 <td class="px-4 py-3 text-sm text-gray-700">${item.cobName || getCobLabel(item.type, item.cob)}</td>
-                <td class="px-4 py-3 text-sm text-gray-700">${item.subCob || '-'}</td>
+                <td class="px-4 py-3 text-sm text-gray-700">${item.cobCode || '-'}</td>
+                <!-- Sub COB column removed -->
                 <td class="px-4 py-3 text-sm text-gray-700">${item.description || '-'}</td>
                 <td class="px-4 py-3 text-sm text-gray-700">
                     <button class="px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors mr-2" onclick="event.stopPropagation(); selectProduct('${item.productId}')"><i class="fas fa-pen mr-1"></i>Edit</button>
@@ -350,9 +358,11 @@ function resetForm() {
 
     if (productIdInput) productIdInput.value = '';
     if (descriptionInput) descriptionInput.value = '';
+    if (typeLabelInput) typeLabelInput.value = '';
+    if (cobCodeInput) cobCodeInput.value = '';
     selectedProductId = null;
 
-    updateCategoryOptions();
+    updateCobOptions();
     renderTable();
 }
 
@@ -386,16 +396,11 @@ async function selectProduct(productId) {
     if (!item) return;
 
     if (!item.type) item.type = 'GI';
-    if (!item.category) item.category = 'default';
 
     selectedProductId = item.productId;
 
     if (productIdInput) productIdInput.value = item.productId;
     if (typeInput) typeInput.value = item.type;
-    updateCategoryOptions();
-
-    ensureSelectOption(categoryInput, item.category, item.category);
-    if (categoryInput) categoryInput.value = item.category;
     updateCobOptions();
 
     const cobLabel = item.cobName || item.cob || '';
@@ -406,13 +411,15 @@ async function selectProduct(productId) {
     ensureSelectOption(subCobInput, item.subCob, item.subCob);
     if (subCobInput) subCobInput.value = item.subCob || '';
     if (descriptionInput) descriptionInput.value = item.description || '';
+    if (typeLabelInput) typeLabelInput.value = item.typeLabel || getTypeLabel(item.type) || '';
+    if (cobCodeInput) cobCodeInput.value = normalizeCobCodeRaw(item.cobCode || generateCobCode(item.type, cobLabel));
 
     renderTable();
 }
 
 function validateForm() {
-    if (!typeInput?.value || !categoryInput?.value) {
-        showMessage('Type and Category are required.');
+    if (!typeInput?.value) {
+        showMessage('Type is required.');
         return false;
     }
 
@@ -425,9 +432,10 @@ function validateForm() {
 }
 
 function mapTypeToApi(type) {
-    if (type === 'GI') return 'general';
-    if (type === 'LI') return 'life';
-    return String(type || '').toLowerCase();
+    // Return the 2-letter enum value that the MySQL cob.type column expects ('LI', 'GI')
+    if (type === 'GI') return 'GI';
+    if (type === 'LI') return 'LI';
+    return String(type || '').toUpperCase();
 }
 
 function buildCobProductCreatePayload(data) {
@@ -435,11 +443,15 @@ function buildCobProductCreatePayload(data) {
 
     return {
         cob_id: data.productId,
+        cob: data.cob || '',
         cob_name: cobName,
+        cob_type: mapTypeToApi(data.type),
+        cob_code: normalizeCobCodeRaw(data.cobCode || generateCobCode(data.type, cobName)),
         sub_cob_name: data.subCob || '',
+        sub_cob: data.subCob || '',
+        type_label: data.typeLabel || getTypeLabel(data.type),
         description: data.description || '',
         type: mapTypeToApi(data.type),
-        category: data.category || 'default',
         status: 'active'
     };
 }
@@ -447,16 +459,18 @@ function buildCobProductCreatePayload(data) {
 function buildCobProductUpdatePayload(data) {
     const isInactive = String(data?.status || '').toLowerCase() === 'inactive';
     const safeType = String(data?.type || 'GI').trim();
-    const safeCategory = String(data?.category || 'default').trim();
     const cobName = String(data?.cobName || getCobLabel(safeType, data?.cob) || data?.cob || '').trim();
 
     return {
         cob_id: data.productId,
+        cob: data.cob || '',
+        cob_type: mapTypeToApi(safeType),
+        cob_code: normalizeCobCodeRaw(data.cobCode || generateCobCode(safeType, cobName)),
         cob_name: cobName,
         sub_cob_name: data.subCob || '',
+        sub_cob: data.subCob || '',
         description: data.description || '',
         type: mapTypeToApi(safeType),
-        category: safeCategory,
         status: isInactive ? 'inactive' : 'active'
     };
 }
@@ -524,13 +538,13 @@ async function createCobProductToApi(data) {
         });
     } catch (error) {
         if (isNetworkFetchError(error)) {
-            throw new Error('Cannot connect to COB API server (http://localhost:3000).');
+            throw new Error(`Cannot connect to COB API server (${COB_PRODUCTS_API_URL}).`);
         }
         throw error;
     }
 
     if (!response.ok) {
-        const fallbackMessage = `Failed to create COB product in API (status ${response.status}).`;
+        const fallbackMessage = `Failed to create COB product in API (status ${response.status}) at ${response.url}.`;
         const errorMessage = await parseErrorMessage(response, fallbackMessage);
         throw new Error(errorMessage);
     }
@@ -589,7 +603,7 @@ async function deleteCobProductToApi(item) {
             });
         } catch (error) {
             if (isNetworkFetchError(error)) {
-                throw new Error('Cannot connect to COB API server (http://localhost:3001).');
+                throw new Error(`Cannot connect to COB API server (${COB_PRODUCTS_API_URL}).`);
             }
             throw error;
         }
@@ -633,20 +647,21 @@ function mapApiStatusToUi(status, isActive) {
 }
 
 function mapCobProductFromApi(item) {
-    const cobCode = String(item?.cob_code || item?.cob_id || item?.code || '').trim();
+    const cobId = String(item?.cob_id ?? item?.id ?? '').trim();
+    const cobCode = String(item?.cob_code || item?.code || '').trim();
     const cobName = String(item?.cob_name || '').trim();
     const subCobName = String(item?.sub_cob_name || '').trim();
-    const category = String(item?.category || '').trim().toUpperCase();
     const createdAt = String(item?.created_at || '').trim();
     const apiId = resolveCobApiId(item);
 
     return {
-        productId: cobCode || `COB-${String(item?.id || Date.now())}`,
-        type: mapApiTypeToUi(item?.type),
-        category,
-        cob: cobCode || cobName,
+        productId: cobId || `COB-${String(item?.id || Date.now())}`,
+        type: mapApiTypeToUi(item?.cob_type || item?.type),
+        cob: cobName || cobCode || '',
+        cobCode: cobCode || '',
         cobName: cobName || cobCode,
         subCob: subCobName,
+        typeLabel: String(item?.type_label || getTypeLabel(item.type)).trim(),
         description: String(item?.description || '').trim(),
         status: mapApiStatusToUi(item?.status, item?.is_active),
         deletedAt: '',
@@ -735,7 +750,6 @@ function hasDuplicate(data) {
         item.status !== 'inactive' &&
         item.productId !== selectedProductId &&
         item.type === data.type &&
-        item.category === data.category &&
         item.cob === data.cob &&
         item.subCob === data.subCob
     );
@@ -747,13 +761,20 @@ function ensureSelectOption(selectElement, value, label) {
     const normalizedValue = String(value || '').trim();
     if (!normalizedValue) return;
 
-    const hasOption = Array.from(selectElement.options).some((option) => option.value === normalizedValue);
-    if (hasOption) return;
+    if (selectElement.tagName === 'SELECT') {
+        const hasOption = Array.from(selectElement.options).some((option) => option.value === normalizedValue);
+        if (hasOption) return;
+        const option = document.createElement('option');
+        option.value = normalizedValue;
+        option.textContent = String(label || normalizedValue).trim() || normalizedValue;
+        selectElement.appendChild(option);
+        return;
+    }
 
-    const option = document.createElement('option');
-    option.value = normalizedValue;
-    option.textContent = String(label || normalizedValue).trim() || normalizedValue;
-    selectElement.appendChild(option);
+    // If element is an input, set its value to the provided label or value
+    if (selectElement.tagName === 'INPUT') {
+        selectElement.value = String(label || normalizedValue).trim() || normalizedValue;
+    }
 }
 
 function addVersion(action, product) {
@@ -771,24 +792,33 @@ function addVersion(action, product) {
 async function saveProduct() {
     if (!validateForm()) return;
 
-    const selectedCobOption = cobInput?.selectedOptions?.[0];
-    const selectedCobLabel = String(selectedCobOption?.textContent || '').trim();
+    let selectedCobLabel = '';
+    if (cobInput) {
+        if (cobInput.tagName === 'SELECT') {
+            const selectedCobOption = cobInput.selectedOptions?.[0];
+            selectedCobLabel = String(selectedCobOption?.textContent || '').trim();
+        } else {
+            selectedCobLabel = String(cobInput.value || '').trim();
+        }
+    }
 
     const data = {
         productId: selectedProductId || generateCobId(cobInput?.value || '', subCobInput?.value || ''),
         type: typeInput.value,
-        category: categoryInput.value,
+        cob_type: typeInput.value,
         cob: cobInput?.value || '',
         cobName: selectedCobLabel || cobInput?.value || '',
+        cobCode: normalizeCobCodeRaw(cobCodeInput?.value || generateCobCode(typeInput.value, selectedCobLabel || cobInput?.value || '')),
         subCob: subCobInput?.value || '',
         description: descriptionInput?.value || '',
+        typeLabel: typeLabelInput?.value || '',
         status: 'active',
         deletedAt: '',
         updatedAt: new Date().toISOString()
     };
 
     if (hasDuplicate(data)) {
-        showMessage('Duplicate data detected for the same Type, Category, COB, and Sub COB.');
+        showMessage('Duplicate data detected for the same Type and COB.');
         return;
     }
 
@@ -844,6 +874,7 @@ async function saveProduct() {
                 const mapped = mapCobProductFromApi(createdApiData);
                 createdRecord.productId = mapped.productId || createdRecord.productId;
                 createdRecord.cob = mapped.cob || createdRecord.cob;
+                    createdRecord.cobCode = mapped.cobCode || createdRecord.cobCode;
                 createdRecord.cobName = mapped.cobName || createdRecord.cobName;
                 createdRecord.subCob = mapped.subCob;
                 createdRecord.description = mapped.description || createdRecord.description;
@@ -985,13 +1016,12 @@ function exportProducts() {
     }
 
     const rows = [
-        ['Product ID', 'Type', 'Category', 'COB', 'Sub COB', 'Description'],
+        ['Product ID', 'Type', 'COB', 'COB Code', 'Description'],
         ...data.map((item) => [
             item.productId,
             getTypeLabel(item.type),
-            getCategoryLabel(item.type, item.category),
-            getCobLabel(item.type, item.cob),
-            item.subCob || '',
+            item.cobName || getCobLabel(item.type, item.cob),
+            item.cobCode || '',
             item.description || ''
         ])
     ];
@@ -1088,10 +1118,8 @@ function renderDependencyControl() {
     if (!container) return;
 
     const active = filteredProducts();
-    const withoutSubCob = active.filter((item) => !item.subCob).length;
     const items = [
         { name: 'Product-Policy Link', status: active.length ? 'healthy' : 'warning', detail: `${active.length} mapped records` },
-        { name: 'Sub COB Completeness', status: withoutSubCob > 0 ? 'warning' : 'healthy', detail: `${active.length - withoutSubCob}/${active.length || 0} complete` },
         { name: 'Quotation Dependency', status: active.length > 2 ? 'healthy' : 'warning', detail: 'COB readiness score' }
     ];
 
@@ -1116,16 +1144,16 @@ function renderAISuggestions() {
     const generalCount = active.filter((item) => item.type === 'GI').length;
     const noSubCob = active.filter((item) => !item.subCob).length;
 
-    const suggestions = [
-        `${active.length} active COB records are ready for quotation mapping.`,
-        noSubCob > 0
-            ? `Complete Sub COB values for ${noSubCob} records to improve underwriting precision.`
-            : 'Sub COB mapping is complete. Keep consistency for new records.',
-        generalCount > 0
-            ? `Review ${generalCount} General Insurance records for cross-module dependency checks.`
-            : 'No General Insurance records detected. Add if required by business line.',
-        'Future Ready: Use COB trend scoring to optimize pricing and approval workflows.'
-    ];
+        const suggestions = [
+            `${active.length} active COB records are ready for quotation mapping.`,
+            noSubCob > 0
+                ? `There are ${noSubCob} records missing subcategory mapping.`
+                : 'Subcategory mapping present where available.',
+            generalCount > 0
+                ? `Review ${generalCount} General Insurance records for cross-module dependency checks.`
+                : 'No General Insurance records detected. Add if required by business line.',
+            'Future Ready: Use COB trend scoring to optimize pricing and approval workflows.'
+        ];
 
     container.innerHTML = suggestions
         .map((item) => `
@@ -1139,7 +1167,7 @@ function renderAISuggestions() {
 
 function updateHealthDashboard() {
     const active = filteredProducts();
-    const complete = active.filter((item) => item.productId && item.type && item.category && item.cob).length;
+    const complete = active.filter((item) => item.productId && item.type && item.cob).length;
     const quality = active.length ? Math.round((complete / active.length) * 100) : 0;
 
     const qualityEl = getElement('metricQuality');
@@ -1157,10 +1185,6 @@ function renderGovernancePanels() {
 
 function setupEventListeners() {
     typeInput?.addEventListener('change', () => {
-        updateCategoryOptions();
-    });
-
-    categoryInput?.addEventListener('change', () => {
         updateCobOptions();
         updateGeneratedProductId();
     });
@@ -1168,6 +1192,13 @@ function setupEventListeners() {
     cobInput?.addEventListener('change', () => {
         updateSubCobOptions();
         updateGeneratedProductId();
+        updateCobCode();
+    });
+    // update cob code while typing for input-type cob
+    cobInput?.addEventListener('input', () => {
+        updateGeneratedProductId();
+        updateDescription();
+        updateCobCode();
     });
 
     subCobInput?.addEventListener('change', () => {
@@ -1233,16 +1264,13 @@ async function loadProducts() {
 
     if (!loadedFromStorage && !loadedFromApi) {
         const now = new Date();
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        const yyyy = String(now.getFullYear());
         products = [
             {
                 productId: 'MOT-C-001',
                 type: 'GI',
-                category: 'IND',
                 cob: 'MOT',
                 subCob: 'Comprehensive',
-                description: 'General Insurance - Individual: Motor (Comprehensive)',
+                description: 'General Insurance: Motor (Comprehensive)',
                 status: 'active',
                 deletedAt: '',
                 updatedAt: now.toISOString()
@@ -1250,10 +1278,9 @@ async function loadProducts() {
             {
                 productId: 'IL-TL-001',
                 type: 'LI',
-                category: 'IL',
                 cob: 'IL',
                 subCob: 'Term Life',
-                description: 'Life Insurance - Individual Life: Individual Life (Term Life)',
+                description: 'Life Insurance: Individual Life (Term Life)',
                 status: 'active',
                 deletedAt: '',
                 updatedAt: now.toISOString()
@@ -1264,7 +1291,6 @@ async function loadProducts() {
         migrateProductIds();
     }
 
-    updateCategoryOptions();
     updateCobOptions();
     updateSubCobOptions();
     renderTable();

@@ -6,18 +6,20 @@ class CurrencyManager {
         this.pageSize = 10;
         this.searchTerm = '';
         this.pendingDeleteId = null;
+        this.apiBaseUrl = this.resolveApiBaseUrl();
+        this.currencyEndpoint = window.GibsyNetApi?.endpoints?.currencies || `${this.apiBaseUrl}/currencies/`;
 
         this.currencyCatalog = [
-            { id: 'IDR', name: 'Indonesian Rupiah', symbol: 'Rp' },
-            { id: 'USD', name: 'United States Dollar', symbol: '$' },
-            { id: 'EUR', name: 'Euro', symbol: '€' },
-            { id: 'SGD', name: 'Singapore Dollar', symbol: 'S$' },
-            { id: 'JPY', name: 'Japanese Yen', symbol: '¥' },
-            { id: 'GBP', name: 'British Pound Sterling', symbol: '£' },
-            { id: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
-            { id: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
-            { id: 'MYR', name: 'Malaysian Ringgit', symbol: 'RM' },
-            { id: 'THB', name: 'Thai Baht', symbol: '฿' }
+            { id: 'IDR', name: 'Indonesian Rupiah', symbol: 'Rp', country: 'Indonesia' },
+            { id: 'USD', name: 'United States Dollar', symbol: '$', country: 'United States' },
+            { id: 'EUR', name: 'Euro', symbol: '€', country: 'European Union' },
+            { id: 'SGD', name: 'Singapore Dollar', symbol: 'S$', country: 'Singapore' },
+            { id: 'JPY', name: 'Japanese Yen', symbol: '¥', country: 'Japan' },
+            { id: 'GBP', name: 'British Pound Sterling', symbol: '£', country: 'United Kingdom' },
+            { id: 'AUD', name: 'Australian Dollar', symbol: 'A$', country: 'Australia' },
+            { id: 'CNY', name: 'Chinese Yuan', symbol: '¥', country: 'China' },
+            { id: 'MYR', name: 'Malaysian Ringgit', symbol: 'RM', country: 'Malaysia' },
+            { id: 'THB', name: 'Thai Baht', symbol: '฿', country: 'Thailand' }
         ];
 
         this.impactTools = [
@@ -41,12 +43,16 @@ class CurrencyManager {
             const currencyId = item.currency_id || item.code || '';
             const currencyName = item.currency_name || item.name || '';
             const currencySymbol = item.currency_symbol || item.symbol || '';
+            const isoAlpha3 = item.iso_alpha_3 || item.currency_alpha3 || item.iso3 || item.code || currencyId || '';
+            const country = item.country || item.country_name || '';
 
             return {
                 id: String(item.id || this.generateId()),
                 currency_id: String(currencyId).toUpperCase(),
                 currency_name: currencyName,
                 currency_symbol: currencySymbol,
+                iso_alpha_3: String(isoAlpha3).toUpperCase(),
+                country: country,
                 note: item.note || '',
                 status: item.status === 'inactive' ? 'inactive' : 'active',
                 version: Number(item.version) > 0 ? Number(item.version) : 1,
@@ -62,8 +68,13 @@ class CurrencyManager {
     bindElements() {
         this.form = document.getElementById('currencyForm');
         this.recordId = document.getElementById('recordId');
-        this.currencyId = document.getElementById('currencyId');
-        this.currencyName = document.getElementById('currencyName');
+        this.currencyIdInput = document.getElementById('currencyId');
+        this.currencyAutoIdInput = document.getElementById('currencyAutoId');
+        this.isoAlpha3Input = document.getElementById('isoAlpha3');
+        this.countryInput = document.getElementById('country');
+        this.currencyNameInput = document.getElementById('currencyName');
+        this.currencyNameDataList = document.getElementById('currencyNameList');
+        this.currencyCode = document.getElementById('currencyCode');
         this.currencySymbol = document.getElementById('currencySymbol');
         this.note = document.getElementById('note');
 
@@ -111,8 +122,12 @@ class CurrencyManager {
             });
         }
 
-        if (this.currencyId) {
-            this.currencyId.addEventListener('change', () => this.handleCurrencySelection());
+        if (this.currencyNameInput) {
+            this.currencyNameInput.addEventListener('input', () => this.handleCurrencySelection());
+        }
+
+        if (this.isoAlpha3Input) {
+            this.isoAlpha3Input.addEventListener('input', () => this.handleCurrencySelection());
         }
 
         if (this.searchInput) {
@@ -180,9 +195,34 @@ class CurrencyManager {
         });
     }
 
-    initialize() {
+    async initialize() {
         this.showLoading(true);
-        this.saveData();
+        // Use local cache only (restore pre-API behavior)
+        const cached = this.loadData();
+        if (cached && cached.length) {
+            this.data = this.normalizeData(cached);
+        } else {
+            // seed from local catalog when no cached data exists
+            const seeded = this.currencyCatalog.map((c) => ({
+                id: this.generateId(),
+                currency_id: c.id,
+                currency_name: c.name,
+                currency_symbol: c.symbol,
+                iso_alpha_3: c.id,
+                country: c.country || '',
+                note: '',
+                status: 'active',
+                version: 1,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                createdBy: this.getCurrentUserName(),
+                updatedBy: this.getCurrentUserName()
+            }));
+
+            this.data = this.normalizeData(seeded);
+            this.saveData();
+        }
+
         this.populateCurrencyOptions();
         this.renderImpactTable();
         this.renderTable();
@@ -191,27 +231,160 @@ class CurrencyManager {
         this.showLoading(false);
     }
 
+    resolveApiBaseUrl() {
+        const fromWindow = window.GibsyNetApi?.baseUrl;
+        const fromStorage = localStorage.getItem('gibsysnet_api_base');
+        return String(fromWindow || fromStorage || 'http://localhost:3001/api').replace(/\/$/, '');
+    }
+
+    async apiRequest(method, path = '', body = null) {
+        const url = path ? `${this.currencyEndpoint.replace(/\/$/, '')}/${path}` : this.currencyEndpoint;
+        const options = {
+            method,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        };
+
+        if (body) {
+            options.body = JSON.stringify(body);
+        }
+
+        const response = await fetch(url, options);
+        if (!response.ok) {
+            const text = await response.text().catch(() => '');
+            throw new Error(text || `API request failed with status ${response.status}`);
+        }
+
+        return response.json().catch(() => null);
+    }
+
+    buildApiPayload(record) {
+        const currencyId = String(record.currency_id || record.code || '').trim();
+        const currencyName = String(record.currency_name || record.name || '').trim();
+        const currencySymbol = String(record.currency_symbol || record.symbol || '').trim();
+        const isoAlpha3 = String(record.iso_alpha_3 || record.isoAlpha3 || record.iso_alpha3 || record.iso3 || record.isoAlpha || record.code || currencyId || '').trim();
+        const isoAlpha3Alt = String(record.iso_alpha3 || record.isoAlpha3 || '').trim();
+        const country = String(record.country || record.country_name || '').trim();
+
+        // Send common variants so backend accepts either naming convention
+        const payload = {
+            // currency id / code variants
+            currency_id: currencyId,
+            currency_code: currencyId,
+            code: currencyId,
+
+            // name variants
+            name: currencyName,
+            currency_name: currencyName,
+
+            // symbol variants
+            symbol: currencySymbol,
+            currency_symbol: currencySymbol,
+
+            // iso variants (underscore and non-underscore)
+            iso_alpha_3: isoAlpha3,
+            iso_alpha3: isoAlpha3,
+            isoAlpha3: isoAlpha3,
+            iso_alpha3_alt: isoAlpha3Alt,
+
+            // country
+            country: country
+        };
+
+        if (record.note) {
+            payload.note = String(record.note).trim();
+        }
+
+        if (record.status) {
+            payload.status = record.status;
+        }
+
+        return payload;
+    }
+
+    findDataArray(payload) {
+        if (Array.isArray(payload)) {
+            return payload;
+        }
+
+        if (payload && typeof payload === 'object') {
+            for (const key of Object.keys(payload)) {
+                const value = payload[key];
+                if (Array.isArray(value)) {
+                    return value;
+                }
+                if (value && typeof value === 'object') {
+                    const nested = this.findDataArray(value);
+                    if (Array.isArray(nested) && nested.length) {
+                        return nested;
+                    }
+                }
+            }
+        }
+
+        return [];
+    }
+
+    async fetchCurrencies() {
+        // Legacy compatibility: load from localStorage only
+        try {
+            const cached = this.loadData();
+            this.data = this.normalizeData(cached);
+        } catch (error) {
+            console.error('Failed to load cached currencies:', error);
+            this.data = [];
+        }
+    }
+
     populateCurrencyOptions() {
-        if (!this.currencyId) return;
+        if (!this.currencyNameDataList) return;
 
-        const options = ['<option value="">Select Currency ID</option>']
-            .concat(this.currencyCatalog.map((currency) => `<option value="${currency.id}">${currency.id}</option>`));
+        const options = this.currencyCatalog.map((currency) => `
+            <option value="${currency.name}"></option>
+        `);
 
-        this.currencyId.innerHTML = options.join('');
+        this.currencyNameDataList.innerHTML = options.join('');
     }
 
     handleCurrencySelection() {
-        if (!this.currencyId) return;
+        if (!this.currencyNameInput || !this.currencyIdInput || !this.isoAlpha3Input || !this.currencyCode || !this.currencySymbol) return;
 
-        const selected = this.currencyCatalog.find((item) => item.id === this.currencyId.value);
-        if (!selected) {
-            this.currencyName.value = '';
+        const typedValue = (this.currencyNameInput.value || this.isoAlpha3Input.value || '').trim();
+        if (!typedValue) {
+            this.currencyIdInput.value = '';
+            this.isoAlpha3Input.value = '';
+            this.currencyCode.value = '';
             this.currencySymbol.value = '';
+            if (this.countryInput) {
+                this.countryInput.value = '';
+            }
             return;
         }
 
-        this.currencyName.value = selected.name;
-        this.currencySymbol.value = selected.symbol;
+        const normalized = typedValue.toLowerCase();
+        const match = this.currencyCatalog.find((currency) =>
+            currency.name.toLowerCase() === normalized || currency.id.toLowerCase() === normalized
+        );
+
+        if (match) {
+            this.currencyIdInput.value = match.id;
+            this.isoAlpha3Input.value = match.id;
+            this.currencyCode.value = match.id;
+            this.currencySymbol.value = match.symbol;
+            if (this.countryInput) {
+                this.countryInput.value = match.country || '';
+            }
+        } else {
+            const codeCandidate = typedValue.toUpperCase();
+            this.currencyIdInput.value = codeCandidate;
+            this.isoAlpha3Input.value = codeCandidate;
+            this.currencyCode.value = codeCandidate;
+            this.currencySymbol.value = '';
+            if (this.countryInput) {
+                this.countryInput.value = '';
+            }
+        }
     }
 
     loadData() {
@@ -244,15 +417,17 @@ class CurrencyManager {
         localStorage.setItem(this.versionKey, JSON.stringify(this.versions));
     }
 
-    saveCurrency() {
-        const currencyId = (this.currencyId?.value || '').trim();
-        const currencyName = (this.currencyName?.value || '').trim();
+    async saveCurrency() {
+        const currencyId = (this.currencyIdInput?.value || '').trim();
+        const isoAlpha3 = (this.isoAlpha3Input?.value || '').trim();
+        const country = (this.countryInput?.value || '').trim();
+        const currencyName = (this.currencyNameInput?.value || '').trim();
         const currencySymbol = (this.currencySymbol?.value || '').trim();
         const note = (this.note?.value || '').trim();
         const recordId = (this.recordId?.value || '').trim();
 
-        if (!currencyId || !currencyName || !currencySymbol) {
-            this.showMessage('Currency ID, Currency Name, and Currency Symbol are required.');
+        if (!isoAlpha3 || !currencyName || !currencySymbol) {
+            this.showMessage('ISO Alpha-3, Currency Name, and Symbol are required.');
             return;
         }
 
@@ -267,6 +442,7 @@ class CurrencyManager {
             return;
         }
 
+        // Local-only save (no backend integration)
         if (recordId) {
             const index = this.data.findIndex((item) => String(item.id) === String(recordId));
             if (index === -1) {
@@ -275,16 +451,18 @@ class CurrencyManager {
             }
 
             const existing = this.data[index];
-            const version = (existing.version || 1) + 1;
             const updatedRecord = {
                 ...existing,
                 currency_id: currencyId,
+                iso_alpha_3: isoAlpha3,
+                country,
                 currency_name: currencyName,
                 currency_symbol: currencySymbol,
                 note,
-                version,
+                version: (existing.version || 1) + 1,
                 updatedAt: new Date().toISOString(),
-                updatedBy: this.getCurrentUserName()
+                updatedBy: this.getCurrentUserName(),
+                status: 'active'
             };
 
             this.data[index] = updatedRecord;
@@ -294,8 +472,10 @@ class CurrencyManager {
             this.showMessage('Currency updated successfully.');
         } else {
             const newRecord = {
-                id: String(this.generateId()),
+                id: this.generateId(),
                 currency_id: currencyId,
+                iso_alpha_3: isoAlpha3,
+                country,
                 currency_name: currencyName,
                 currency_symbol: currencySymbol,
                 note,
@@ -307,7 +487,7 @@ class CurrencyManager {
                 updatedBy: this.getCurrentUserName()
             };
 
-            this.data.unshift(newRecord);
+            this.data.unshift(this.normalizeData([newRecord])[0]);
             this.pushVersion('create', newRecord);
             this.saveData();
             this.saveVersions();
@@ -345,11 +525,29 @@ class CurrencyManager {
 
         this.form.reset();
         this.recordId.value = '';
-        this.currencyName.value = '';
-        this.currencySymbol.value = '';
-
-        if (this.currencyId) {
-            this.currencyId.value = '';
+        if (this.currencyAutoIdInput) {
+            this.currencyAutoIdInput.value = '';
+        }
+        if (this.currencyIdInput) {
+            this.currencyIdInput.value = '';
+        }
+        if (this.isoAlpha3Input) {
+            this.isoAlpha3Input.value = '';
+        }
+        if (this.countryInput) {
+            this.countryInput.value = '';
+        }
+        if (this.currencyNameInput) {
+            this.currencyNameInput.value = '';
+        }
+        if (this.currencyCode) {
+            this.currencyCode.value = '';
+        }
+        if (this.currencySymbol) {
+            this.currencySymbol.value = '';
+        }
+        if (this.note) {
+            this.note.value = '';
         }
     }
 
@@ -373,7 +571,7 @@ class CurrencyManager {
         this.showConfirmModal();
     }
 
-    confirmDelete() {
+    async confirmDelete() {
         if (!this.pendingDeleteId) {
             this.hideConfirmModal();
             return;
@@ -387,6 +585,8 @@ class CurrencyManager {
         }
 
         const existing = this.data[index];
+
+        // Local-only soft delete
         this.data[index] = {
             ...existing,
             status: 'inactive',
@@ -409,7 +609,7 @@ class CurrencyManager {
         this.showMessage('Currency has been moved to soft delete list.');
     }
 
-    restoreCurrency(recordId) {
+    async restoreCurrency(recordId) {
         const index = this.data.findIndex((item) => String(item.id) === String(recordId) && item.status === 'inactive');
         if (index === -1) {
             this.showMessage('Soft deleted record not found.');
@@ -417,6 +617,8 @@ class CurrencyManager {
         }
 
         const existing = this.data[index];
+
+        // Local-only restore
         this.data[index] = {
             ...existing,
             status: 'active',
@@ -436,25 +638,24 @@ class CurrencyManager {
         this.showMessage(`Currency ${this.data[index].currency_id} restored successfully.`);
     }
 
-    getFilteredActiveData() {
+    getFilteredData() {
         return this.data
-            .filter((item) => item.status === 'active')
             .filter((item) => {
                 if (!this.searchTerm) return true;
-                const target = `${item.currency_id} ${item.currency_name} ${item.currency_symbol} ${item.note || ''}`.toLowerCase();
+                const target = `${item.currency_id} ${item.iso_alpha_3 || ''} ${item.country || ''} ${item.currency_name} ${item.currency_symbol}`.toLowerCase();
                 return target.includes(this.searchTerm);
             });
     }
 
     getTotalPages() {
-        const total = this.getFilteredActiveData().length;
+        const total = this.getFilteredData().length;
         return Math.max(1, Math.ceil(total / this.pageSize));
     }
 
     renderTable() {
         if (!this.tableBody) return;
 
-        const filtered = this.getFilteredActiveData();
+        const filtered = this.getFilteredData();
         const totalPages = this.getTotalPages();
 
         if (this.currentPage > totalPages) {
@@ -467,7 +668,7 @@ class CurrencyManager {
         if (pageItems.length === 0) {
             this.tableBody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="px-4 py-6 text-center text-gray-500">No currency data available</td>
+                    <td colspan="4" class="px-4 py-6 text-center text-gray-500">No currency data available</td>
                 </tr>
             `;
         } else {
@@ -478,10 +679,8 @@ class CurrencyManager {
                 return `
                     <tr class="hover:bg-gray-50 ${isActive ? 'partner-row-active' : ''}" data-row-id="${item.id}">
                         <td class="px-4 py-3 text-sm text-gray-700">${rowNumber}</td>
-                        <td class="px-4 py-3 text-sm text-gray-800 font-medium">${this.escapeHtml(item.currency_id)}</td>
                         <td class="px-4 py-3 text-sm text-gray-700">${this.escapeHtml(item.currency_name)}</td>
                         <td class="px-4 py-3 text-sm text-gray-700">${this.escapeHtml(item.currency_symbol)}</td>
-                        <td class="px-4 py-3 text-sm text-gray-700">${this.escapeHtml(item.note || '-')}</td>
                         <td class="px-4 py-3 text-sm text-gray-700">
                             <button type="button" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors mr-2" data-action="edit" data-id="${item.id}"><i class="fas fa-pen mr-1"></i>Edit</button>
                         </td>
@@ -528,10 +727,30 @@ class CurrencyManager {
         }
 
         this.recordId.value = item.id;
-        this.currencyId.value = item.currency_id;
-        this.currencyName.value = item.currency_name;
-        this.currencySymbol.value = item.currency_symbol;
-        this.note.value = item.note || '';
+        if (this.currencyAutoIdInput) {
+            this.currencyAutoIdInput.value = item.id;
+        }
+        if (this.currencyIdInput) {
+            this.currencyIdInput.value = item.currency_id;
+        }
+        if (this.isoAlpha3Input) {
+            this.isoAlpha3Input.value = item.iso_alpha_3 || item.currency_id || '';
+        }
+        if (this.countryInput) {
+            this.countryInput.value = item.country || '';
+        }
+        if (this.currencyNameInput) {
+            this.currencyNameInput.value = item.currency_name || item.currency_id;
+        }
+        if (this.currencyCode) {
+            this.currencyCode.value = item.currency_id;
+        }
+        if (this.currencySymbol) {
+            this.currencySymbol.value = item.currency_symbol;
+        }
+        if (this.note) {
+            this.note.value = item.note || '';
+        }
     }
 
     renderImpactTable() {
