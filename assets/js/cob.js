@@ -307,7 +307,12 @@ function getSoftDeletedProducts() {
 }
 
 function renderTable() {
-    const filtered = filteredProducts();
+    const filtered = [...filteredProducts()].sort((a, b) => {
+        const aTime = new Date(a.updatedAt || a.deletedAt || 0).getTime();
+        const bTime = new Date(b.updatedAt || b.deletedAt || 0).getTime();
+        if (aTime !== bTime) return bTime - aTime;
+        return String(b.productId || '').localeCompare(String(a.productId || ''));
+    });
     const totalPages = Math.ceil(filtered.length / rowsPerPage) || 1;
     if (currentPage > totalPages) currentPage = totalPages;
 
@@ -318,7 +323,7 @@ function renderTable() {
     productTableBody.innerHTML = '';
 
             if (!pageData.length) {
-        productTableBody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-sm text-gray-500">No data available.</td></tr>';
+        productTableBody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">No data available.</td></tr>';
     } else {
         pageData.forEach((item, index) => {
             const rowNumber = start + index + 1;
@@ -328,11 +333,9 @@ function renderTable() {
 
             row.innerHTML = `
                 <td class="px-4 py-3 text-sm text-gray-700">${rowNumber}</td>
-                <td class="px-4 py-3 text-sm font-mono text-xs text-gray-700">${item.productId || '-'}</td>
                 <td class="px-4 py-3 text-sm text-gray-700">${getTypeLabel(item.type)}</td>
                 <td class="px-4 py-3 text-sm text-gray-700">${item.cobName || getCobLabel(item.type, item.cob)}</td>
                 <td class="px-4 py-3 text-sm text-gray-700">${item.cobCode || '-'}</td>
-                <!-- Sub COB column removed -->
                 <td class="px-4 py-3 text-sm text-gray-700">${item.description || '-'}</td>
                 <td class="px-4 py-3 text-sm text-gray-700">
                     <button class="px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors mr-2" onclick="event.stopPropagation(); selectProduct('${item.productId}')"><i class="fas fa-pen mr-1"></i>Edit</button>

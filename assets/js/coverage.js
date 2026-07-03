@@ -2,6 +2,8 @@ class CoverageManager {
     constructor() {
         this.storageKey = 'gibsysnet_coverage_data';
         this.cobKey = 'gibsysnet_cob_products';
+        this.apiBaseUrl = this.resolveApiBaseUrl();
+        this.listApiUrl = `${this.apiBaseUrl}/coverage`;
         this.productData = {
             LI: {
                 cob: {
@@ -31,6 +33,7 @@ class CoverageManager {
             { id: 3, name: 'Marine Cargo' },
             { id: 4, name: 'Health Insurance' }
         ];
+        this.subCobLookup = [];
 
         this.data = this.loadData();
         this.cobProducts = this.loadCobProducts();
@@ -43,8 +46,12 @@ class CoverageManager {
         this.initializeElements();
         this.bindEvents();
         this.populateCobDropdown();
-        this.resetForm();
-        this.applySearch();
+        this.populateSubCobDropdown();
+        this.loadSubCobLookup();
+        this.loadCoveragesFromApi().finally(() => {
+            this.resetForm();
+            this.applySearch();
+        });
     }
 
     initializeElements() {
@@ -125,6 +132,15 @@ class CoverageManager {
         this.messageOk.addEventListener('click', () => this.hideMessageModal());
 
         this.tableBody.addEventListener('click', (event) => this.handleTableAction(event));
+        this.tableBody.addEventListener('click', (event) => {
+            const row = event.target.closest('tr[data-row-id]');
+            if (!row) return;
+            const clickedButton = event.target.closest('button[data-action]');
+            if (clickedButton) return;
+            const rowId = Number(row.getAttribute('data-row-id'));
+            this.selectedId = rowId;
+            this.highlightSelectedRow();
+        });
     }
 
     loadData() {
@@ -146,6 +162,12 @@ class CoverageManager {
         }
     }
 
+    resolveApiBaseUrl() {
+        const fromWindow = window.GibsyNetApi?.baseUrl;
+        const fromStorage = localStorage.getItem('gibsynet_api_base');
+        return String(fromWindow || fromStorage || 'http://localhost:3001/api').replace(/\/$/, '');
+    }
+
     loadCobProducts() {
         const stored = localStorage.getItem(this.cobKey);
         if (!stored) return this.defaultCobProducts;
@@ -156,6 +178,181 @@ class CoverageManager {
         } catch (_) {
             return this.defaultCobProducts;
         }
+    }
+
+    normalizeSubCobRows(payload) {
+        const rows = Array.isArray(payload)
+            ? payload
+            : Array.isArray(payload?.data)
+                ? payload.data
+                : Array.isArray(payload?.rows)
+                    ? payload.rows
+                    : Array.isArray(payload?.result)
+                        ? payload.result
+                        : [];
+
+        return rows
+            .map((item) => {
+                if (!item || typeof item !== 'object') return null;
+
+                const cobName = String(
+                    item.cob_name
+                    ?? item.cobName
+                    ?? item.cob
+                    ?? item.cob_name_display
+                    ?? ''
+                ).trim();
+                const subCobName = String(
+                    item.sub_cob_name
+                    ?? item.subCobName
+                    ?? item.sub_cob
+                    ?? item.subCob
+                    ?? ''
+                ).trim();
+
+                if (!cobName && !subCobName) return null;
+
+                return {
+                    ...item,
+                    cob_name: cobName,
+                    sub_cob_name: subCobName
+                };
+            })
+            .filter(Boolean);
+    }
+
+    async loadSubCobLookup() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/sub-cob`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch sub_cob data (${response.status})`);
+            }
+            const payload = await response.json();
+            this.subCobLookup = this.normalizeSubCobRows(payload);
+            this.populateCobDropdown();
+            this.populateSubCobDropdown();
+        } catch (error) {
+            console.error('Error loading sub_cob lookup:', error);
+            this.subCobLookup = [];
+            this.populateCobDropdown();
+            this.populateSubCobDropdown();
+        }
+    }
+
+    normalizeCoverageRecord(item, fallbackIndex = 0) {
+        const now = new Date().toISOString();
+        const normalizedId = item?.id ?? item?.coverage_id ?? item?.coverageId ?? item?.coverageID;
+
+        return {
+            id: normalizedId !== undefined && normalizedId !== null && normalizedId !== ''
+                ? normalizedId
+                : fallbackIndex + 1,
+            coverage_code: item?.coverage_code ?? item?.coverageCode ?? '',
+            type: item?.type ?? item?.coverage_type ?? '',
+            cob_id: item?.cob_id ?? item?.cobId ?? item?.cob ?? '',
+            sub_cob: item?.sub_cob ?? item?.subCob ?? item?.sub_cob_name ?? '',
+            coverage: item?.coverage ?? item?.description ?? '',
+            status: item?.status || 'active',
+            version: Number(item?.version || 1),
+            createdAt: item?.createdAt || item?.created_at || now,
+            updatedAt: item?.updatedAt || item?.updated_at || now,
+            deletedAt: item?.deletedAt || item?.deleted_at || null
+        };
+    }
+
+    async loadCoveragesFromApi() {
+        try {
+            const response = await fetch(this.listApiUrl, {
+                method: 'GET',
+                headers: {
+                    Accept: 'application/json'
+                },
+                cache: 'no-store'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to load coverage data (${response.status})`);
+            }
+
+            const payload = await response.json();
+            const rows = Array.isArray(payload?.data)
+                ? payload.data
+                : Array.isArray(payload)
+                    ? payload
+                    : Array.isArray(payload?.result)
+                        ? payload.result
+                        : [];
+
+            this.data = rows.map((item, index) => this.normalizeCoverageRecord(item, index));
+            this.saveData();
+            return true;
+        } catch (error) {
+            console.error('Failed to load coverage data from API:', error);
+            this.data = this.loadData();
+            return false;
+        }
+    }
+
+    buildCoveragePayload(formData) {
+        return {
+            coverage_code: formData.coverage_code,
+            type: formData.type,
+            cob_id: formData.cob_id,
+            sub_cob: formData.sub_cob,
+            coverage: formData.coverage,
+            status: formData.status || 'active'
+        };
+    }
+
+    async createCoverageOnApi(payload) {
+        const response = await fetch(this.listApiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const responsePayload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            const message = responsePayload?.message || `Failed to create coverage. Status ${response.status}`;
+            throw new Error(message);
+        }
+
+        return responsePayload;
+    }
+
+    async updateCoverageOnApi(id, payload) {
+        const endpoint = `${this.listApiUrl}/${encodeURIComponent(id)}`;
+        let response = await fetch(endpoint, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        let responsePayload = await response.json().catch(() => ({}));
+        if (!response.ok && response.status === 404) {
+            response = await fetch(endpoint, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            responsePayload = await response.json().catch(() => ({}));
+        }
+
+        if (!response.ok) {
+            const message = responsePayload?.message || `Failed to update coverage. Status ${response.status}`;
+            throw new Error(message);
+        }
+
+        return responsePayload;
     }
 
     saveData() {
@@ -174,46 +371,93 @@ class CoverageManager {
     }
 
     getCobNameById(cobId) {
-        const cobCode = String(cobId);
+        const value = String(cobId || '').trim();
+        if (!value) return '-';
+
+        const lookup = this.subCobLookup.find((item) =>
+            String(item.cob_name || '').trim() === value
+            || String(item.cob_code || '').trim() === value
+            || String(item.cob_id || '').trim() === value
+        );
+        if (lookup?.cob_name) return lookup.cob_name;
+
+        const cobCode = value;
         const type = this.inferTypeByCob(cobCode);
         if (type && this.productData[type]?.cob[cobCode]) {
             return this.productData[type].cob[cobCode].name;
         }
 
         const product = this.cobProducts.find((item) => Number(item.id) === Number(cobId));
-        return product ? product.name : '-';
+        return product ? product.name : value;
     }
 
-    populateCobDropdown() {
-        const selectedType = this.normalizeText(this.type.value);
+    populateCobDropdown(selectedCob = '') {
         this.cob.innerHTML = '<option value="">Select COB</option>';
 
-        if (!selectedType || !this.productData[selectedType]) {
+        const selected = this.normalizeText(selectedCob || this.cob.value);
+        const uniqueCobNames = [...new Set(
+            this.subCobLookup
+                .map((item) => this.normalizeText(item.cob_name))
+                .filter(Boolean)
+        )];
+
+        if (!uniqueCobNames.length) {
+            const selectedType = this.normalizeText(this.type.value);
+            if (selectedType && this.productData[selectedType]) {
+                Object.entries(this.productData[selectedType].cob).forEach(([code, definition]) => {
+                    const option = document.createElement('option');
+                    option.value = code;
+                    option.textContent = definition.name;
+                    this.cob.appendChild(option);
+                });
+            }
+            if (selected) {
+                this.cob.value = selected;
+            }
             return;
         }
 
-        Object.entries(this.productData[selectedType].cob).forEach(([code, definition]) => {
+        uniqueCobNames.forEach((name) => {
             const option = document.createElement('option');
-            option.value = code;
-            option.textContent = definition.name;
+            option.value = name;
+            option.textContent = name;
             this.cob.appendChild(option);
         });
+
+        if (selected && [...this.cob.options].some((option) => option.value === selected)) {
+            this.cob.value = selected;
+        }
     }
 
     populateSubCobDropdown(selectedSubCob = '') {
-        const selectedType = this.normalizeText(this.type.value);
         const selectedCob = this.normalizeText(this.cob.value);
         this.subCob.innerHTML = '<option value="">Select Sub COB</option>';
 
-        const subOptions = this.productData[selectedType]?.cob?.[selectedCob]?.sub || [];
-        subOptions.forEach((sub) => {
+        let subOptions = [];
+
+        if (selectedCob) {
+            subOptions = this.subCobLookup
+                .filter((item) => this.normalizeText(item.cob_name) === selectedCob)
+                .map((item) => this.normalizeText(item.sub_cob_name))
+                .filter(Boolean);
+        }
+
+        if (!subOptions.length) {
+            const selectedType = this.normalizeText(this.type.value);
+            if (selectedType && this.productData[selectedType]?.cob?.[selectedCob]?.sub) {
+                subOptions = this.productData[selectedType].cob[selectedCob].sub;
+            }
+        }
+
+        const uniqueSubOptions = [...new Set(subOptions)];
+        uniqueSubOptions.forEach((sub) => {
             const option = document.createElement('option');
             option.value = sub;
             option.textContent = sub;
             this.subCob.appendChild(option);
         });
 
-        if (selectedSubCob && subOptions.includes(selectedSubCob)) {
+        if (selectedSubCob && uniqueSubOptions.includes(selectedSubCob)) {
             this.subCob.value = selectedSubCob;
         }
     }
@@ -250,7 +494,7 @@ class CoverageManager {
         return null;
     }
 
-    handleSave(event) {
+    async handleSave(event) {
         event.preventDefault();
         this.showLoading();
 
@@ -263,38 +507,29 @@ class CoverageManager {
             return;
         }
 
-        if (formData.id) {
-            const idx = this.data.findIndex((item) => item.id === formData.id);
-            if (idx > -1) {
-                const previousVersion = this.data[idx].version || 1;
-                this.data[idx] = {
-                    ...this.data[idx],
-                    ...formData,
-                    status: this.data[idx].status || 'active',
-                    version: previousVersion + 1,
-                    updatedAt: new Date().toISOString(),
-                    deletedAt: this.data[idx].deletedAt || null
-                };
+        try {
+            if (formData.id) {
+                const payload = this.buildCoveragePayload(formData);
+                await this.updateCoverageOnApi(formData.id, payload);
+                await this.loadCoveragesFromApi();
+                this.resetForm();
+                this.applySearch();
                 this.showMessage('Coverage record updated successfully.');
+                return;
             }
-        } else {
-            const nextId = this.data.length ? Math.max(...this.data.map((item) => item.id)) + 1 : 1;
-            this.data.push({
-                ...formData,
-                status: 'active',
-                version: 1,
-                id: nextId,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                deletedAt: null
-            });
-            this.showMessage('Coverage record saved successfully.');
-        }
 
-        this.saveData();
-        this.resetForm();
-        this.applySearch();
-        this.hideLoading();
+            const payload = this.buildCoveragePayload(formData);
+            await this.createCoverageOnApi(payload);
+            await this.loadCoveragesFromApi();
+            this.resetForm();
+            this.applySearch();
+            this.showMessage('Coverage record saved successfully.');
+        } catch (error) {
+            console.error('Failed to save coverage:', error);
+            this.showMessage(error.message || 'Failed to save coverage record.');
+        } finally {
+            this.hideLoading();
+        }
     }
 
     handleDeleteSelected() {
@@ -308,47 +543,73 @@ class CoverageManager {
         this.showConfirmModal();
     }
 
-    executeDelete() {
+    async executeDelete() {
         if (!this.pendingDeleteId) {
             this.hideConfirmModal();
             return;
         }
 
-        const idx = this.data.findIndex((item) => item.id === this.pendingDeleteId);
-        if (idx > -1) {
-            this.data[idx] = {
-                ...this.data[idx],
-                status: 'inactive',
-                deletedAt: new Date().toISOString(),
-                version: (this.data[idx].version || 1) + 1,
-                updatedAt: new Date().toISOString()
-            };
-            this.saveData();
-            this.showMessage('Coverage record moved to soft delete.');
-        }
-
+        const coverageId = this.pendingDeleteId;
         this.pendingDeleteId = null;
         this.selectedId = null;
         this.hideConfirmModal();
-        this.resetForm();
-        this.applySearch();
+        this.showLoading();
+
+        try {
+            const currentRecord = this.data.find((item) => item.id === coverageId);
+            if (!currentRecord) {
+                throw new Error('Selected coverage record is not available.');
+            }
+
+            const now = new Date().toISOString();
+            const updatedRecord = {
+                ...currentRecord,
+                status: 'inactive',
+                deletedAt: now,
+                updatedAt: now
+            };
+
+            this.data = this.data.map((item) => item.id === coverageId ? updatedRecord : item);
+            this.saveData();
+            this.resetForm();
+            this.applySearch();
+            this.showMessage('Coverage record moved to soft delete.');
+
+            const payload = this.buildCoveragePayload(updatedRecord);
+            await this.updateCoverageOnApi(coverageId, {
+                ...payload,
+                deletedAt: now
+            }).catch((apiError) => {
+                console.warn('API sync failed for soft delete, but local change applied:', apiError);
+            });
+        } catch (error) {
+            console.error('Failed to soft delete coverage:', error);
+            this.showMessage(error.message || 'Failed to delete coverage record.');
+        } finally {
+            this.hideLoading();
+        }
     }
 
-    restoreRecord(id) {
-        const idx = this.data.findIndex((item) => item.id === id);
-        if (idx === -1) return;
+    async restoreRecord(id) {
+        const record = this.data.find((item) => item.id === id);
+        if (!record) return;
 
-        this.data[idx] = {
-            ...this.data[idx],
-            status: 'active',
-            deletedAt: null,
-            version: (this.data[idx].version || 1) + 1,
-            updatedAt: new Date().toISOString()
-        };
-
-        this.saveData();
-        this.applySearch();
-        this.showMessage('Coverage record restored successfully.');
+        try {
+            const payload = this.buildCoveragePayload({
+                ...record,
+                status: 'active'
+            });
+            await this.updateCoverageOnApi(id, {
+                ...payload,
+                deletedAt: null
+            });
+            await this.loadCoveragesFromApi();
+            this.applySearch();
+            this.showMessage('Coverage record restored successfully.');
+        } catch (error) {
+            console.error('Failed to restore coverage:', error);
+            this.showMessage(error.message || 'Failed to restore coverage record.');
+        }
     }
 
     resetForm() {
@@ -389,6 +650,10 @@ class CoverageManager {
             ].join(' ').toLowerCase();
 
             return haystack.includes(keyword);
+        }).sort((a, b) => {
+            const aVal = parseInt(String(a.coverage_code || '').replace(/\D/g, ''), 10) || 0;
+            const bVal = parseInt(String(b.coverage_code || '').replace(/\D/g, ''), 10) || 0;
+            return bVal - aVal;
         });
 
         this.currentPage = 1;

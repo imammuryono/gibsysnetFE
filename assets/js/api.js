@@ -11,7 +11,7 @@
 		endpoints: {
 			cob: `${baseUrl}/cob`,
 			quotation: `${baseUrl}/quotations`,
-			currencies: `${baseUrl}/currencies`,
+			currency: `${baseUrl}/currency`,
 			modelRisk: `${baseUrl}/modelrisk`,
 			modelRiskLookup: `${baseUrl}/modelrisk`,
 			partners: `${baseUrl}/partners`,

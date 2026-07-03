@@ -261,47 +261,9 @@ function updateDateTime() {
     }
 }
 
+// Note: initializeDropdowns has been deprecated because dropdown listeners are now managed globally by layout-loader.js
 function initializeDropdowns() {
-    const menuButtons = document.querySelectorAll('.menu-btn');
-    const userMenuBtn = getElement('userMenuBtn');
-    const userMenu = getElement('userMenu');
-    const notificationBtn = getElement('notificationBtn');
-    const notificationDropdown = getElement('notificationDropdown');
-
-    if (userMenuBtn && userMenu) {
-        userMenuBtn.addEventListener('click', function (event) {
-            event.stopPropagation();
-            userMenu.classList.toggle('show');
-            if (notificationDropdown) notificationDropdown.classList.remove('show');
-        });
-    }
-
-    if (notificationBtn && notificationDropdown) {
-        notificationBtn.addEventListener('click', function (event) {
-            event.stopPropagation();
-            notificationDropdown.classList.toggle('show');
-            if (userMenu) userMenu.classList.remove('show');
-        });
-    }
-
-    menuButtons.forEach((button) => {
-        const container = button.closest('.menu-container');
-        if (!container) return;
-        const dropdown = container.querySelector('.menu-dropdown');
-        if (!dropdown) return;
-
-        button.addEventListener('click', function (event) {
-            event.stopPropagation();
-            document.querySelectorAll('.menu-dropdown').forEach((item) => {
-                if (item !== dropdown) item.classList.remove('show');
-            });
-            dropdown.classList.toggle('show');
-        });
-    });
-
-    document.addEventListener('click', function () {
-        document.querySelectorAll('.menu-dropdown').forEach((dropdown) => dropdown.classList.remove('show'));
-    });
+    // No-op to avoid breaking other files or calls, listeners are handled by layout-loader.js
 }
 
 function getPrefix(type, category) {

@@ -255,6 +255,86 @@ class CommissionManager {
         return String(value).trim();
     }
 
+    isInactiveCommissionRecord(record) {
+        if (!record) return false;
+
+        const status = String(record.status || '').trim().toLowerCase();
+        return status === 'inactive'
+            || status === 'deleted'
+            || Boolean(record.deletedAt)
+            || Boolean(record.deleted_at)
+            || record.is_deleted === true
+            || record.is_deleted === 1;
+    }
+
+    getCommissionRecordKeys(record) {
+        const keys = [];
+        const apiId = Number(record?.api_id || record?.id || record?.commission_id || record?.commissionId || 0) || null;
+        const marketingId = this.normalizeMarketingId(record?.marketing_id ?? record?.marketingId);
+        const commCode = String(record?.comm_code ?? record?.commCode ?? record?.commcode ?? '').trim();
+
+        if (apiId) {
+            keys.push(`api:${apiId}`);
+            keys.push(`id:${apiId}`);
+        }
+
+        if (marketingId && commCode) {
+            keys.push(`mk:${marketingId}|${commCode}`);
+        }
+
+        if (record?.id) {
+            keys.push(`row:${record.id}`);
+        }
+
+        return Array.from(new Set(keys));
+    }
+
+    mergeCommissionRecords(primaryRecords, secondaryRecords) {
+        const merged = [];
+
+        const findMatchIndex = (record) => {
+            const keys = this.getCommissionRecordKeys(record);
+            return merged.findIndex((existing) => this.getCommissionRecordKeys(existing).some((key) => keys.includes(key)));
+        };
+
+        const upsert = (record) => {
+            if (!record) return;
+
+            const normalized = {
+                ...record,
+                id: Number(record.id || 0) || Number(record.api_id || 0) || 0
+            };
+            const existingIndex = findMatchIndex(normalized);
+
+            if (existingIndex === -1) {
+                merged.push(normalized);
+                return;
+            }
+
+            const existing = merged[existingIndex];
+            const updated = {
+                ...existing,
+                ...normalized
+            };
+
+            if (this.isInactiveCommissionRecord(existing) && !this.isInactiveCommissionRecord(normalized)) {
+                updated.status = 'active';
+                updated.deletedAt = null;
+            }
+
+            if (!this.isInactiveCommissionRecord(existing) && this.isInactiveCommissionRecord(normalized)) {
+                updated.status = 'inactive';
+                updated.deletedAt = normalized.deletedAt || normalized.deleted_at || existing.deletedAt || new Date().toISOString();
+            }
+
+            merged[existingIndex] = updated;
+        };
+
+        primaryRecords.forEach(upsert);
+        secondaryRecords.forEach(upsert);
+        return merged;
+    }
+
     getNextMarketingId() {
         const usedIds = this.data
             .map((item) => Number(item?.marketing_id))
@@ -367,6 +447,7 @@ class CommissionManager {
 
     async loadCommissionsFromApi() {
         try {
+            const storedRecords = this.loadData();
             const response = await fetch(this.listApiUrl, {
                 method: 'GET',
                 headers: {
@@ -386,9 +467,11 @@ class CommissionManager {
 
             const storedState = this.getStoredCommissionState();
             const rows = this.getCommissionRowsFromApiPayload(payload);
-            this.data = rows
+            const apiRecords = rows
                 .map((item, index) => this.mapApiCommission(item, index, storedState))
                 .filter((item) => Number.isInteger(item.id) && item.id > 0);
+            const mergedRecords = this.mergeCommissionRecords(storedRecords, apiRecords);
+            this.data = mergedRecords.filter((item) => Number.isInteger(item.id) && item.id > 0);
             this.saveData();
             return true;
         } catch (error) {
@@ -845,15 +928,21 @@ class CommissionManager {
             };
             let apiDeleteMessage = '';
             let deletedWithLocalFallback = false;
+            let deleteSyncSucceeded = false;
 
             if (apiId) {
                 try {
                     const deletePayload = await this.deleteCommissionOnApi(softDeletedRecord);
                     apiDeleteMessage = String(deletePayload?.message || '').trim();
+
+                    this.data[idx] = softDeletedRecord;
+                    this.saveData();
+
                     const refreshed = await this.loadCommissionsFromApi();
                     if (!refreshed) {
                         deletedWithLocalFallback = true;
                     }
+                    deleteSyncSucceeded = true;
                 } catch (error) {
                     const message = String(error?.message || '');
                     const canFallback = this.isNetworkFetchError(error)
@@ -868,7 +957,7 @@ class CommissionManager {
                 deletedWithLocalFallback = true;
             }
 
-            if (deletedWithLocalFallback) {
+            if (deleteSyncSucceeded || deletedWithLocalFallback) {
                 this.data[idx] = softDeletedRecord;
                 this.saveData();
             }
@@ -958,6 +1047,8 @@ class CommissionManager {
     applySearch() {
         const keyword = this.searchInput.value.trim().toLowerCase();
         this.filteredData = this.data.filter(item => {
+            if (this.isInactiveCommissionRecord(item)) return false;
+
             const haystack = [
                 item.marketing_name,
                 item.comm_code,

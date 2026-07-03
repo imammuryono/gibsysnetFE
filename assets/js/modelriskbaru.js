@@ -1,5 +1,6 @@
 const apiConfig = window.GibsyNetApi || {};
-const modelRiskApiUrl = 'http://localhost:3001/api/modelrisk';
+const apiBase = (apiConfig.baseUrl || 'http://localhost:3001/api').replace(/\/$/, '');
+const modelRiskApiUrl = `${apiBase}/modelrisk`;
 const ROWS_PER_PAGE = 15;
 
 let riskEntries = [];
@@ -234,6 +235,7 @@ async function saveRiskEntry() {
     type: typeName,
     series: seriesName,
     subSeries: subSeriesName,
+    sub_series: subSeriesName,
     description: `${merkName} ${modelName} ${seriesName}`.trim()
   };
 
@@ -338,6 +340,7 @@ async function restoreRiskEntry(encodedModelId) {
         type: entry.typeName,
         series: entry.seriesName || '',
         subSeries: entry.subSeriesName || '',
+        sub_series: entry.subSeriesName || '',
         description: entry.description || `${entry.merkName} ${entry.modelName} ${entry.seriesName || ''}`.trim()
       })
     });

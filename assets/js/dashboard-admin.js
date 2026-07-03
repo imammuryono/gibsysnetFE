@@ -88,54 +88,9 @@ function updateDateTime() {
 }
 
 // Initialize dropdown menus
+// Note: initializeDropdowns has been deprecated because dropdown listeners are now managed globally by layout-loader.js
 function initializeDropdowns() {
-    const menuButtons = document.querySelectorAll('.menu-btn');
-    const userMenuBtn = document.getElementById('userMenuBtn');
-    const userMenu = document.getElementById('userMenu');
-    const notificationBtn = document.getElementById('notificationBtn');
-    const notificationDropdown = document.getElementById('notificationDropdown');
-    
-    // Toggle user menu
-    if (userMenuBtn && userMenu) {
-        userMenuBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            userMenu.classList.toggle('show');
-            notificationDropdown.classList.remove('show');
-        });
-    }
-    
-    // Toggle notification menu
-    if (notificationBtn && notificationDropdown) {
-        notificationBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            notificationDropdown.classList.toggle('show');
-            userMenu.classList.remove('show');
-        });
-    }
-    
-    // Toggle other menus
-    menuButtons.forEach(button => {
-        const container = button.closest('.menu-container');
-        const dropdown = container.querySelector('.menu-dropdown');
-        
-        button.addEventListener('click', function(e) {
-            e.stopPropagation();
-            
-            // Close all other dropdowns
-            document.querySelectorAll('.menu-dropdown').forEach(d => {
-                if (d !== dropdown) d.classList.remove('show');
-            });
-            
-            dropdown.classList.toggle('show');
-        });
-    });
-    
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function() {
-        document.querySelectorAll('.menu-dropdown').forEach(dropdown => {
-            dropdown.classList.remove('show');
-        });
-    });
+    // No-op to avoid breaking other files or calls, listeners are handled by layout-loader.js
 }
 
 // Sidebar menu functionality

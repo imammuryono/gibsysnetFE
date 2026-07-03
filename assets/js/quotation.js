@@ -168,15 +168,13 @@ class QuotationManager {
             });
         });
 
-        // When Risk tab is clicked and basic info is complete + COB set, load detail form
+        // When Risk tab is clicked, load detail form if COB is set
         const riskBtn = document.getElementById('tab-risk-btn');
         if (riskBtn) {
             riskBtn.addEventListener('click', () => {
                 const cobVal = (this.cob?.value || '').trim();
-                if (this.isRiskTabUnlocked() && cobVal) {
+                if (cobVal) {
                     this.loadRiskTabContent(cobVal);
-                } else if (!this.isRiskTabUnlocked()) {
-                    this.showMessage('Save Basic Information first to unlock the Risk tab.');
                 }
             });
         }
@@ -1003,14 +1001,51 @@ class QuotationManager {
         this.rebuildSelectOptions(this.cob, options, '-- Select COB (Lookup) --', selectedCob);
     }
 
-    populateSubCobOptions(cobValue = '', selectedSubCob = '') {
+    async populateSubCobOptions(cobValue = '', selectedSubCob = '') {
         const selectedCob = String(cobValue || '').trim();
-        const options = this.cobProducts
-            .filter((item) => !selectedCob || item.cob === selectedCob)
-            .map((item) => ({ value: item.subCob, label: item.subCob }))
-            .filter((item) => item.value);
 
-        this.rebuildSelectOptions(this.subCob, options, '-- Select Sub COB (Lookup) --', selectedSubCob);
+        // Reset Sub COB dropdown saat COB belum dipilih
+        if (!selectedCob) {
+            this.rebuildSelectOptions(this.subCob, [], '-- Select Sub COB (Lookup) --', '');
+            if (this.subCobName) this.subCobName.value = '';
+            return;
+        }
+
+        try {
+            const apiBase = this.quotationApiUrl.replace('/api/quotations', '');
+            const res = await fetch(`${apiBase}/api/sub-cob?cob_code=${encodeURIComponent(selectedCob)}`, {
+                headers: { Accept: 'application/json' },
+                cache: 'no-store'
+            });
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            const payload = await res.json();
+            const rows = Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []);
+
+            const options = rows.map((item) => ({
+                value: item.sub_cob_code || item.sub_cob_name || '',
+                label: item.sub_cob_name || item.sub_cob_code || ''
+            })).filter((o) => o.value);
+
+            this.rebuildSelectOptions(this.subCob, options, '-- Select Sub COB (Lookup) --', selectedSubCob);
+
+            // Update sub_cob_name readonly field
+            if (this.subCobName) {
+                const matched = rows.find((r) =>
+                    (r.sub_cob_code || r.sub_cob_name) === (this.subCob?.value || '')
+                );
+                this.subCobName.value = matched ? (matched.sub_cob_name || '') : '';
+            }
+        } catch (err) {
+            console.warn('[SubCOB] Gagal fetch dari API, fallback ke data lokal:', err.message);
+            // Fallback: filter dari cobProducts (data lokal/hardcoded)
+            const options = this.cobProducts
+                .filter((item) => item.cob === selectedCob)
+                .map((item) => ({ value: item.subCob, label: item.subCobName || item.subCob }))
+                .filter((item) => item.value);
+            this.rebuildSelectOptions(this.subCob, options, '-- Select Sub COB (Lookup) --', selectedSubCob);
+        }
     }
 
     getPartnerOptionsByCategory(category = '') {
@@ -1200,9 +1235,9 @@ class QuotationManager {
         this.regNo.value = this.generateRegNo();
     }
 
-    handleCobSelectionChange() {
+    async handleCobSelectionChange() {
         const selectedCob = this.cob?.value || '';
-        this.populateSubCobOptions(selectedCob);
+        await this.populateSubCobOptions(selectedCob);
         this.autoGenerateRegNo();
         this._riskDetailLoaded = null; // reset so content reloads on COB change
     }
@@ -1387,10 +1422,19 @@ class QuotationManager {
     updateCobNameFields() {
         const cobVal = String(this.cob?.value || '').trim();
         const subCobVal = String(this.subCob?.value || '').trim();
+
+        // COB name: lookup dari cobProducts lokal
         const match = this.cobProducts.find((item) => item.cob === cobVal);
-        const subMatch = this.cobProducts.find((item) => item.cob === cobVal && item.subCob === subCobVal);
         if (this.cobName) this.cobName.value = match ? (match.cobName || cobVal) : cobVal;
-        if (this.subCobName) this.subCobName.value = subMatch ? (subMatch.subCobName || subCobVal) : subCobVal;
+
+        // Sub COB name: ambil dari selected option text (sudah dari API)
+        if (this.subCobName) {
+            const selectedOption = this.subCob?.options[this.subCob.selectedIndex];
+            const optionLabel = selectedOption ? selectedOption.text : '';
+            this.subCobName.value = (optionLabel && optionLabel !== '-- Select Sub COB (Lookup) --')
+                ? optionLabel
+                : subCobVal;
+        }
     }
 
     handleIssueDateChange() {

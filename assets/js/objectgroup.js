@@ -2,6 +2,7 @@ class ObjectGroupManager {
     constructor() {
         this.storageKey = 'gibsysnet_object_group_data';
         this.versionKey = 'gibsysnet_object_group_versions';
+        this.apiEndpoint = 'http://localhost:3001/api/object-group';
         this.currentPage = 1;
         this.pageSize = 8;
         this.searchTerm = '';
@@ -148,8 +149,9 @@ class ObjectGroupManager {
         });
     }
 
-    initialize() {
+    async initialize() {
         this.showLoading(true);
+        await this.loadObjectGroupsFromApi();
         this.populateCobOptions();
         this.populateSubCobOptions();
         this.updateGeneratedIdPreview();
@@ -189,6 +191,66 @@ class ObjectGroupManager {
                 updatedBy: this.getCurrentUserName()
             }
         ];
+    }
+
+    mapApiObjectGroup(item, index = 0) {
+        const now = new Date().toISOString();
+        const apiId = item?.id ?? item?.object_group_id ?? item?.objectGroupId ?? '';
+
+        return {
+            id: String(apiId || this.generateId()),
+            object_group_id: String(item?.object_group_id || item?.objectGroupId || item?.code || '').trim(),
+            type: String(item?.type || '').trim(),
+            cob: String(item?.cob || '').trim(),
+            sub_cob: String(item?.sub_cob || item?.subCob || '').trim(),
+            object_group_name: String(item?.object_group_name || item?.objectGroupName || item?.name || '').trim(),
+            object_group_name_eng: String(item?.object_group_name_eng || item?.objectGroupNameEng || '').trim(),
+            note: String(item?.note || item?.description || '').trim(),
+            status: String(item?.status || 'active').toLowerCase() === 'inactive' ? 'inactive' : 'active',
+            version: Number(item?.version || 1),
+            createdAt: item?.created_at || item?.createdAt || now,
+            updatedAt: item?.updated_at || item?.updatedAt || now,
+            createdBy: item?.created_by || item?.createdBy || this.getCurrentUserName(),
+            updatedBy: item?.updated_by || item?.updatedBy || this.getCurrentUserName()
+        };
+    }
+
+    async loadObjectGroupsFromApi() {
+        try {
+            const response = await fetch(this.apiEndpoint, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                cache: 'no-store'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to load object groups (status ${response.status}).`);
+            }
+
+            const payload = await response.json();
+            const rows = Array.isArray(payload?.data)
+                ? payload.data
+                : Array.isArray(payload)
+                    ? payload
+                    : Array.isArray(payload?.rows)
+                        ? payload.rows
+                        : [];
+
+            if (!rows.length) {
+                this.data = this.loadData();
+            } else {
+                this.data = rows.map((item, index) => this.mapApiObjectGroup(item, index));
+            }
+
+            this.saveData();
+            return true;
+        } catch (error) {
+            console.error('Failed to load object groups from API:', error);
+            this.data = this.loadData();
+            return false;
+        }
     }
 
     saveData() {
@@ -291,7 +353,7 @@ class ObjectGroupManager {
         this.objectGroupIdDisplay.value = this.generateObjectGroupCode(type, cob, subCob);
     }
 
-    saveRecord() {
+    async saveRecord() {
         const id = (this.recordId?.value || '').trim();
         const type = (this.type?.value || '').trim();
         const cob = (this.cob?.value || '').trim();
@@ -319,59 +381,103 @@ class ObjectGroupManager {
             return;
         }
 
-        if (id) {
-            const index = this.data.findIndex((item) => String(item.id) === String(id));
-            if (index === -1) {
-                this.showMessage('Object group record not found.');
-                return;
+        const objectGroupId = (this.objectGroupIdDisplay?.value || this.generateObjectGroupCode(type, cob, subCob)).trim();
+        const cobLabel = this.getCobMapByType(type)?.[cob]?.name || cob;
+        const payload = {
+            object_group_id: objectGroupId,
+            type,
+            cob: cobLabel,
+            sub_cob: subCob,
+            object_group_name: objectGroupName,
+            object_group_name_eng: objectGroupNameEng,
+            note,
+            status: 'active'
+        };
+
+        try {
+            this.showLoading(true);
+
+            if (id) {
+                const index = this.data.findIndex((item) => String(item.id) === String(id));
+                if (index === -1) {
+                    this.showMessage('Object group record not found.');
+                    return;
+                }
+
+                const response = await fetch(`${this.apiEndpoint}/${encodeURIComponent(id)}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to update object group (status ${response.status}).`);
+                }
+
+                const result = await response.json();
+                const updated = this.mapApiObjectGroup(result?.data || result || payload, index);
+                updated.id = String(id);
+                updated.object_group_id = updated.object_group_id || payload.object_group_id || this.data[index]?.object_group_id || '';
+                updated.type = updated.type || payload.type || this.data[index]?.type || '';
+                updated.cob = updated.cob || payload.cob || this.data[index]?.cob || '';
+                updated.sub_cob = updated.sub_cob || payload.sub_cob || this.data[index]?.sub_cob || '';
+                updated.object_group_name = updated.object_group_name || payload.object_group_name || this.data[index]?.object_group_name || '';
+                updated.object_group_name_eng = updated.object_group_name_eng || payload.object_group_name_eng || this.data[index]?.object_group_name_eng || '';
+                updated.note = updated.note || payload.note || this.data[index]?.note || '';
+                this.data[index] = updated;
+                this.pushVersion('update', updated);
+                this.showMessage('Object group updated successfully.');
+            } else {
+                const response = await fetch(this.apiEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to create object group (status ${response.status}).`);
+                }
+
+                const result = await response.json();
+                const created = this.mapApiObjectGroup(result?.data || payload, 0);
+                created.id = String(result?.data?.id || result?.id || payload.object_group_id || this.generateId());
+                created.object_group_id = payload.object_group_id;
+                created.type = payload.type;
+                created.cob = payload.cob;
+                created.sub_cob = payload.sub_cob;
+                created.object_group_name = payload.object_group_name;
+                created.object_group_name_eng = payload.object_group_name_eng;
+                created.note = payload.note;
+                created.status = 'active';
+                created.version = 1;
+                created.createdAt = created.createdAt || new Date().toISOString();
+                created.updatedAt = created.updatedAt || created.createdAt;
+                created.createdBy = created.createdBy || this.getCurrentUserName();
+                created.updatedBy = created.updatedBy || this.getCurrentUserName();
+                this.data.unshift(created);
+                this.pushVersion('create', created);
+                this.showMessage('Object group saved successfully.');
             }
 
-            const existing = this.data[index];
-            const updated = {
-                ...existing,
-                type,
-                cob,
-                sub_cob: subCob,
-                object_group_name: objectGroupName,
-                object_group_name_eng: objectGroupNameEng,
-                note,
-                version: (existing.version || 1) + 1,
-                updatedAt: new Date().toISOString(),
-                updatedBy: this.getCurrentUserName()
-            };
-
-            this.data[index] = updated;
-            this.pushVersion('update', updated);
-            this.showMessage('Object group updated successfully.');
-        } else {
-            const record = {
-                id: this.generateId(),
-                object_group_id: this.generateObjectGroupCode(type, cob, subCob),
-                type,
-                cob,
-                sub_cob: subCob,
-                object_group_name: objectGroupName,
-                object_group_name_eng: objectGroupNameEng,
-                note,
-                status: 'active',
-                version: 1,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                createdBy: this.getCurrentUserName(),
-                updatedBy: this.getCurrentUserName()
-            };
-
-            this.data.unshift(record);
-            this.pushVersion('create', record);
-            this.showMessage('Object group saved successfully.');
+            await this.loadObjectGroupsFromApi();
+            this.saveData();
+            this.saveVersions();
+            this.resetForm();
+            this.renderTable();
+            this.renderGovernancePanels();
+            this.updateHealthMetrics();
+        } catch (error) {
+            console.error('Failed to save object group:', error);
+            this.showMessage('Unable to save object group. Please try again.');
+        } finally {
+            this.showLoading(false);
         }
-
-        this.saveData();
-        this.saveVersions();
-        this.resetForm();
-        this.renderTable();
-        this.renderGovernancePanels();
-        this.updateHealthMetrics();
     }
 
     pushVersion(action, record) {
@@ -421,7 +527,7 @@ class ObjectGroupManager {
         this.showConfirmModal();
     }
 
-    confirmDelete() {
+    async confirmDelete() {
         if (!this.pendingDeleteId) {
             this.hideConfirmModal();
             return;
@@ -434,53 +540,101 @@ class ObjectGroupManager {
             return;
         }
 
-        const existing = this.data[index];
-        this.data[index] = {
-            ...existing,
-            status: 'inactive',
-            version: (existing.version || 1) + 1,
-            deletedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            updatedBy: this.getCurrentUserName()
-        };
+        try {
+            this.showLoading(true);
+            const existing = this.data[index];
+            const response = await fetch(`${this.apiEndpoint}/${encodeURIComponent(existing.id)}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    ...existing,
+                    status: 'inactive'
+                })
+            });
 
-        this.pushVersion('soft-delete', this.data[index]);
-        this.saveData();
-        this.saveVersions();
+            if (!response.ok) {
+                throw new Error(`Failed to soft delete object group (status ${response.status}).`);
+            }
 
-        this.pendingDeleteId = null;
-        this.hideConfirmModal();
-        this.resetForm();
-        this.renderTable();
-        this.renderGovernancePanels();
-        this.updateHealthMetrics();
-        this.showMessage('Object group moved to soft delete successfully.');
+            this.data[index] = {
+                ...existing,
+                status: 'inactive',
+                version: (existing.version || 1) + 1,
+                deletedAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                updatedBy: this.getCurrentUserName()
+            };
+
+            this.pushVersion('soft-delete', this.data[index]);
+            this.saveData();
+            this.saveVersions();
+
+            this.pendingDeleteId = null;
+            this.hideConfirmModal();
+            this.resetForm();
+            this.renderTable();
+            this.renderGovernancePanels();
+            this.updateHealthMetrics();
+            this.showMessage('Object group moved to soft delete successfully.');
+        } catch (error) {
+            console.error('Failed to soft delete object group:', error);
+            this.showMessage('Unable to delete object group. Please try again.');
+        } finally {
+            this.showLoading(false);
+        }
     }
 
-    restoreRecord(recordId) {
+    async restoreRecord(recordId) {
         const index = this.data.findIndex((item) => String(item.id) === String(recordId) && item.status === 'inactive');
         if (index === -1) {
             this.showMessage('Soft deleted record not found.');
             return;
         }
 
-        const existing = this.data[index];
-        this.data[index] = {
-            ...existing,
-            status: 'active',
-            version: (existing.version || 1) + 1,
-            deletedAt: null,
-            updatedAt: new Date().toISOString(),
-            updatedBy: this.getCurrentUserName()
-        };
+        try {
+            this.showLoading(true);
+            const existing = this.data[index];
+            const response = await fetch(`${this.apiEndpoint}/${encodeURIComponent(existing.id)}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    ...existing,
+                    status: 'active'
+                })
+            });
 
-        this.pushVersion('restore', this.data[index]);
-        this.saveData();
-        this.saveVersions();
-        this.renderTable();
-        this.renderGovernancePanels();
-        this.updateHealthMetrics();
-        this.showMessage(`Object group ${this.data[index].object_group_id} restored successfully.`);
+            if (!response.ok) {
+                throw new Error(`Failed to restore object group (status ${response.status}).`);
+            }
+
+            this.data[index] = {
+                ...existing,
+                status: 'active',
+                version: (existing.version || 1) + 1,
+                deletedAt: null,
+                updatedAt: new Date().toISOString(),
+                updatedBy: this.getCurrentUserName()
+            };
+
+            this.pushVersion('restore', this.data[index]);
+            this.saveData();
+            this.saveVersions();
+            this.renderTable();
+            this.renderGovernancePanels();
+            this.updateHealthMetrics();
+            this.showMessage(`Object group ${this.data[index].object_group_id} restored successfully.`);
+        } catch (error) {
+            console.error('Failed to restore object group:', error);
+            this.showMessage('Unable to restore object group. Please try again.');
+        } finally {
+            this.showLoading(false);
+        }
     }
 
     editRecord(recordId) {

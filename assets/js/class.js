@@ -1,4 +1,4 @@
-// State
+﻿// State
 let classes = [];
 let versionHistory = [];
 let selectedClassId = null;
@@ -30,6 +30,14 @@ const confirmOk = document.getElementById('confirmOk');
 const messageModal = document.getElementById('messageModal');
 const messageText = document.getElementById('messageText');
 const messageOk = document.getElementById('messageOk');
+const CLASS_CACHE_STORAGE_KEY = 'gibsysnet_class_construction_cache';
+const CLASS_FALLBACK_ROWS = [
+    { id: 1, classCode: 'CLS007', classCategory: 'Constrate Construction', className: '1st Class Construction', classNameEng: 'First Class Construction', status: 'active' },
+    { id: 2, classCode: 'CLS008', classCategory: 'Semi Constrate Construction', className: '2nd Class Construction', classNameEng: '2nd Class Construction', status: 'active' },
+    { id: 3, classCode: 'CLS009', classCategory: 'Wood and Constrate Construction', className: '3rd Class Construction', classNameEng: '3rd Class Construction', status: 'active' },
+    { id: 4, classCode: 'CC002', classCategory: 'Building', className: 'Concrete Residential Building', classNameEng: 'Concrete Residential Building', status: 'active' },
+    { id: 5, classCode: 'CLS003', classCategory: 'Concrete Construction', className: '1st class Construction', classNameEng: 'First Class Construction', status: 'active' }
+];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -123,13 +131,14 @@ function setupEventListeners() {
 }
 
 function normalizeClass(item) {
+    const status = String(item.status || 'active').trim().toLowerCase() || 'active';
     return {
         id: Number(item.id),
         classCode: item.classCode || item.class_code || '',
         classCategory: item.classCategory || item.class_category || '',
         className: item.className || item.class_name || '',
         classNameEng: item.classNameEng || item.class_name_eng || '',
-        status: item.status || 'active',
+        status,
         deletedAt: item.deletedAt || item.deleted_at || '',
         updatedAt: item.updatedAt || item.updated_at || new Date().toISOString()
     };
@@ -139,7 +148,16 @@ function getRowsFromPayload(payload) {
     if (Array.isArray(payload)) return payload;
     if (Array.isArray(payload?.data)) return payload.data;
     if (Array.isArray(payload?.classes)) return payload.classes;
+    if (Array.isArray(payload?.rows)) return payload.rows;
+    if (Array.isArray(payload?.items)) return payload.items;
+    if (Array.isArray(payload?.data?.rows)) return payload.data.rows;
+    if (Array.isArray(payload?.data?.items)) return payload.data.items;
     return [];
+}
+
+function isActiveStatus(status) {
+    const value = String(status || 'active').trim().toLowerCase();
+    return value !== 'inactive' && value !== 'deleted' && value !== 'false' && value !== '0';
 }
 
 function loadSoftDeleteCache() {
@@ -172,16 +190,53 @@ function removeSoftDeleteCache(classId) {
     saveSoftDeleteCache(loadSoftDeleteCache().filter((item) => String(item.id) !== String(classId)));
 }
 
+function loadClassCache() {
+    try {
+        const raw = localStorage.getItem(CLASS_CACHE_STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed.map(normalizeClass) : [];
+    } catch (_) {
+        return [];
+    }
+}
+
+function saveClassCache(records) {
+    const byId = new Map();
+    records.map(normalizeClass).forEach((record) => {
+        if (!record.id) return;
+        byId.set(String(record.id), record);
+    });
+    localStorage.setItem(CLASS_CACHE_STORAGE_KEY, JSON.stringify(Array.from(byId.values())));
+}
+
 function mergeClassRecords(primaryRecords, secondaryRecords) {
     const byId = new Map();
-    [...primaryRecords, ...secondaryRecords].forEach((record) => {
+    const compareFreshness = (a, b) => {
+        const aTime = new Date(a.updatedAt || a.deletedAt || 0).getTime();
+        const bTime = new Date(b.updatedAt || b.deletedAt || 0).getTime();
+        return bTime - aTime;
+    };
+    const upsert = (record) => {
         const normalized = normalizeClass(record);
         if (!normalized.id) return;
-        byId.set(String(normalized.id), {
-            ...(byId.get(String(normalized.id)) || {}),
-            ...normalized
-        });
-    });
+        const key = String(normalized.id);
+        const existing = byId.get(key);
+        if (!existing) {
+            byId.set(key, normalized);
+            return;
+        }
+        if (existing.status === 'inactive' && normalized.status !== 'inactive') {
+            byId.set(key, normalized);
+            return;
+        }
+        if (existing.status !== 'inactive' && normalized.status === 'inactive') {
+            return;
+        }
+        const isNewer = compareFreshness(normalized, existing) > 0;
+        byId.set(key, isNewer ? { ...existing, ...normalized } : { ...normalized, ...existing });
+    };
+    primaryRecords.forEach(upsert);
+    secondaryRecords.forEach(upsert);
     return Array.from(byId.values());
 }
 
@@ -234,17 +289,23 @@ async function loadClasses() {
     try {
         const payload = await requestJson(API_URL);
         const apiRows = getRowsFromPayload(payload).map(normalizeClass);
-        const activeApiIds = new Set(apiRows.filter((item) => item.status !== 'inactive').map((item) => String(item.id)));
+        const cachedRows = loadClassCache();
+        const fallbackRows = cachedRows.length ? cachedRows : CLASS_FALLBACK_ROWS.map(normalizeClass);
+        const activeApiRows = apiRows.filter((item) => isActiveStatus(item.status));
+        const activeApiIds = new Set(activeApiRows.map((item) => String(item.id)));
         const apiSoftDeleted = apiRows.filter((item) => item.status === 'inactive');
         const endpointSoftDeleted = await loadSoftDeletedClassesFromApi();
         const cachedSoftDeleted = loadSoftDeleteCache().filter((item) => !activeApiIds.has(String(item.id)));
+        const cachedRowsNotInApi = fallbackRows.filter((item) => !activeApiIds.has(String(item.id)));
         const softDeleted = mergeClassRecords(apiSoftDeleted, mergeClassRecords(endpointSoftDeleted, cachedSoftDeleted));
+        const mergedActiveRows = mergeClassRecords(activeApiRows, cachedRowsNotInApi).filter((item) => isActiveStatus(item.status));
 
         if (softDeleted.length) {
             saveSoftDeleteCache(softDeleted);
         }
 
-        classes = mergeClassRecords(apiRows, softDeleted);
+        classes = mergeClassRecords(mergedActiveRows, softDeleted);
+        saveClassCache(classes);
         renderTable();
         renderGovernancePanels();
     } catch (error) {
@@ -259,8 +320,7 @@ async function loadClasses() {
 function filteredClasses() {
     const keyword = searchInput.value.toLowerCase();
     return classes.filter((item) => {
-        const isActive = item.status !== 'inactive';
-        if (!isActive) return false;
+        if (!isActiveStatus(item.status)) return false;
 
         return (item.classCode || '').toLowerCase().includes(keyword) ||
             (item.classCategory || '').toLowerCase().includes(keyword) ||
@@ -636,6 +696,7 @@ async function handleEdit() {
                 classes[index] = updatedRecord
                     ? normalizeClass(updatedRecord)
                     : { ...classes[index], ...classData };
+                saveClassCache(classes);
                 addVersionHistory('Updated', classes[index]);
                 showMessage('Class has been updated successfully.');
             }
@@ -647,6 +708,7 @@ async function handleEdit() {
                 ? normalizeClass(createdRecord)
                 : { id: classes.length ? Math.max(...classes.map(c => c.id)) + 1 : 1, ...classData };
             classes.push(newClass);
+            saveClassCache(classes);
             addVersionHistory('Created', newClass);
             showMessage('Class has been added successfully.');
         }
@@ -694,6 +756,7 @@ async function confirmDelete() {
                 updatedAt: new Date().toISOString()
             });
             upsertSoftDeleteCache(target);
+            saveClassCache(classes);
             addVersionHistory('Deleted', target);
         }
         
@@ -731,6 +794,7 @@ async function restoreSoftDeletedClass(classId) {
             updatedAt: new Date().toISOString()
         });
         removeSoftDeleteCache(classId);
+        saveClassCache(classes);
         addVersionHistory('Restored', restored);
         showMessage(`Class ${restored.classCode} has been restored successfully.`);
         await loadClasses();
@@ -793,3 +857,4 @@ function showMessage(msg, type = 'success') {
 function closeModal(modal) {
     modal.style.display = 'none';
 }
+
