@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -586,10 +586,10 @@
         function redirectBasedOnRole(user) {
             console.log(`Redirecting user ${user.username} with role: ${user.user_level}`);
             
-            let redirectUrl = 'dashboard/dashboard-user.html';
+            let redirectUrl = 'dashboard-user.html';
             
             if (user.user_level === 'super_admin' || user.user_level === 'admin') {
-                redirectUrl = 'dashboard/dashboard-admin.html';
+                redirectUrl = 'dashboard-admin.html';
             }
             
             console.log(`User: ${user.username}, Role: ${user.user_level}, Redirect to: ${redirectUrl}`);

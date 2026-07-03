@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -1125,7 +1125,7 @@
             // Jika URL mengandung dashboard.html (typo atau link salah)
             if (currentPath.includes('dashboard.html') && !currentPath.includes('dashboard-user.html')) {
                 console.warn('Wrong URL detected, redirecting to correct dashboard');
-                const newPath = currentPath.replace('dashboard.html', 'dashboard/dashboard-user.html');
+                const newPath = currentPath.replace('dashboard.html', 'dashboard-user.html');
                 window.location.href = newPath;
                 return;
             }
