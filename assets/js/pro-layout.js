@@ -36,7 +36,7 @@
                                 <a href="coverages.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-umbrella mr-2"></i>Coverage</a>
                                 <a href="objectgroup.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-object-group mr-2"></i>Object Group</a>
                                 <a href="occupations.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-user-tie mr-2"></i>Occupations</a>
-                                <a href="commission.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-hand-holding-usd mr-2"></i>Commission</a>
+                                <a href="commission.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-hand-holding-usd mr-2"></i>Commission Management</a>
                                 <a href="target.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-bullseye mr-2"></i>Production Target</a>
                             </div>
                         </div>
@@ -47,7 +47,7 @@
                             </button>
                             <div class="menu-dropdown">
                                 <a href="administration.html?action=password" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-key mr-2"></i>Change Password</a>
-                                <a href="administration.html?action=users" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-users-cog mr-2"></i>User Management</a>
+                                <a href="users.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-users-cog mr-2"></i>User Management</a>
                             </div>
                         </div>
                     </div>

@@ -350,18 +350,21 @@ let itemsPerPage = 10;
 
 // Check if user is logged in and has admin access
 function checkLogin() {
-    const user = JSON.parse(localStorage.getItem('gibsysnet_user'));
-    const token = localStorage.getItem('gibsysnet_token');
+    const user = JSON.parse(sessionStorage.getItem('gibsysnet_user') || localStorage.getItem('gibsysnet_user'));
+    const token = sessionStorage.getItem('gibsysnet_token') || localStorage.getItem('gibsysnet_token');
 
     if (!user || !token) {
         window.location.href = 'login.html';
         return false;
     }
 
-    // Check if user has admin access
-    if (user.user_level !== 'admin' && user.user_level !== 'super_admin') {
+    const urlParams = new URLSearchParams(window.location.search);
+    const action = urlParams.get('action') || 'users';
+
+    // Check if user has admin access (only for users management)
+    if (action === 'users' && user.user_level !== 'admin' && user.user_level !== 'super_admin') {
         alert('Access denied. Admin privileges required.');
-        window.location.href = 'dashboard-user.html';
+        window.location.href = 'index.html';
         return false;
     }
 
@@ -1038,22 +1041,54 @@ async function handlePasswordChange(e) {
     }
 
     try {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        let userId = currentUser.id;
+        if (!userId) {
+            // Fallback lookup via username
+            const usersResp = await fetch(`http://localhost:3001/api/users`);
+            const usersJson = await usersResp.json();
+            const usersList = usersJson.data || usersJson.message || [];
+            const foundUser = usersList.find(u => u.username === currentUser.username);
+            if (foundUser) {
+                userId = foundUser.id;
+            }
+        }
+
+        if (!userId) {
+            throw new Error('ID Pengguna tidak ditemukan. Silakan login kembali.');
+        }
+
+        // Call backend API to update password
+        const response = await fetch(`http://localhost:3001/api/users/${userId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ password: newPassword })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Gagal mengubah password di database.');
+        }
 
         showPasswordAlert('success', 'Password changed successfully! You will be logged out for security reasons.');
 
         // Reset form
         resetPasswordForm();
 
-        // Logout user after 3 seconds
+        // Clear session and force redirect to login.html without confirmation prompt
         setTimeout(() => {
-            handleLogout();
-        }, 3000);
+            localStorage.removeItem('gibsysnet_user');
+            localStorage.removeItem('gibsysnet_token');
+            sessionStorage.removeItem('gibsysnet_user');
+            sessionStorage.removeItem('gibsysnet_token');
+            window.location.href = 'login.html';
+        }, 2000);
 
     } catch (error) {
         console.error('Error changing password:', error);
-        showPasswordAlert('error', 'Failed to change password. Please try again.');
+        showPasswordAlert('error', error.message || 'Failed to change password. Please try again.');
     } finally {
         if (submitBtn) {
             submitBtn.disabled = false;

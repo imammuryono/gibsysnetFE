@@ -20,8 +20,8 @@ function escapeHtml(value) {
 }
 
 function checkLogin() {
-  const user = JSON.parse(localStorage.getItem('gibsysnet_user'));
-  const token = localStorage.getItem('gibsysnet_token');
+  const user = JSON.parse(sessionStorage.getItem('gibsysnet_user') || localStorage.getItem('gibsysnet_user'));
+  const token = sessionStorage.getItem('gibsysnet_token') || localStorage.getItem('gibsysnet_token');
   if (!user || !token) {
     window.location.href = 'login.html';
     return null;

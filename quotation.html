@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -46,9 +46,14 @@
 
                     <form id="quotationForm" class="p-6">
                         <input type="hidden" id="quotationId" name="quotation_id">
-
-                        <div class="quotation-tabs" role="tablist" aria-label="Quotation Tabs">
-                            <button type="button" id="tab-risk-btn" class="tab-item active" data-tab="tab-risk">1. Risk</button>
+                        <div class="quotation-tabs" role="tablist" aria-label="Quotation Tabs" style="overflow: visible !important;">
+                            <div class="relative inline-block" id="tab-risk-container">
+                                <button type="button" id="tab-risk-btn" class="tab-item active" data-tab="tab-risk" style="display: flex; align-items: center; gap: 6px;">1. Risk <i class="fas fa-chevron-down text-xs"></i></button>
+                                <div id="tab-risk-dropdown" class="hidden absolute left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1" style="box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); border: 1px solid #d1d5db;">
+                                    <button type="button" class="block w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 text-sm font-medium" data-risk-type="vehicle" style="display: block; width: 100%; text-align: left; padding: 8px 16px; background: transparent; border: none; cursor: pointer;"><i class="fas fa-car mr-2 text-blue-600"></i>Vehicle Risk</button>
+                                    <button type="button" class="block w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 text-sm font-medium" data-risk-type="property" style="display: block; width: 100%; text-align: left; padding: 8px 16px; background: transparent; border: none; cursor: pointer;"><i class="fas fa-building mr-2 text-green-600"></i>Property Risk</button>
+                                </div>
+                            </div>
                             <button type="button" class="tab-item" data-tab="tab-insurance">2. Insurance</button>
                             <button type="button" class="tab-item" data-tab="tab-installment">3. Installment</button>
                             <button type="button" class="tab-item" data-tab="tab-wordquot">4. Word Quot.</button>
@@ -213,6 +218,12 @@
                             </div>
                         </div>
 
+                        </div><!-- /basicInfoPanel -->
+                        <!-- Risk Detail: replaces basic info view when COB+SubCOB are set -->
+                        <div id="tab-risk-detail" class="hidden">
+                            <iframe id="riskDetailFrame" src="" style="width:100%;min-height:900px;border:none;border-radius:6px;display:block;" title="Risk Detail Form"></iframe>
+                        </div>
+
                         <h3 class="text-base font-semibold text-gray-700 mt-5 mb-3"><i class="fas fa-user-shield mr-2"></i>Audit</h3>
                         <div class="form-row quotation-grid audit-grid audit-legacy-panel">
                             <div class="form-group">
@@ -239,11 +250,6 @@
                                 <label for="closeDate">Close Date</label>
                                 <input type="date" id="closeDate" name="close_date">
                             </div>
-                        </div>
-                        </div><!-- /basicInfoPanel -->
-                        <!-- Risk Detail: replaces basic info view when COB+SubCOB are set -->
-                        <div id="tab-risk-detail" class="hidden">
-                            <iframe id="riskDetailFrame" src="" style="width:100%;min-height:900px;border:none;border-radius:6px;display:block;" title="Risk Detail Form"></iframe>
                         </div>
                         </div><!-- /tab-risk -->
 

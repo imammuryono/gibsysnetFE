@@ -170,9 +170,15 @@
     border: 2px solid #e2e8f0;
     border-radius: 8px;
     font-size: 0.875rem;
-    transition: all 0.3s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
     background-color: #ffffff;
     color: #1f2937;
+}
+
+.quotation-column .form-group input:hover,
+.quotation-column .form-group select:hover,
+.quotation-column .form-group textarea:hover {
+    border-color: #cbd5e1;
 }
 
 .quotation-column .form-group input:focus,
@@ -180,8 +186,21 @@
 .quotation-column .form-group textarea:focus,
 .quotation-grid.audit-grid .form-group input:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: #2563eb;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+    background-color: #ffffff;
+}
+
+/* Readonly and Disabled Inputs - Professional Look */
+.quotation-column .form-group input[readonly],
+.quotation-column .form-group select[disabled],
+.quotation-column .form-group select[readonly],
+.quotation-grid.audit-grid .form-group input[readonly] {
+    background-color: #f8fafc;
+    border-color: #e2e8f0;
+    color: #64748b;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 
 .quotation-grid.audit-grid {
@@ -334,3 +353,4 @@
         min-width: max-content;
     }
 }
+

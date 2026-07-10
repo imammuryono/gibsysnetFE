@@ -155,8 +155,23 @@ class QuotationManager {
     bindEvents() {
         const tabItems = document.querySelectorAll('.tab-item');
         tabItems.forEach((tab) => {
-            tab.addEventListener('click', () => {
+            tab.addEventListener('click', (e) => {
                 if (tab.classList.contains('disabled')) return;
+
+                // Intercept Risk tab to toggle custom dropdown
+                if (tab.id === 'tab-risk-btn') {
+                    e.stopPropagation();
+                    const dropdown = document.getElementById('tab-risk-dropdown');
+                    if (dropdown) {
+                        dropdown.classList.toggle('hidden');
+                    }
+                    return;
+                }
+
+                // Hide Risk dropdown when clicking other tabs
+                const dropdown = document.getElementById('tab-risk-dropdown');
+                if (dropdown) dropdown.classList.add('hidden');
+
                 tabItems.forEach((item) => item.classList.remove('active'));
                 tab.classList.add('active');
                 const target = tab.getAttribute('data-tab');
@@ -168,16 +183,37 @@ class QuotationManager {
             });
         });
 
-        // When Risk tab is clicked, load detail form if COB is set
-        const riskBtn = document.getElementById('tab-risk-btn');
-        if (riskBtn) {
-            riskBtn.addEventListener('click', () => {
-                const cobVal = (this.cob?.value || '').trim();
-                if (cobVal) {
-                    this.loadRiskTabContent(cobVal);
-                }
+        // Event listeners for options inside Risk tab dropdown
+        const riskDropdown = document.getElementById('tab-risk-dropdown');
+        if (riskDropdown) {
+            riskDropdown.querySelectorAll('button[data-risk-type]').forEach((btn) => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const type = btn.getAttribute('data-risk-type');
+                    
+                    // Set Risk tab to active & switch panel
+                    tabItems.forEach((item) => item.classList.remove('active'));
+                    const riskBtn = document.getElementById('tab-risk-btn');
+                    if (riskBtn) riskBtn.classList.add('active');
+
+                    document.querySelectorAll('.quot-tab-panel').forEach((p) => p.classList.add('hidden'));
+                    const panel = document.getElementById('tab-risk');
+                    if (panel) panel.classList.remove('hidden');
+
+                    // Load specific risk type
+                    this.loadRiskType(type);
+
+                    // Hide dropdown
+                    riskDropdown.classList.add('hidden');
+                });
             });
         }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', () => {
+            const dropdown = document.getElementById('tab-risk-dropdown');
+            if (dropdown) dropdown.classList.add('hidden');
+        });
 
         // Also restore basic info panel when switching away from Risk tab
         document.querySelectorAll('.tab-item:not(#tab-risk-btn)').forEach((tab) => {
@@ -1348,6 +1384,24 @@ class QuotationManager {
         this._showRiskDetailPanel();
     }
 
+    loadRiskType(type) {
+        const srcFile = type === 'vehicle' ? 'riskvehicle.html' : 'riskproperty.html';
+        const frame = document.getElementById('riskDetailFrame');
+        if (!frame) return;
+
+        const currentRecord = this.getCurrentWorkingQuotation();
+        const frameUrl = new URL(srcFile, window.location.href);
+        frameUrl.searchParams.set('regNo', currentRecord?.regNo || this.regNo?.value || '');
+        frameUrl.searchParams.set('quotationId', currentRecord?.id || this.quotationId?.value || '');
+
+        frame.src = frameUrl.toString();
+        this._riskDetailLoaded = type;
+
+        this._showRiskDetailPanel();
+    }
+
+
+
     bindRiskDetailBridge() {
         window.addEventListener('message', (event) => {
             if (!event || !event.data) return;
@@ -1404,10 +1458,10 @@ class QuotationManager {
     }
 
     _showRiskDetailPanel() {
-        // Replace basic info with the risk detail iframe (same behavior as other tabs)
+        // Keep basic info visible, and show the risk detail iframe below it (vertical flow)
         const basicInfo = document.getElementById('basicInfoPanel');
         const detail    = document.getElementById('tab-risk-detail');
-        if (basicInfo) basicInfo.classList.add('hidden');
+        if (basicInfo) basicInfo.classList.remove('hidden');
         if (detail)    detail.classList.remove('hidden');
     }
 

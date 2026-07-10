@@ -16,7 +16,10 @@
 			modelRiskLookup: `${baseUrl}/modelrisk`,
 			partners: `${baseUrl}/partners`,
 			riskVehicle: `${baseUrl}/risk-vehicle`,
-			classConstruction: `${baseUrl}/class-construction`
+			classConstruction: `${baseUrl}/class-construction`,
+			// User Management
+			users: `${baseUrl}/users`,
+			auth: `${baseUrl}/auth`
 		}
 	};
 })();

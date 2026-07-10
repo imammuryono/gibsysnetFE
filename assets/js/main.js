@@ -129,6 +129,8 @@ const Auth = {
     logout: () => {
         localStorage.removeItem('gibsysnet_token');
         localStorage.removeItem('gibsysnet_user');
+        sessionStorage.removeItem('gibsysnet_token');
+        sessionStorage.removeItem('gibsysnet_user');
         window.location.href = 'login.html';
     },
 

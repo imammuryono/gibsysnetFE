@@ -1,0 +1,1421 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - GIBSYSNET</title>
+    <link href="assets/css/output.css" rel="stylesheet">
+    <script src="assets/js/tailwind.config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/custom.css">
+    <link rel="stylesheet" href="assets/css/administration.css">
+    <link rel="stylesheet" href="assets/css/users.css">
+</head>
+<body class="bg-gray-50">
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+        <div class="menu-bar text-white" id="menu-bar-container"></div>
+        <div class="status-bar text-white text-sm" id="status-bar-container"></div>
+        <div class="sidebar" id="sidebar-container"
+             data-title="User Management"
+             data-icon="fas fa-users-cog"
+             data-type="master"></div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+
+            <!-- Page Header -->
+            <div class="mb-6">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">User Management</h1>
+                        <p class="text-gray-500 text-sm mt-1">Manage users and system access control for GIBSYSNET</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="health-grid mb-6">
+                <div class="health-card">
+                    <p class="health-label">Total Users</p>
+                    <p class="health-value" id="statTotal">0</p>
+                </div>
+                <div class="health-card">
+                    <p class="health-label">Active</p>
+                    <p class="health-value" id="statActive">0</p>
+                </div>
+                <div class="health-card">
+                    <p class="health-label">Inactive</p>
+                    <p class="health-value" id="statInactive">0</p>
+                </div>
+                <div class="health-card">
+                    <p class="health-label">Admin / Super</p>
+                    <p class="health-value" id="statAdmin">0</p>
+                </div>
+                <div class="health-card">
+                    <p class="health-label">Online Now</p>
+                    <p class="health-value" id="statOnline">0</p>
+                </div>
+            </div>
+
+            <!-- Inline User Information Form (like partners.html) -->
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+                <div class="xl:col-span-2 bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b flex justify-between items-center">
+                        <h3 class="font-bold text-gray-800" id="userFormTitle"><i class="fas fa-user-plus text-green-500 mr-2"></i>User Information</h3>
+                    </div>
+                    <form id="userForm" class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4" onsubmit="return false;">
+                        <input type="hidden" id="formUserId">
+
+                        <div>
+                            <label class="form-label-custom">Full Name <span class="req">*</span></label>
+                            <input type="text" class="form-control" id="formFullName" placeholder="Example: John Doe">
+                            <span class="form-error" id="errFullName">Full name is required.</span>
+                        </div>
+                        <div>
+                            <label class="form-label-custom">Username <span class="req">*</span></label>
+                            <input type="text" class="form-control" id="formUsername" placeholder="unique_username">
+                            <span class="form-error" id="errUsername">Username min. 3 characters.</span>
+                        </div>
+
+                        <div>
+                            <label class="form-label-custom">Email <span class="req">*</span></label>
+                            <input type="email" class="form-control" id="formEmail" placeholder="name@company.com">
+                            <span class="form-error" id="errEmail">Invalid email address.</span>
+                        </div>
+                        <div>
+                            <label class="form-label-custom">Phone Number</label>
+                            <input type="text" class="form-control" id="formPhone" placeholder="+62 8xx-xxxx-xxxx">
+                        </div>
+
+                        <div>
+                            <label class="form-label-custom">Role <span class="req">*</span></label>
+                            <select class="form-control" id="formRoleId" onchange="onRoleChange()">
+                                <option value="">-- Select Role --</option>
+                                <option value="1">Super Admin</option>
+                                <option value="2">Admin</option>
+                                <option value="3">Manager</option>
+                                <option value="4">Broker</option>
+                                <option value="5">User</option>
+                            </select>
+                            <span class="form-error" id="errRole">Role is required.</span>
+                            <div id="roleDescription" class="hidden mt-2 p-2 rounded-lg bg-blue-50 border border-blue-100">
+                                <p class="text-xs text-blue-700" id="roleDescText"></p>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label-custom">Department</label>
+                            <select class="form-control" id="formDepartment">
+                                <option value="">-- Select Department --</option>
+                                <option value="Administration">Administration</option>
+                                <option value="Sales">Sales</option>
+                                <option value="Operations">Operations</option>
+                                <option value="Finance">Finance</option>
+                                <option value="Compliance">Compliance</option>
+                                <option value="IT">IT</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="form-label-custom">Avatar URL</label>
+                            <input type="text" class="form-control" id="formAvatar" placeholder="Example: /assets/images/avatar1.png">
+                        </div>
+                        <div>
+                            <label class="form-label-custom">Account Status</label>
+                            <div class="toggle-wrap" style="margin-top: 8px;">
+                                <label class="toggle">
+                                    <input type="checkbox" id="formStatus" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span class="text-sm text-gray-600" id="statusLabel">Active</span>
+                            </div>
+                        </div>
+
+                        <div style="position:relative;">
+                            <label class="form-label-custom" id="passLabel">Password <span class="req">*</span></label>
+                            <div style="position:relative;">
+                                <input type="password" class="form-control" id="formPassword" placeholder="Min. 8 characters" style="padding-right:2.75rem;">
+                                <button type="button" class="toggle-pw-btn" onclick="toggleFormPw('formPassword','iconPw1')"><i class="fas fa-eye" id="iconPw1"></i></button>
+                            </div>
+                            <span class="form-error" id="errPassword">Password min. 8 characters.</span>
+                            <p class="form-hint" id="passHint">Leave empty if you do not want to change the password.</p>
+                        </div>
+                        <div style="position:relative;">
+                            <label class="form-label-custom" id="passConfirmLabel">Confirm Password <span class="req">*</span></label>
+                            <div style="position:relative;">
+                                <input type="password" class="form-control" id="formPasswordConfirm" placeholder="Repeat password" style="padding-right:2.75rem;">
+                                <button type="button" class="toggle-pw-btn" onclick="toggleFormPw('formPasswordConfirm','iconPw2')"><i class="fas fa-eye" id="iconPw2"></i></button>
+                            </div>
+                            <span class="form-error" id="errPasswordConfirm">Passwords do not match.</span>
+                        </div>
+
+                        <!-- Menu Access Section -->
+                        <div class="md:col-span-2">
+                            <label class="form-label-custom">Menu Access <span class="req">*</span></label>
+                            <div id="formMenuAccess" class="space-y-4 border rounded-lg p-4 bg-gray-50">
+                                <!-- Menu Access will be loaded here dynamically -->
+                                <div id="menuAccessTree" class="space-y-2"></div>
+                                <div class="mt-2 flex gap-2">
+                                    <button type="button" class="btn-ghost btn-sm" onclick="selectAllMenus()">
+                                        <i class="fas fa-check-double mr-1"></i>Select All
+                                    </button>
+                                    <button type="button" class="btn-ghost btn-sm" onclick="deselectAllMenus()">
+                                        <i class="fas fa-times mr-1"></i>Deselect All
+                                    </button>
+                                </div>
+                            </div>
+                            <span class="form-error" id="errMenuAccess">At least one menu access must be selected.</span>
+                        </div>
+
+                    </form>
+                </div>
+
+                <!-- Right Side Panel: Tool Impact Analysis -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b">
+                        <h3 class="font-bold text-gray-800"><i class="fas fa-microscope mr-2 text-indigo-600"></i>Tool Impact Analysis</h3>
+                    </div>
+                    <div class="p-4">
+                        <table class="w-full text-sm" id="impactTable">
+                            <thead class="text-gray-500">
+                                <tr>
+                                    <th class="text-left py-2">Tool</th>
+                                    <th class="text-left py-2">Impact</th>
+                                    <th class="text-left py-2">Risk</th>
+                                </tr>
+                            </thead>
+                            <tbody id="impactTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Governance & Control Panels -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b"><h3 class="font-bold text-gray-800"><i class="fas fa-code-branch mr-2 text-green-600"></i>Data Versioning</h3></div>
+                    <div class="p-4" id="versionList"></div>
+                </div>
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b"><h3 class="font-bold text-gray-800"><i class="fas fa-trash-restore mr-2 text-red-500"></i>Soft Delete</h3></div>
+                    <div class="p-4" id="softDeleteList"></div>
+                </div>
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b"><h3 class="font-bold text-gray-800"><i class="fas fa-project-diagram mr-2 text-purple-600"></i>Smart Dependency Control</h3></div>
+                    <div class="p-4" id="dependencyList"></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
+                <div class="px-6 py-4 border-b"><h3 class="font-bold text-gray-800"><i class="fas fa-robot mr-2 text-sky-600"></i>AI Suggestion (Future Ready)</h3></div>
+                <div class="p-4" id="aiSuggestionList"></div>
+            </div>
+
+            <!-- User List Card -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-6 py-4 border-b flex flex-wrap items-center justify-between gap-3">
+                    <h3 class="font-bold text-gray-800">
+                        <i class="fas fa-users-cog mr-2 text-blue-600"></i>User List
+                    </h3>
+                    <div class="flex gap-2 flex-wrap items-center">
+                        <div class="search-box" style="min-width: 240px;">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchInput" placeholder="Search name, username, email..." oninput="handleSearch()">
+                        </div>
+                        <select class="filter-select" id="filterRole" onchange="handleFilter()">
+                            <option value="">All Roles</option>
+                            <option value="super_admin">Super Admin</option>
+                            <option value="admin">Admin</option>
+                            <option value="manager">Manager</option>
+                            <option value="broker">Broker</option>
+                            <option value="user">User</option>
+                        </select>
+                        <select class="filter-select" id="filterStatus" onchange="handleFilter()">
+                            <option value="">All Statuses</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="deleted">Deleted</option>
+                        </select>
+                        <button class="btn-ghost btn-sm" onclick="resetFilters()">
+                            <i class="fas fa-rotate-right"></i> Reset
+                        </button>
+                        <button class="btn-ghost btn-sm" onclick="exportUsers()" title="Export CSV">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="min-w-full divide-y divide-gray-200" id="userTable">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" style="width:40px;">
+                                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" style="accent-color:#3b82f6; width:15px; height:15px;">
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Login</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" style="width:170px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="userTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="empty-state hidden" id="emptyState">
+                    <i class="fas fa-users-slash"></i>
+                    <h3>No users found</h3>
+                    <p>Try changing filters or add a new user.</p>
+                </div>
+                <div class="px-6 py-4 border-t bg-gray-50 flex flex-wrap items-center justify-between gap-3">
+                    <div class="text-sm text-gray-700">
+                        <span id="paginationInfo">Showing 0 users</span>
+                    </div>
+                    <div class="pagination" id="paginationBtns"></div>
+                </div>
+            </div>
+
+            <!-- Bulk Actions Bar -->
+            <div id="bulkBar" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-4 z-50">
+                <span class="text-sm font-medium" id="bulkCount">0 selected</span>
+                <div class="w-px h-4 bg-white/20"></div>
+                <button class="btn btn-sm btn-success" onclick="bulkActivate()"><i class="fas fa-check"></i> Activate</button>
+                <button class="btn btn-sm btn-warning" onclick="bulkDeactivate()"><i class="fas fa-ban"></i> Deactivate</button>
+                <button class="btn btn-sm btn-danger"  onclick="bulkDelete()"><i class="fas fa-trash"></i> Delete</button>
+                <button class="btn btn-sm btn-ghost text-white border-white/20" onclick="clearSelection()"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div id="footer-container" class="mt-6"></div>
+        </div><!-- /main-content -->
+    </div><!-- /dashboard-grid -->
+
+    <!-- MODAL: Permissions -->
+    <div class="modal-backdrop" id="permModal">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2><i class="fas fa-key mr-2 text-purple-500"></i>Manage Permissions &mdash; <span id="permUserName" class="font-normal text-gray-500"></span></h2>
+                <button class="modal-close" onclick="closeModal('permModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-sm text-gray-500 mb-4">Check the modules this user is allowed to access. Specific permissions will override the default role.</p>
+
+                <div class="p-3 rounded-xl border border-amber-100 bg-amber-50 text-sm text-amber-800 mb-4">
+                    <i class="fas fa-shield-halved mr-2"></i>
+                    Current Role: <strong id="permUserRole">&mdash;</strong>. Default permissions applied. You can override below.
+                </div>
+
+                <div class="section-divider">File</div>
+                <div class="perm-grid" id="permGridFile"></div>
+
+                <div class="section-divider">Master Data</div>
+                <div class="perm-grid" id="permGridMaster"></div>
+
+                <div class="section-divider">Transactions</div>
+                <div class="perm-grid" id="permGridTransaction"></div>
+
+                <div class="section-divider">Reports &amp; Analytics</div>
+                <div class="perm-grid" id="permGridReport"></div>
+
+                <div class="section-divider">Compliance</div>
+                <div class="perm-grid" id="permGridCompliance"></div>
+
+                <div class="section-divider">Administration</div>
+                <div class="perm-grid" id="permGridAdmin"></div>
+
+                <div class="section-divider">Utilities</div>
+                <div class="perm-grid" id="permGridUtility"></div>
+
+                <div class="section-divider">Help</div>
+                <div class="perm-grid" id="permGridHelp"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" onclick="closeModal('permModal')">Cancel</button>
+                <button class="btn-ghost btn-sm" onclick="applyDefaultPerms()"><i class="fas fa-rotate-right mr-1"></i>Reset to Default Role</button>
+                <button class="btn-primary" onclick="savePermissions()"><i class="fas fa-save mr-1"></i>Save Permissions</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Delete Confirm -->
+    <div class="modal-backdrop" id="deleteModal">
+        <div class="modal modal-sm">
+            <div class="modal-body" style="text-align:center; padding:32px 24px;">
+                <div class="danger-icon"><i class="fas fa-trash-alt"></i></div>
+                <h2 class="text-lg font-bold text-gray-800 mb-2">Soft Delete User?</h2>
+                <p class="text-sm text-gray-500 mb-2">You are about to remove user account <strong id="deleteUserName"></strong>.</p>
+                <p class="text-xs text-amber-500">This action moves the user to soft delete. The account can be restored later.</p>
+            </div>
+            <div class="modal-footer" style="justify-content:center;">
+                <button class="btn-ghost" onclick="closeModal('deleteModal')">Cancel</button>
+                <button class="btn btn-danger" id="btnConfirmDelete" onclick="confirmDelete()">
+                    <i class="fas fa-trash mr-1"></i>Yes, Remove
+                </button>
+                <button class="btn btn-success" id="btnRestoreUser" onclick="restoreUser()" style="display:none;">
+                    <i class="fas fa-undo mr-1"></i>Restore User
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Reset Password -->
+    <div class="modal-backdrop" id="resetPwModal">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2><i class="fas fa-lock-open text-amber-500 mr-2"></i>Reset Password &mdash; <span id="resetPwUserName" class="font-normal text-gray-500"></span></h2>
+                <button class="modal-close" onclick="closeModal('resetPwModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" style="position:relative;">
+                    <label class="form-label-custom">New Password <span class="req">*</span></label>
+                    <div style="position:relative;">
+                        <input type="password" class="form-control" id="newPwInput" placeholder="Min. 8 characters" style="padding-right:2.75rem;">
+                        <button type="button" class="toggle-pw-btn" onclick="toggleFormPw('newPwInput','iconPw3')"><i class="fas fa-eye" id="iconPw3"></i></button>
+                    </div>
+                    <span class="form-error" id="errNewPw">Password min. 8 characters.</span>
+                </div>
+                <div class="form-group" style="position:relative;">
+                    <label class="form-label-custom">Confirm Password <span class="req">*</span></label>
+                    <div style="position:relative;">
+                        <input type="password" class="form-control" id="newPwConfirm" placeholder="Repeat password" style="padding-right:2.75rem;">
+                        <button type="button" class="toggle-pw-btn" onclick="toggleFormPw('newPwConfirm','iconPw4')"><i class="fas fa-eye" id="iconPw4"></i></button>
+                    </div>
+                    <span class="form-error" id="errNewPwC">Passwords do not match.</span>
+                </div>
+                <label class="toggle-wrap">
+                    <label class="toggle"><input type="checkbox" id="mustChangePw" checked><span class="toggle-slider"></span></label>
+                    <span class="text-sm text-gray-600">Force password change on next login</span>
+                </label>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" onclick="closeModal('resetPwModal')">Cancel</button>
+                <button class="btn btn-warning" onclick="doResetPassword()"><i class="fas fa-key mr-1"></i>Reset Password</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+    /* ── Users page specific CSS ── */
+    .health-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; }
+    .health-card { background:white; border-radius:12px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,.06); border:1px solid #e5e7eb; text-align:center; }
+    .health-label { color:#6b7280; font-size:.75rem; margin-bottom:4px; }
+    .health-value { font-size:1.75rem; font-weight:700; color:#1f2937; }
+    .search-box { position:relative; flex:1; min-width:200px; }
+    .search-box i { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#9ca3af; }
+    .search-box input { width:100%; padding:8px 12px 8px 32px; border:1px solid #d1d5db; border-radius:8px; font-size:.875rem; outline:none; transition:border .2s; }
+    .search-box input:focus { border-color:#3b82f6; }
+    .filter-select { padding:8px 32px 8px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:.875rem; background:#fff; cursor:pointer; outline:none; appearance:auto; }
+    .form-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .form-group { margin-bottom:12px; }
+    .form-label-custom { display:block; font-weight:600; font-size:.85rem; margin-bottom:4px; color:#374151; }
+    .form-control { width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:.875rem; outline:none; transition:border .2s; }
+    .form-control:focus { border-color:#3b82f6; box-shadow:0 0 0 2px rgba(59,130,246,.15); }
+    .form-error { display:none; font-size:.75rem; color:#ef4444; margin-top:2px; }
+    .form-error.show { display:block; }
+    .form-hint { font-size:.75rem; color:#6b7280; margin-top:4px; }
+    .req { color:#ef4444; }
+    .toggle-wrap { display:flex; align-items:center; gap:8px; margin-top:4px; }
+    .toggle { position:relative; display:inline-block; width:44px; height:24px; cursor:pointer; }
+    .toggle input { opacity:0; width:0; height:0; }
+    .toggle-slider { position:absolute; inset:0; background:#d1d5db; border-radius:24px; transition:.2s; }
+    .toggle-slider::before { content:''; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s; }
+    .toggle input:checked + .toggle-slider { background:#3b82f6; }
+    .toggle input:checked + .toggle-slider::before { transform:translateX(20px); }
+    .toggle-pw-btn { position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:#6b7280; cursor:pointer; padding:4px; font-size:.85rem; }
+    .section-divider { font-weight:700; font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; color:#6b7280; margin:16px 0 8px; padding-top:8px; border-top:1px solid #e5e7eb; }
+    .perm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; margin-bottom:12px; }
+    .perm-item { display:flex; align-items:center; gap:8px; padding:8px 12px; background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb; }
+    .perm-item input[type="checkbox"] { accent-color:#3b82f6; width:16px; height:16px; }
+    .perm-item label { font-size:.85rem; cursor:pointer; }
+    .perm-badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:.7rem; font-weight:600; }
+    .perm-badge.on { background:#d1fae5; color:#065f46; }
+    .perm-badge.off { background:#fee2e2; color:#991b1b; }
+    .danger-icon { width:64px; height:64px; border-radius:50%; background:#fee2e2; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
+    .danger-icon i { color:#ef4444; font-size:1.5rem; }
+    .empty-state { text-align:center; padding:48px 24px; color:#6b7280; }
+    .empty-state i { font-size:3rem; margin-bottom:12px; color:#d1d5db; }
+    .empty-state h3 { font-size:1.1rem; color:#374151; margin-bottom:4px; }
+    .empty-state p { font-size:.85rem; }
+    
+    /* Menu Access Tree Styles */
+    .menu-group { margin-bottom:8px; }
+    .menu-group-header { display:flex; align-items:center; gap:8px; padding:6px 12px; background:#f3f4f6; border-radius:6px; cursor:pointer; transition:background .2s; }
+    .menu-group-header:hover { background:#e5e7eb; }
+    .menu-group-header input[type="checkbox"] { accent-color:#3b82f6; width:15px; height:15px; }
+    .menu-group-header label { font-weight:600; font-size:.85rem; cursor:pointer; flex:1; }
+    .menu-group-header .toggle-icon { transition:transform .2s; font-size:.7rem; color:#6b7280; }
+    .menu-group-header .toggle-icon.open { transform:rotate(90deg); }
+    .menu-items { padding-left:28px; margin-top:4px; display:flex; flex-direction:column; gap:4px; }
+    .menu-items.collapsed { display:none; }
+    .menu-item { display:flex; align-items:center; gap:8px; padding:4px 8px; border-radius:4px; transition:background .2s; }
+    .menu-item:hover { background:#f9fafb; }
+    .menu-item input[type="checkbox"] { accent-color:#3b82f6; width:14px; height:14px; }
+    .menu-item label { font-size:.8rem; cursor:pointer; color:#374151; }
+    .menu-item .menu-icon { color:#6b7280; font-size:.7rem; width:16px; }
+    </style>
+
+    <script>
+    // ─── Menu Access Data ──────────────────────────────────────────────
+    // This represents the application menu structure
+    const MENU_STRUCTURE = {
+        'Dashboard': {
+            icon: 'fa-gauge-high',
+            items: ['Main Dashboard', 'Analytics Dashboard', 'Custom Dashboard']
+        },
+        'File': {
+            icon: 'fa-folder',
+            items: ['My Files', 'Shared Files', 'Archives', 'Upload']
+        },
+        'Master Data': {
+            icon: 'fa-database',
+            items: ['Partners', 'Users', 'Roles', 'Permissions', 'Departments', 'Locations']
+        },
+        'Transactions': {
+            icon: 'fa-arrows-rotate',
+            items: ['Incoming', 'Outgoing', 'Transfer', 'Reconciliation', 'Audit Log']
+        },
+        'Reports & Analytics': {
+            icon: 'fa-chart-pie',
+            items: ['Financial Reports', 'Operational Reports', 'Compliance Reports', 'Custom Reports', 'Analytics Dashboard']
+        },
+        'Compliance': {
+            icon: 'fa-gavel',
+            items: ['Regulatory Compliance', 'Risk Assessment', 'Audit Trail', 'Policy Management']
+        },
+        'Administration': {
+            icon: 'fa-gear',
+            items: ['System Settings', 'User Management', 'Role Management', 'Menu Access', 'Backup & Restore']
+        },
+        'Utilities': {
+            icon: 'fa-toolbox',
+            items: ['Calculator', 'Converter', 'Import/Export', 'Task Scheduler', 'Notifications']
+        },
+        'Help': {
+            icon: 'fa-circle-question',
+            items: ['Documentation', 'FAQs', 'Support Ticket', 'Training Videos', 'Community Forum']
+        }
+    };
+
+    // ─── Menu Access Functions ──────────────────────────────────────────
+    let currentUserMenus = [];
+
+    function loadMenuAccess(userId = null) {
+        const container = document.getElementById('menuAccessTree');
+        container.innerHTML = '';
+        currentUserMenus = [];
+
+        // Build menu tree
+        Object.entries(MENU_STRUCTURE).forEach(([groupName, groupData]) => {
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'menu-group';
+
+            // Group header
+            const header = document.createElement('div');
+            header.className = 'menu-group-header';
+            header.innerHTML = `
+                <input type="checkbox" class="group-checkbox" data-group="${groupName}" onchange="toggleGroupMenus('${groupName}')">
+                <label><i class="fas ${groupData.icon} mr-1"></i>${groupName}</label>
+                <span class="toggle-icon" onclick="toggleMenuGroup('${groupName}')"><i class="fas fa-chevron-right"></i></span>
+            `;
+            groupDiv.appendChild(header);
+
+            // Menu items
+            const itemsDiv = document.createElement('div');
+            itemsDiv.className = 'menu-items';
+            itemsDiv.id = `menu-items-${groupName}`;
+
+            groupData.items.forEach(itemName => {
+                const itemId = `${groupName}-${itemName}`.replace(/\s+/g, '-').toLowerCase();
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'menu-item';
+                itemDiv.innerHTML = `
+                    <input type="checkbox" class="menu-checkbox" data-group="${groupName}" data-item="${itemName}" id="menu-${itemId}" onchange="updateGroupCheckbox('${groupName}')">
+                    <label for="menu-${itemId}"><i class="fas ${groupData.icon} menu-icon"></i>${itemName}</label>
+                `;
+                itemsDiv.appendChild(itemDiv);
+            });
+
+            groupDiv.appendChild(itemsDiv);
+            container.appendChild(groupDiv);
+        });
+
+        // If editing existing user, load their menu access
+        if (userId) {
+            loadUserMenuAccess(userId);
+        }
+
+        // Set initial state for group checkboxes
+        updateAllGroupCheckboxes();
+    }
+
+    function toggleMenuGroup(groupName) {
+        const items = document.getElementById(`menu-items-${groupName}`);
+        const icon = document.querySelector(`[data-group="${groupName}"]`)?.closest('.menu-group-header')?.querySelector('.toggle-icon i');
+        if (items) {
+            items.classList.toggle('collapsed');
+            if (icon) {
+                icon.classList.toggle('fa-chevron-right');
+                icon.classList.toggle('fa-chevron-down');
+            }
+        }
+    }
+
+    function toggleGroupMenus(groupName) {
+        const checkbox = document.querySelector(`.group-checkbox[data-group="${groupName}"]`);
+        const items = document.querySelectorAll(`.menu-checkbox[data-group="${groupName}"]`);
+        items.forEach(item => item.checked = checkbox.checked);
+        updateGroupCheckbox(groupName);
+    }
+
+    function updateGroupCheckbox(groupName) {
+        const items = document.querySelectorAll(`.menu-checkbox[data-group="${groupName}"]`);
+        const groupCheckbox = document.querySelector(`.group-checkbox[data-group="${groupName}"]`);
+        if (groupCheckbox) {
+            const checkedItems = Array.from(items).filter(item => item.checked);
+            groupCheckbox.checked = checkedItems.length === items.length;
+            groupCheckbox.indeterminate = checkedItems.length > 0 && checkedItems.length < items.length;
+        }
+        updateMenuAccessData();
+    }
+
+    function updateAllGroupCheckboxes() {
+        Object.keys(MENU_STRUCTURE).forEach(groupName => updateGroupCheckbox(groupName));
+    }
+
+    function updateMenuAccessData() {
+        currentUserMenus = [];
+        document.querySelectorAll('.menu-checkbox:checked').forEach(checkbox => {
+            const group = checkbox.dataset.group;
+            const item = checkbox.dataset.item;
+            currentUserMenus.push({ group, item });
+        });
+        // Validate menu access
+        const errorEl = document.getElementById('errMenuAccess');
+        if (currentUserMenus.length === 0) {
+            errorEl.classList.add('show');
+        } else {
+            errorEl.classList.remove('show');
+        }
+    }
+
+    function selectAllMenus() {
+        document.querySelectorAll('.menu-checkbox').forEach(checkbox => checkbox.checked = true);
+        updateAllGroupCheckboxes();
+    }
+
+    function deselectAllMenus() {
+        document.querySelectorAll('.menu-checkbox').forEach(checkbox => checkbox.checked = false);
+        updateAllGroupCheckboxes();
+    }
+
+    function loadUserMenuAccess(userId) {
+        fetch(`${API_BASE}/users/${userId}/menu-access`)
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to load menu access');
+                return res.json();
+            })
+            .then(data => {
+                if (data.success && data.menus) {
+                    // Clear all checkboxes first
+                    document.querySelectorAll('.menu-checkbox').forEach(cb => cb.checked = false);
+                    // Set checked based on user's menu access
+                    data.menus.forEach(menu => {
+                        const id = `menu-${menu.group}-${menu.item}`.replace(/\s+/g, '-').toLowerCase();
+                        const checkbox = document.getElementById(id);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                    updateAllGroupCheckboxes();
+                }
+            })
+            .catch(err => {
+                console.error('Error loading user menu access:', err);
+                showToast('Failed to load menu access', 'error');
+            });
+    }
+
+    function getMenuAccessData() {
+        return currentUserMenus;
+    }
+
+    function saveUserMenuAccess(userId) {
+        const menus = getMenuAccessData();
+        return fetch(`${API_BASE}/users/${userId}/menu-access`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ menus })
+        });
+    }
+
+    // ─── API Base URL ──────────────────────────────────────────────────
+    const API_BASE = 'http://localhost:3001/api';
+
+    // ─── Toast System ──────────────────────────────────────────────────
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `
+            <div class="toast-content">
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                <span>${message}</span>
+            </div>
+            <button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+        `;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    }
+
+    // ─── CRUD Functions ──────────────────────────────────────────────────
+    let editingUserId = null;
+    let deleteTargetId = null;
+    let isDeleting = false;
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        loadUsers();
+        loadMenuAccess();
+        setupFormValidation();
+        setupSidebarButtons();
+    });
+
+    function setupSidebarButtons() {
+        // Sidebar buttons will be handled by layout-loader.js
+        // We'll add event listeners after sidebar is loaded
+        document.addEventListener('sidebarLoaded', function() {
+            // Add New button
+            const btnNew = document.querySelector('[data-action="new"]');
+            if (btnNew) btnNew.addEventListener('click', () => resetForm());
+
+            // Save button
+            const btnSave = document.querySelector('[data-action="save"]');
+            if (btnSave) btnSave.addEventListener('click', () => saveUser());
+
+            // Delete button
+            const btnDelete = document.querySelector('[data-action="delete"]');
+            if (btnDelete) btnDelete.addEventListener('click', () => {
+                if (editingUserId) {
+                    openDeleteModal(editingUserId);
+                } else {
+                    showToast('Please select a user to delete', 'warning');
+                }
+            });
+        });
+    }
+
+    function resetForm() {
+        document.getElementById('userForm').reset();
+        document.getElementById('formUserId').value = '';
+        document.getElementById('formStatus').checked = true;
+        document.getElementById('statusLabel').textContent = 'Active';
+        document.getElementById('userFormTitle').innerHTML = '<i class="fas fa-user-plus text-green-500 mr-2"></i>User Information';
+        document.getElementById('passLabel').innerHTML = 'Password <span class="req">*</span>';
+        document.getElementById('passConfirmLabel').innerHTML = 'Confirm Password <span class="req">*</span>';
+        document.getElementById('passHint').textContent = 'Leave empty if you do not want to change the password.';
+        editingUserId = null;
+        // Reset menu access
+        loadMenuAccess();
+        clearErrors();
+    }
+
+    function clearErrors() {
+        document.querySelectorAll('.form-error').forEach(el => el.classList.remove('show'));
+    }
+
+    function setupFormValidation() {
+        document.getElementById('formStatus').addEventListener('change', function() {
+            document.getElementById('statusLabel').textContent = this.checked ? 'Active' : 'Inactive';
+        });
+    }
+
+    function onRoleChange() {
+        const roleId = document.getElementById('formRoleId').value;
+        const descDiv = document.getElementById('roleDescription');
+        const descText = document.getElementById('roleDescText');
+        const roleDescriptions = {
+            1: 'Super Admin: Full system access with all permissions.',
+            2: 'Admin: Administrative access with limited system configuration.',
+            3: 'Manager: Can manage teams and view reports.',
+            4: 'Broker: Can process transactions and manage clients.',
+            5: 'User: Basic access for daily operations.'
+        };
+        if (roleId && roleDescriptions[roleId]) {
+            descText.textContent = roleDescriptions[roleId];
+            descDiv.classList.remove('hidden');
+        } else {
+            descDiv.classList.add('hidden');
+        }
+    }
+
+    // ─── Load Users ──────────────────────────────────────────────────
+    function loadUsers() {
+        fetch(`${API_BASE}/users`)
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to fetch users');
+                return res.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    renderUsers(data.users);
+                    updateStats(data.users);
+                }
+            })
+            .catch(err => {
+                console.error('Error loading users:', err);
+                showToast('Failed to load users', 'error');
+            });
+    }
+
+    function renderUsers(users) {
+        const tbody = document.getElementById('userTableBody');
+        const emptyState = document.getElementById('emptyState');
+        
+        if (!users || users.length === 0) {
+            tbody.innerHTML = '';
+            emptyState.classList.remove('hidden');
+            document.getElementById('paginationInfo').textContent = 'Showing 0 users';
+            return;
+        }
+
+        emptyState.classList.add('hidden');
+        let html = '';
+        users.forEach(user => {
+            const statusClass = user.status === 'active' ? 'status-active' : user.status === 'deleted' ? 'status-deleted' : 'status-inactive';
+            const statusLabel = user.status === 'active' ? 'Active' : user.status === 'deleted' ? 'Deleted' : 'Inactive';
+            const isDeleted = user.status === 'deleted';
+            
+            html += `
+                <tr class="${isDeleted ? 'opacity-60' : ''}">
+                    <td class="px-4 py-3">
+                        <input type="checkbox" class="row-checkbox" value="${user.id}" ${isDeleted ? 'disabled' : ''} onchange="updateBulkBar()">
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center gap-3">
+                            <img src="${user.avatar || '/assets/images/default-avatar.png'}" alt="${user.full_name}" class="w-8 h-8 rounded-full object-cover">
+                            <div>
+                                <p class="font-medium text-gray-800">${user.full_name}</p>
+                                <p class="text-xs text-gray-500">${user.email}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 text-sm">${user.username}</td>
+                    <td class="px-4 py-3"><span class="role-badge role-${user.role_name?.toLowerCase() || 'user'}">${user.role_name || 'User'}</span></td>
+                    <td class="px-4 py-3"><span class="${statusClass}">${statusLabel}</span></td>
+                    <td class="px-4 py-3 text-sm">${user.department || '-'}</td>
+                    <td class="px-4 py-3 text-sm">${user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}</td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <button class="btn-icon" onclick="editUser('${user.id}')" title="Edit">
+                                <i class="fas fa-pen text-blue-500"></i>
+                            </button>
+                            <button class="btn-icon" onclick="openPermModal('${user.id}')" title="Permissions">
+                                <i class="fas fa-key text-purple-500"></i>
+                            </button>
+                            <button class="btn-icon" onclick="openResetPwModal('${user.id}')" title="Reset Password">
+                                <i class="fas fa-lock text-amber-500"></i>
+                            </button>
+                            ${isDeleted ? 
+                                `<button class="btn-icon" onclick="restoreUser('${user.id}')" title="Restore">
+                                    <i class="fas fa-undo text-green-500"></i>
+                                </button>` :
+                                `<button class="btn-icon" onclick="openDeleteModal('${user.id}')" title="Delete">
+                                    <i class="fas fa-trash text-red-500"></i>
+                                </button>`
+                            }
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+        document.getElementById('paginationInfo').textContent = `Showing ${users.length} users`;
+    }
+
+    function updateStats(users) {
+        const total = users.length;
+        const active = users.filter(u => u.status === 'active').length;
+        const inactive = users.filter(u => u.status === 'inactive').length;
+        const admin = users.filter(u => u.role_id && [1, 2].includes(u.role_id)).length;
+        const online = users.filter(u => u.is_online).length;
+
+        document.getElementById('statTotal').textContent = total;
+        document.getElementById('statActive').textContent = active;
+        document.getElementById('statInactive').textContent = inactive;
+        document.getElementById('statAdmin').textContent = admin;
+        document.getElementById('statOnline').textContent = online;
+    }
+
+    // ─── CRUD Operations ──────────────────────────────────────────────────
+    function saveUser() {
+        // Validate form
+        if (!validateForm()) return;
+
+        const userData = {
+            full_name: document.getElementById('formFullName').value.trim(),
+            username: document.getElementById('formUsername').value.trim(),
+            email: document.getElementById('formEmail').value.trim(),
+            phone: document.getElementById('formPhone').value.trim(),
+            role_id: parseInt(document.getElementById('formRoleId').value),
+            department: document.getElementById('formDepartment').value,
+            avatar: document.getElementById('formAvatar').value.trim(),
+            status: document.getElementById('formStatus').checked ? 'active' : 'inactive',
+            password: document.getElementById('formPassword').value,
+            password_confirm: document.getElementById('formPasswordConfirm').value,
+            menus: getMenuAccessData()
+        };
+
+        // Remove password if empty (for update)
+        if (!userData.password) {
+            delete userData.password;
+            delete userData.password_confirm;
+        }
+
+        const userId = document.getElementById('formUserId').value;
+        const method = userId ? 'PUT' : 'POST';
+        const url = userId ? `${API_BASE}/users/${userId}` : `${API_BASE}/users`;
+
+        fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData)
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Failed to save user');
+            return res.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showToast(userId ? 'User updated successfully' : 'User created successfully', 'success');
+                resetForm();
+                loadUsers();
+                // If user was created, load menu access for the new user
+                if (!userId && data.user) {
+                    loadMenuAccess(data.user.id);
+                }
+            }
+        })
+        .catch(err => {
+            console.error('Error saving user:', err);
+            showToast('Failed to save user: ' + err.message, 'error');
+        });
+    }
+
+    function editUser(userId) {
+        fetch(`${API_BASE}/users/${userId}`)
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to fetch user');
+                return res.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    const user = data.user;
+                    document.getElementById('formUserId').value = user.id;
+                    document.getElementById('formFullName').value = user.full_name || '';
+                    document.getElementById('formUsername').value = user.username || '';
+                    document.getElementById('formEmail').value = user.email || '';
+                    document.getElementById('formPhone').value = user.phone || '';
+                    document.getElementById('formRoleId').value = user.role_id || '';
+                    document.getElementById('formDepartment').value = user.department || '';
+                    document.getElementById('formAvatar').value = user.avatar || '';
+                    document.getElementById('formStatus').checked = user.status === 'active';
+                    document.getElementById('statusLabel').textContent = user.status === 'active' ? 'Active' : 'Inactive';
+                    document.getElementById('formPassword').value = '';
+                    document.getElementById('formPasswordConfirm').value = '';
+                    document.getElementById('userFormTitle').innerHTML = '<i class="fas fa-user-edit text-blue-500 mr-2"></i>Edit User';
+                    document.getElementById('passLabel').innerHTML = 'Password';
+                    document.getElementById('passConfirmLabel').innerHTML = 'Confirm Password';
+                    document.getElementById('passHint').textContent = 'Leave empty to keep current password.';
+                    editingUserId = user.id;
+
+                    // Load menu access for this user
+                    loadMenuAccess(user.id);
+                    onRoleChange();
+                    clearErrors();
+                }
+            })
+            .catch(err => {
+                console.error('Error loading user:', err);
+                showToast('Failed to load user data', 'error');
+            });
+    }
+
+    function validateForm() {
+        clearErrors();
+        let isValid = true;
+
+        // Full Name
+        const fullName = document.getElementById('formFullName').value.trim();
+        if (!fullName) {
+            document.getElementById('errFullName').classList.add('show');
+            isValid = false;
+        }
+
+        // Username
+        const username = document.getElementById('formUsername').value.trim();
+        if (username.length < 3) {
+            document.getElementById('errUsername').classList.add('show');
+            isValid = false;
+        }
+
+        // Email
+        const email = document.getElementById('formEmail').value.trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email)) {
+            document.getElementById('errEmail').classList.add('show');
+            isValid = false;
+        }
+
+        // Role
+        const roleId = document.getElementById('formRoleId').value;
+        if (!roleId) {
+            document.getElementById('errRole').classList.add('show');
+            isValid = false;
+        }
+
+        // Menu Access
+        const menus = getMenuAccessData();
+        if (menus.length === 0) {
+            document.getElementById('errMenuAccess').classList.add('show');
+            isValid = false;
+        }
+
+        // Password validation for new user
+        const userId = document.getElementById('formUserId').value;
+        const password = document.getElementById('formPassword').value;
+        const passwordConfirm = document.getElementById('formPasswordConfirm').value;
+
+        if (!userId && password.length < 8) {
+            document.getElementById('errPassword').classList.add('show');
+            isValid = false;
+        } else if (userId && password && password.length < 8) {
+            document.getElementById('errPassword').classList.add('show');
+            isValid = false;
+        }
+
+        if (password && passwordConfirm && password !== passwordConfirm) {
+            document.getElementById('errPasswordConfirm').classList.add('show');
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    // ─── Delete/Restore Functions ──────────────────────────────────────
+    function openDeleteModal(userId) {
+        deleteTargetId = userId;
+        const user = findUserById(userId);
+        if (user) {
+            document.getElementById('deleteUserName').textContent = user.full_name || user.username;
+            const isDeleted = user.status === 'deleted';
+            document.querySelector('#deleteModal .modal-footer .btn-danger').style.display = isDeleted ? 'none' : 'inline-flex';
+            document.getElementById('btnRestoreUser').style.display = isDeleted ? 'inline-flex' : 'none';
+            document.querySelector('#deleteModal .modal-body h2').textContent = isDeleted ? 'Restore User?' : 'Soft Delete User?';
+            document.querySelector('#deleteModal .modal-body p.text-xs').textContent = isDeleted ? 
+                'This action will restore the user account to active status.' :
+                'This action moves the user to soft delete. The account can be restored later.';
+        }
+        openModal('deleteModal');
+    }
+
+    function findUserById(userId) {
+        // Find user from table data
+        const rows = document.querySelectorAll('#userTableBody tr');
+        for (const row of rows) {
+            const checkbox = row.querySelector('.row-checkbox');
+            if (checkbox && checkbox.value === userId) {
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 1) {
+                    const nameCell = cells[1];
+                    const nameEl = nameCell.querySelector('.font-medium');
+                    return { 
+                        id: userId, 
+                        full_name: nameEl ? nameEl.textContent : userId,
+                        username: cells[2]?.textContent?.trim() || userId,
+                        status: row.classList.contains('opacity-60') ? 'deleted' : 'active'
+                    };
+                }
+            }
+        }
+        return { id: userId, full_name: userId, username: userId };
+    }
+
+    function confirmDelete() {
+        if (!deleteTargetId) return;
+        const isRestore = document.getElementById('btnRestoreUser').style.display === 'inline-flex';
+        
+        const url = isRestore ? `${API_BASE}/users/${deleteTargetId}/restore` : `${API_BASE}/users/${deleteTargetId}`;
+        const method = isRestore ? 'POST' : 'DELETE';
+
+        fetch(url, { method })
+            .then(res => {
+                if (!res.ok) throw new Error(isRestore ? 'Failed to restore user' : 'Failed to delete user');
+                return res.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showToast(isRestore ? 'User restored successfully' : 'User soft deleted successfully', 'success');
+                    closeModal('deleteModal');
+                    loadUsers();
+                    deleteTargetId = null;
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                showToast(err.message, 'error');
+            });
+    }
+
+    function restoreUser(userId) {
+        if (userId) {
+            deleteTargetId = userId;
+            document.getElementById('btnRestoreUser').style.display = 'inline-flex';
+            document.querySelector('#deleteModal .modal-footer .btn-danger').style.display = 'none';
+            document.querySelector('#deleteModal .modal-body h2').textContent = 'Restore User?';
+            document.querySelector('#deleteModal .modal-body p.text-xs').textContent = 'This action will restore the user account to active status.';
+            const user = findUserById(userId);
+            document.getElementById('deleteUserName').textContent = user.full_name || user.username;
+            openModal('deleteModal');
+        }
+    }
+
+    // ─── Bulk Operations ──────────────────────────────────────────────
+    function updateBulkBar() {
+        const checked = document.querySelectorAll('.row-checkbox:checked:not([disabled])');
+        const bar = document.getElementById('bulkBar');
+        const count = document.getElementById('bulkCount');
+        
+        if (checked.length > 0) {
+            bar.classList.remove('hidden');
+            count.textContent = `${checked.length} selected`;
+        } else {
+            bar.classList.add('hidden');
+        }
+    }
+
+    function clearSelection() {
+        document.querySelectorAll('.row-checkbox:checked').forEach(cb => cb.checked = false);
+        updateBulkBar();
+    }
+
+    function getSelectedIds() {
+        return Array.from(document.querySelectorAll('.row-checkbox:checked:not([disabled])')).map(cb => cb.value);
+    }
+
+    function bulkActivate() {
+        const ids = getSelectedIds();
+        if (ids.length === 0) return;
+        bulkUpdateStatus(ids, 'active');
+    }
+
+    function bulkDeactivate() {
+        const ids = getSelectedIds();
+        if (ids.length === 0) return;
+        bulkUpdateStatus(ids, 'inactive');
+    }
+
+    function bulkUpdateStatus(ids, status) {
+        Promise.all(ids.map(id => 
+            fetch(`${API_BASE}/users/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            })
+        ))
+        .then(responses => {
+            const allOk = responses.every(r => r.ok);
+            if (allOk) {
+                showToast(`Users ${status === 'active' ? 'activated' : 'deactivated'} successfully`, 'success');
+                clearSelection();
+                loadUsers();
+            } else {
+                throw new Error('Some operations failed');
+            }
+        })
+        .catch(err => {
+            console.error('Bulk update error:', err);
+            showToast('Failed to update users', 'error');
+        });
+    }
+
+    function bulkDelete() {
+        const ids = getSelectedIds();
+        if (ids.length === 0) return;
+        if (!confirm(`Are you sure you want to soft delete ${ids.length} user(s)?`)) return;
+
+        Promise.all(ids.map(id => 
+            fetch(`${API_BASE}/users/${id}`, { method: 'DELETE' })
+        ))
+        .then(responses => {
+            const allOk = responses.every(r => r.ok);
+            if (allOk) {
+                showToast(`${ids.length} users soft deleted successfully`, 'success');
+                clearSelection();
+                loadUsers();
+            } else {
+                throw new Error('Some operations failed');
+            }
+        })
+        .catch(err => {
+            console.error('Bulk delete error:', err);
+            showToast('Failed to delete users', 'error');
+        });
+    }
+
+    // ─── Filter/Search ──────────────────────────────────────────────────
+    function handleSearch() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const rows = document.querySelectorAll('#userTableBody tr');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const isVisible = text.includes(searchTerm);
+            row.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount++;
+        });
+        
+        document.getElementById('paginationInfo').textContent = `Showing ${visibleCount} users`;
+    }
+
+    function handleFilter() {
+        const roleFilter = document.getElementById('filterRole').value;
+        const statusFilter = document.getElementById('filterStatus').value;
+        const rows = document.querySelectorAll('#userTableBody tr');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            let show = true;
+            const roleCell = row.querySelector('.role-badge');
+            const statusCell = row.querySelector('[class*="status-"]');
+            
+            if (roleFilter && roleCell) {
+                const role = roleCell.textContent.toLowerCase();
+                if (role !== roleFilter.replace('_', ' ')) show = false;
+            }
+            
+            if (statusFilter && statusCell) {
+                const status = statusCell.textContent.toLowerCase();
+                if (status !== statusFilter) show = false;
+            }
+            
+            row.style.display = show ? '' : 'none';
+            if (show) visibleCount++;
+        });
+        
+        document.getElementById('paginationInfo').textContent = `Showing ${visibleCount} users`;
+    }
+
+    function resetFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('filterRole').value = '';
+        document.getElementById('filterStatus').value = '';
+        document.querySelectorAll('#userTableBody tr').forEach(row => row.style.display = '');
+        handleSearch();
+    }
+
+    // ─── Export ──────────────────────────────────────────────────────────
+    function exportUsers() {
+        const rows = document.querySelectorAll('#userTableBody tr:not([style*="display: none"])');
+        if (rows.length === 0) {
+            showToast('No users to export', 'warning');
+            return;
+        }
+
+        let csv = 'Full Name,Username,Email,Role,Status,Department,Last Login\n';
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 7) {
+                const name = cells[1]?.querySelector('.font-medium')?.textContent || '';
+                const username = cells[2]?.textContent?.trim() || '';
+                const email = cells[1]?.querySelector('.text-xs')?.textContent || '';
+                const role = cells[3]?.textContent?.trim() || '';
+                const status = cells[4]?.textContent?.trim() || '';
+                const dept = cells[5]?.textContent?.trim() || '';
+                const lastLogin = cells[6]?.textContent?.trim() || '';
+                csv += `${name},${username},${email},${role},${status},${dept},${lastLogin}\n`;
+            }
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `users_export_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Users exported successfully', 'success');
+    }
+
+    // ─── Modal Functions ──────────────────────────────────────────────────
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // ─── Permissions Modal ──────────────────────────────────────────────
+    let permUserId = null;
+
+    function openPermModal(userId) {
+        permUserId = userId;
+        fetch(`${API_BASE}/users/${userId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('permUserName').textContent = data.user.full_name || data.user.username;
+                    document.getElementById('permUserRole').textContent = data.user.role_name || 'Unknown';
+                    // Load permissions
+                    loadPermissions(userId);
+                    openModal('permModal');
+                }
+            })
+            .catch(err => {
+                console.error('Error loading user for permissions:', err);
+                showToast('Failed to load user data', 'error');
+            });
+    }
+
+    function loadPermissions(userId) {
+        // This would load the user's specific permissions from the backend
+        // For now, we'll show a placeholder
+        const grids = ['permGridFile', 'permGridMaster', 'permGridTransaction', 'permGridReport', 'permGridCompliance', 'permGridAdmin', 'permGridUtility', 'permGridHelp'];
+        grids.forEach(gridId => {
+            const grid = document.getElementById(gridId);
+            if (grid) {
+                grid.innerHTML = `
+                    <div class="perm-item">
+                        <input type="checkbox" checked>
+                        <label>View</label>
+                    </div>
+                    <div class="perm-item">
+                        <input type="checkbox">
+                        <label>Create</label>
+                    </div>
+                    <div class="perm-item">
+                        <input type="checkbox" checked>
+                        <label>Edit</label>
+                    </div>
+                    <div class="perm-item">
+                        <input type="checkbox">
+                        <label>Delete</label>
+                    </div>
+                `;
+            }
+        });
+    }
+
+    function applyDefaultPerms() {
+        // Reset to role-based default permissions
+        showToast('Permissions reset to default role', 'success');
+    }
+
+    function savePermissions() {
+        // Save permissions to backend
+        showToast('Permissions saved successfully', 'success');
+        closeModal('permModal');
+    }
+
+    // ─── Reset Password Modal ──────────────────────────────────────────
+    let resetPwUserId = null;
+
+    function openResetPwModal(userId) {
+        resetPwUserId = userId;
+        fetch(`${API_BASE}/users/${userId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('resetPwUserName').textContent = data.user.full_name || data.user.username;
+                    document.getElementById('newPwInput').value = '';
+                    document.getElementById('newPwConfirm').value = '';
+                    document.getElementById('mustChangePw').checked = true;
+                    document.getElementById('errNewPw').classList.remove('show');
+                    document.getElementById('errNewPwC').classList.remove('show');
+                    openModal('resetPwModal');
+                }
+            })
+            .catch(err => {
+                console.error('Error loading user:', err);
+                showToast('Failed to load user data', 'error');
+            });
+    }
+
+    function doResetPassword() {
+        const password = document.getElementById('newPwInput').value;
+        const confirm = document.getElementById('newPwConfirm').value;
+        const mustChange = document.getElementById('mustChangePw').checked;
+
+        if (password.length < 8) {
+            document.getElementById('errNewPw').classList.add('show');
+            return;
+        }
+        if (password !== confirm) {
+            document.getElementById('errNewPwC').classList.add('show');
+            return;
+        }
+
+        fetch(`${API_BASE}/users/${resetPwUserId}/password`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password, must_change: mustChange })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Failed to reset password');
+            return res.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showToast('Password reset successfully', 'success');
+                closeModal('resetPwModal');
+            }
+        })
+        .catch(err => {
+            console.error('Error resetting password:', err);
+            showToast('Failed to reset password: ' + err.message, 'error');
+        });
+    }
+
+    // ─── Toggle Password Visibility ──────────────────────────────────
+    function toggleFormPw(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            input.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    }
+
+    // ─── Toggle Select All ──────────────────────────────────────────────
+    function toggleSelectAll(checkbox) {
+        document.querySelectorAll('.row-checkbox:not([disabled])').forEach(cb => cb.checked = checkbox.checked);
+        updateBulkBar();
+    }
+
+    // ─── Load sidebar buttons after layout loads ──────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+        // Wait for sidebar to load
+        const checkSidebar = setInterval(() => {
+            const sidebar = document.getElementById('sidebar-container');
+            if (sidebar && sidebar.querySelector('[data-action]')) {
+                clearInterval(checkSidebar);
+                setupSidebarButtons();
+            }
+        }, 500);
+    });
+    </script>
+
+    <!-- Load external scripts -->
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/layout-loader.js"></script>
+</body>
+</html>

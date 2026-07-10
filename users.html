@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - GIBSYSNET</title>
+    <link href="assets/css/output.css" rel="stylesheet">
+    <script src="assets/js/tailwind.config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/custom.css">
+    <link rel="stylesheet" href="assets/css/administration.css">
+    <link rel="stylesheet" href="assets/css/users.css">
+</head>
+<body class="bg-gray-50">
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+        <div class="menu-bar text-white" id="menu-bar-container"></div>
+        <div class="status-bar text-white text-sm" id="status-bar-container"></div>
+        <div class="sidebar" id="sidebar-container"
+             data-title="User Management"
+             data-icon="fas fa-users-cog"
+             data-type="master"></div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+
+            <!-- Page Header -->
+            <div class="mb-6">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">User Management</h1>
+                        <p class="text-gray-500 text-sm mt-1">Manage users and system access control for GIBSYSNET</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="health-grid mb-6">
+                <div class="health-card">
+                    <p class="health-label">Total Users</p>
+                    <p class="health-value" id="statTotal">0</p>
+                </div>
+                <div class="health-card">
+                    <p class="health-label">Active</p>
+                    <p class="health-value" id="statActive">0</p>
+                </div>
+                <div class="health-card">
+                    <p class="health-label">Inactive</p>
+                    <p class="health-value" id="statInactive">0</p>
+                </div>
+                <div class="health-card">
+                    <p class="health-label">Admin / Super</p>
+                    <p class="health-value" id="statAdmin">0</p>
+                </div>
+                <div class="health-card">
+                    <p class="health-label">Online Now</p>
+                    <p class="health-value" id="statOnline">0</p>
+                </div>
+            </div>
+
+            <!-- Inline User Information Form (like partners.html) -->
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+                <div class="xl:col-span-2 bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b flex justify-between items-center">
+                        <h3 class="font-bold text-gray-800" id="userFormTitle"><i class="fas fa-user-plus text-green-500 mr-2"></i>User Information</h3>
+                    </div>
+                    <form id="userForm" class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4" onsubmit="return false;">
+                        <input type="hidden" id="formUserId">
+
+                        <div>
+                            <label class="form-label-custom">Full Name <span class="req">*</span></label>
+                            <input type="text" class="form-control" id="formFullName" placeholder="Example: John Doe">
+                            <span class="form-error" id="errFullName">Full name is required.</span>
+                        </div>
+                        <div>
+                            <label class="form-label-custom">Username <span class="req">*</span></label>
+                            <input type="text" class="form-control" id="formUsername" placeholder="unique_username">
+                            <span class="form-error" id="errUsername">Username min. 3 characters.</span>
+                        </div>
+
+                        <div>
+                            <label class="form-label-custom">Email <span class="req">*</span></label>
+                            <input type="email" class="form-control" id="formEmail" placeholder="name@company.com">
+                            <span class="form-error" id="errEmail">Invalid email address.</span>
+                        </div>
+                        <div>
+                            <label class="form-label-custom">Phone Number</label>
+                            <input type="text" class="form-control" id="formPhone" placeholder="+62 8xx-xxxx-xxxx">
+                        </div>
+
+                        <div>
+                            <label class="form-label-custom">Role <span class="req">*</span></label>
+                            <select class="form-control" id="formRoleId" onchange="onRoleChange()">
+                                <option value="">-- Select Role --</option>
+                                <option value="1">Super Admin</option>
+                                <option value="2">Admin</option>
+                                <option value="3">Manager</option>
+                                <option value="4">Broker</option>
+                                <option value="5">User</option>
+                            </select>
+                            <span class="form-error" id="errRole">Role is required.</span>
+                            <div id="roleDescription" class="hidden mt-2 p-2 rounded-lg bg-blue-50 border border-blue-100">
+                                <p class="text-xs text-blue-700" id="roleDescText"></p>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label-custom">Department</label>
+                            <select class="form-control" id="formDepartment">
+                                <option value="">-- Select Department --</option>
+                                <option value="Administration">Administration</option>
+                                <option value="Sales">Sales</option>
+                                <option value="Operations">Operations</option>
+                                <option value="Finance">Finance</option>
+                                <option value="Compliance">Compliance</option>
+                                <option value="IT">IT</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="form-label-custom">Avatar URL</label>
+                            <input type="text" class="form-control" id="formAvatar" placeholder="Example: /assets/images/avatar1.png">
+                        </div>
+                        <div>
+                            <label class="form-label-custom">Account Status</label>
+                            <div class="toggle-wrap" style="margin-top: 8px;">
+                                <label class="toggle">
+                                    <input type="checkbox" id="formStatus" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span class="text-sm text-gray-600" id="statusLabel">Active</span>
+                            </div>
+                        </div>
+
+                        <div style="position:relative;">
+                            <label class="form-label-custom" id="passLabel">Password <span class="req">*</span></label>
+                            <div style="position:relative;">
+                                <input type="password" class="form-control" id="formPassword" placeholder="Min. 8 characters" style="padding-right:2.75rem;">
+                                <button type="button" class="toggle-pw-btn" onclick="toggleFormPw('formPassword','iconPw1')"><i class="fas fa-eye" id="iconPw1"></i></button>
+                            </div>
+                            <span class="form-error" id="errPassword">Password min. 8 characters.</span>
+                            <p class="form-hint" id="passHint">Leave empty if you do not want to change the password.</p>
+                        </div>
+                        <div style="position:relative;">
+                            <label class="form-label-custom" id="passConfirmLabel">Confirm Password <span class="req">*</span></label>
+                            <div style="position:relative;">
+                                <input type="password" class="form-control" id="formPasswordConfirm" placeholder="Repeat password" style="padding-right:2.75rem;">
+                                <button type="button" class="toggle-pw-btn" onclick="toggleFormPw('formPasswordConfirm','iconPw2')"><i class="fas fa-eye" id="iconPw2"></i></button>
+                            </div>
+                            <span class="form-error" id="errPasswordConfirm">Passwords do not match.</span>
+                        </div>
+
+                        <!-- Menu Access Section -->
+                        <div class="md:col-span-2">
+                            <label class="form-label-custom">Menu Access <span class="req">*</span></label>
+                            <div id="formMenuAccess" class="space-y-4 border rounded-lg p-4 bg-gray-50">
+                                <!-- Menu Access will be loaded here dynamically -->
+                                <div id="menuAccessTree" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                                <div class="mt-2 flex gap-2">
+                                    <button type="button" class="btn-ghost btn-sm" onclick="selectAllMenus()">
+                                        <i class="fas fa-check-double mr-1"></i>Select All
+                                    </button>
+                                    <button type="button" class="btn-ghost btn-sm" onclick="deselectAllMenus()">
+                                        <i class="fas fa-times mr-1"></i>Deselect All
+                                    </button>
+                                </div>
+                            </div>
+                            <span class="form-error" id="errMenuAccess">At least one menu access must be selected.</span>
+                        </div>
+
+                    </form>
+                </div>
+
+                <!-- Right Side Panel: Tool Impact Analysis -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b">
+                        <h3 class="font-bold text-gray-800"><i class="fas fa-microscope mr-2 text-indigo-600"></i>Tool Impact Analysis</h3>
+                    </div>
+                    <div class="p-4">
+                        <table class="w-full text-sm" id="impactTable">
+                            <thead class="text-gray-500">
+                                <tr>
+                                    <th class="text-left py-2">Tool</th>
+                                    <th class="text-left py-2">Impact</th>
+                                    <th class="text-left py-2">Risk</th>
+                                </tr>
+                            </thead>
+                            <tbody id="impactTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Governance & Control Panels -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b"><h3 class="font-bold text-gray-800"><i class="fas fa-code-branch mr-2 text-green-600"></i>Data Versioning</h3></div>
+                    <div class="p-4" id="versionList"></div>
+                </div>
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b"><h3 class="font-bold text-gray-800"><i class="fas fa-trash-restore mr-2 text-red-500"></i>Soft Delete</h3></div>
+                    <div class="p-4" id="softDeleteList"></div>
+                </div>
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b"><h3 class="font-bold text-gray-800"><i class="fas fa-project-diagram mr-2 text-purple-600"></i>Smart Dependency Control</h3></div>
+                    <div class="p-4" id="dependencyList"></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
+                <div class="px-6 py-4 border-b"><h3 class="font-bold text-gray-800"><i class="fas fa-robot mr-2 text-sky-600"></i>AI Suggestion (Future Ready)</h3></div>
+                <div class="p-4" id="aiSuggestionList"></div>
+            </div>
+
+            <!-- User List Card -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-6 py-4 border-b flex flex-wrap items-center justify-between gap-3">
+                    <h3 class="font-bold text-gray-800">
+                        <i class="fas fa-users-cog mr-2 text-blue-600"></i>User List
+                    </h3>
+                    <div class="flex gap-2 flex-wrap items-center">
+                        <div class="search-box" style="min-width: 240px;">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchInput" placeholder="Search name, username, email..." oninput="handleSearch()">
+                        </div>
+                        <select class="filter-select" id="filterRole" onchange="handleFilter()">
+                            <option value="">All Roles</option>
+                            <option value="super_admin">Super Admin</option>
+                            <option value="admin">Admin</option>
+                            <option value="manager">Manager</option>
+                            <option value="broker">Broker</option>
+                            <option value="user">User</option>
+                        </select>
+                        <select class="filter-select" id="filterStatus" onchange="handleFilter()">
+                            <option value="">All Statuses</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="deleted">Deleted</option>
+                        </select>
+                        <button class="btn-ghost btn-sm" onclick="resetFilters()">
+                            <i class="fas fa-rotate-right"></i> Reset
+                        </button>
+                        <button class="btn-ghost btn-sm" onclick="exportUsers()" title="Export CSV">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="min-w-full divide-y divide-gray-200" id="userTable">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" style="width:40px;">
+                                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" style="accent-color:#3b82f6; width:15px; height:15px;">
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" style="width:50px;">No</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" style="width:70px;">ID User</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Login</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" style="width:170px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="userTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="empty-state hidden" id="emptyState">
+                    <i class="fas fa-users-slash"></i>
+                    <h3>No users found</h3>
+                    <p>Try changing filters or add a new user.</p>
+                </div>
+                <div class="px-6 py-4 border-t bg-gray-50 flex flex-wrap items-center justify-between gap-3">
+                    <div class="text-sm text-gray-700">
+                        <span id="paginationInfo">Showing 0 users</span>
+                    </div>
+                    <div class="pagination" id="paginationBtns"></div>
+                </div>
+            </div>
+
+            <!-- Bulk Actions Bar -->
+            <div id="bulkBar" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-4 z-50">
+                <span class="text-sm font-medium" id="bulkCount">0 selected</span>
+                <div class="w-px h-4 bg-white/20"></div>
+                <button class="btn btn-sm btn-success" onclick="bulkActivate()"><i class="fas fa-check"></i> Activate</button>
+                <button class="btn btn-sm btn-warning" onclick="bulkDeactivate()"><i class="fas fa-ban"></i> Deactivate</button>
+                <button class="btn btn-sm btn-danger"  onclick="bulkDelete()"><i class="fas fa-trash"></i> Delete</button>
+                <button class="btn btn-sm btn-ghost text-white border-white/20" onclick="clearSelection()"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div id="footer-container" class="mt-6"></div>
+        </div><!-- /main-content -->
+    </div><!-- /dashboard-grid -->
+
+    <!-- MODAL: Permissions -->
+    <div class="modal-backdrop" id="permModal">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2><i class="fas fa-key mr-2 text-purple-500"></i>Manage Permissions &mdash; <span id="permUserName" class="font-normal text-gray-500"></span></h2>
+                <button class="modal-close" onclick="closeModal('permModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-sm text-gray-500 mb-4">Check the modules this user is allowed to access. Specific permissions will override the default role.</p>
+
+                <div class="p-3 rounded-xl border border-amber-100 bg-amber-50 text-sm text-amber-800 mb-4">
+                    <i class="fas fa-shield-halved mr-2"></i>
+                    Current Role: <strong id="permUserRole">&mdash;</strong>. Default permissions applied. You can override below.
+                </div>
+
+                <div class="section-divider">File</div>
+                <div class="perm-grid" id="permGridFile"></div>
+
+                <div class="section-divider">Master Data</div>
+                <div class="perm-grid" id="permGridMaster"></div>
+
+                <div class="section-divider">Transactions</div>
+                <div class="perm-grid" id="permGridTransaction"></div>
+
+                <div class="section-divider">Reports &amp; Analytics</div>
+                <div class="perm-grid" id="permGridReport"></div>
+
+                <div class="section-divider">Compliance</div>
+                <div class="perm-grid" id="permGridCompliance"></div>
+
+                <div class="section-divider">Administration</div>
+                <div class="perm-grid" id="permGridAdmin"></div>
+
+                <div class="section-divider">Utilities</div>
+                <div class="perm-grid" id="permGridUtility"></div>
+
+                <div class="section-divider">Help</div>
+                <div class="perm-grid" id="permGridHelp"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" onclick="closeModal('permModal')">Cancel</button>
+                <button class="btn-ghost btn-sm" onclick="applyDefaultPerms()"><i class="fas fa-rotate-right mr-1"></i>Reset to Default Role</button>
+                <button class="btn-primary" onclick="savePermissions()"><i class="fas fa-save mr-1"></i>Save Permissions</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Delete Confirm -->
+    <div class="modal-backdrop" id="deleteModal">
+        <div class="modal modal-sm">
+            <div class="modal-body" style="text-align:center; padding:32px 24px;">
+                <div class="danger-icon"><i class="fas fa-trash-alt"></i></div>
+                <h2 class="text-lg font-bold text-gray-800 mb-2">Soft Delete User?</h2>
+                <p class="text-sm text-gray-500 mb-2">You are about to remove user account <strong id="deleteUserName"></strong>.</p>
+                <p class="text-xs text-amber-500">This action moves the user to soft delete. The account can be restored later.</p>
+            </div>
+            <div class="modal-footer" style="justify-content:center;">
+                <button class="btn-ghost" onclick="closeModal('deleteModal')">Cancel</button>
+                <button class="btn btn-danger" id="btnConfirmDelete" onclick="confirmDelete()">
+                    <i class="fas fa-trash mr-1"></i>Yes, Remove
+                </button>
+                <button class="btn btn-success" id="btnRestoreUser" onclick="restoreUser()" style="display:none;">
+                    <i class="fas fa-undo mr-1"></i>Restore User
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Reset Password -->
+    <div class="modal-backdrop" id="resetPwModal">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2><i class="fas fa-lock-open text-amber-500 mr-2"></i>Reset Password &mdash; <span id="resetPwUserName" class="font-normal text-gray-500"></span></h2>
+                <button class="modal-close" onclick="closeModal('resetPwModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" style="position:relative;">
+                    <label class="form-label-custom">New Password <span class="req">*</span></label>
+                    <div style="position:relative;">
+                        <input type="password" class="form-control" id="newPwInput" placeholder="Min. 8 characters" style="padding-right:2.75rem;">
+                        <button type="button" class="toggle-pw-btn" onclick="toggleFormPw('newPwInput','iconPw3')"><i class="fas fa-eye" id="iconPw3"></i></button>
+                    </div>
+                    <span class="form-error" id="errNewPw">Password min. 8 characters.</span>
+                </div>
+                <div class="form-group" style="position:relative;">
+                    <label class="form-label-custom">Confirm Password <span class="req">*</span></label>
+                    <div style="position:relative;">
+                        <input type="password" class="form-control" id="newPwConfirm" placeholder="Repeat password" style="padding-right:2.75rem;">
+                        <button type="button" class="toggle-pw-btn" onclick="toggleFormPw('newPwConfirm','iconPw4')"><i class="fas fa-eye" id="iconPw4"></i></button>
+                    </div>
+                    <span class="form-error" id="errNewPwC">Passwords do not match.</span>
+                </div>
+                <label class="toggle-wrap">
+                    <label class="toggle"><input type="checkbox" id="mustChangePw" checked><span class="toggle-slider"></span></label>
+                    <span class="text-sm text-gray-600">Force password change on next login</span>
+                </label>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" onclick="closeModal('resetPwModal')">Cancel</button>
+                <button class="btn btn-warning" onclick="doResetPassword()"><i class="fas fa-key mr-1"></i>Reset Password</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+    /* ── Users page specific CSS ── */
+    .health-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; }
+    .health-card { background:white; border-radius:12px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,.06); border:1px solid #e5e7eb; text-align:center; }
+    .health-label { color:#6b7280; font-size:.75rem; margin-bottom:4px; }
+    .health-value { font-size:1.75rem; font-weight:700; color:#1f2937; }
+    .search-box { position:relative; flex:1; min-width:200px; }
+    .search-box i { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#9ca3af; }
+    .search-box input { width:100%; padding:8px 12px 8px 32px; border:1px solid #d1d5db; border-radius:8px; font-size:.875rem; outline:none; transition:border .2s; }
+    .search-box input:focus { border-color:#3b82f6; }
+    .filter-select { padding:8px 32px 8px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:.875rem; background:#fff; cursor:pointer; outline:none; appearance:auto; }
+    .form-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .form-group { margin-bottom:12px; }
+    .form-label-custom { display:block; font-weight:600; font-size:.85rem; margin-bottom:4px; color:#374151; }
+    .form-control { width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:.875rem; outline:none; transition:border .2s; }
+    .form-control:focus { border-color:#3b82f6; box-shadow:0 0 0 2px rgba(59,130,246,.15); }
+    .form-error { display:none; font-size:.75rem; color:#ef4444; margin-top:2px; }
+    .form-error.show { display:block; }
+    .form-hint { font-size:.75rem; color:#6b7280; margin-top:4px; }
+    .req { color:#ef4444; }
+    .toggle-wrap { display:flex; align-items:center; gap:8px; margin-top:4px; }
+    .toggle { position:relative; display:inline-block; width:44px; height:24px; cursor:pointer; }
+    .toggle input { opacity:0; width:0; height:0; }
+    .toggle-slider { position:absolute; inset:0; background:#d1d5db; border-radius:24px; transition:.2s; }
+    .toggle-slider::before { content:''; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s; }
+    .toggle input:checked + .toggle-slider { background:#3b82f6; }
+    .toggle input:checked + .toggle-slider::before { transform:translateX(20px); }
+    .toggle-pw-btn { position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:#6b7280; cursor:pointer; padding:4px; font-size:.85rem; }
+    .section-divider { font-weight:700; font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; color:#6b7280; margin:16px 0 8px; padding-top:8px; border-top:1px solid #e5e7eb; }
+    .perm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; margin-bottom:12px; }
+    .perm-item { display:flex; align-items:center; gap:8px; padding:8px 12px; background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb; }
+    .perm-item input[type="checkbox"] { accent-color:#3b82f6; width:16px; height:16px; }
+    .perm-item label { font-size:.85rem; cursor:pointer; }
+    .perm-badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:.7rem; font-weight:600; }
+    .perm-badge.on { background:#d1fae5; color:#065f46; }
+    .perm-badge.off { background:#fee2e2; color:#991b1b; }
+    .danger-icon { width:64px; height:64px; border-radius:50%; background:#fee2e2; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
+    .danger-icon i { color:#ef4444; font-size:1.5rem; }
+    .empty-state { text-align:center; padding:48px 24px; color:#6b7280; }
+    .empty-state i { font-size:3rem; margin-bottom:12px; color:#d1d5db; }
+    .empty-state h3 { font-size:1.1rem; color:#374151; margin-bottom:4px; }
+    .empty-state p { font-size:.85rem; }
+    
+    /* Menu Access Tree Styles */
+    .menu-group { margin-bottom:8px; }
+    .menu-group-header { display:flex; align-items:center; gap:8px; padding:6px 12px; background:#f3f4f6; border-radius:6px; cursor:pointer; transition:background .2s; }
+    .menu-group-header:hover { background:#e5e7eb; }
+    .menu-group-header input[type="checkbox"] { accent-color:#3b82f6; width:15px; height:15px; }
+    .menu-group-header label { font-weight:600; font-size:.85rem; cursor:pointer; flex:1; }
+    .menu-group-header .toggle-icon { transition:transform .2s; font-size:.7rem; color:#6b7280; }
+    .menu-group-header .toggle-icon.open { transform:rotate(90deg); }
+    .menu-items { padding-left:28px; margin-top:4px; display:flex; flex-direction:column; gap:4px; }
+    .menu-items.collapsed { display:none; }
+    .menu-item { display:flex; align-items:center; gap:8px; padding:4px 8px; border-radius:4px; transition:background .2s; }
+    .menu-item:hover { background:#f9fafb; }
+    .menu-item input[type="checkbox"] { accent-color:#3b82f6; width:14px; height:14px; }
+    .menu-item label { font-size:.8rem; cursor:pointer; color:#374151; }
+    .menu-item .menu-icon { color:#6b7280; font-size:.7rem; width:16px; }
+    </style>
+
+    
+    <script src="assets/js/users.js"></script>
+
+    <!-- Load external scripts -->
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/layout-loader.js"></script>
+</body>
+</html>

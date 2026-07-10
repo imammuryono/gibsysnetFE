@@ -4,606 +4,760 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - GIBSYSNET</title>
-    <link href="../assets/css/output.css" rel="stylesheet">
+    <meta name="description" content="Masuk ke GIBSYSNET — General Insurance Broker System. Akses dikontrol oleh administrator.">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/login.css">
+    <style>
+        /* ── Production overrides ── */
+        .login-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(24px) saturate(200%);
+            -webkit-backdrop-filter: blur(24px) saturate(200%);
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            box-shadow:
+                0 32px 64px rgba(0, 0, 0, 0.08),
+                0 2px 4px rgba(0, 0, 0, 0.04),
+                inset 0 1px 0 rgba(255, 255, 255, 0.7);
+            border-radius: 28px;
+            width: 100%;
+            max-width: 460px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
+            border-radius: 28px 28px 0 0;
+        }
+
+        .card-header {
+            padding: 2.5rem 2.5rem 1.5rem;
+            text-align: center;
+        }
+
+        .logo-wrap {
+            width: 72px;
+            height: 72px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #3b82f6, #7c3aed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem;
+            box-shadow: 0 12px 32px -4px rgba(59, 130, 246, 0.4);
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 12px 32px -4px rgba(59, 130, 246, 0.4); }
+            50%       { box-shadow: 0 12px 40px -2px rgba(124, 58, 237, 0.5); }
+        }
+
+        .logo-wrap i { font-size: 1.75rem; color: #fff; }
+
+        .card-title {
+            font-size: 1.625rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #1e40af, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+            margin-bottom: 0.3rem;
+        }
+
+        .card-subtitle { font-size: 0.875rem; color: #64748b; }
+
+        .card-body { padding: 0 2.5rem 2.5rem; }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.4), transparent);
+            margin-bottom: 1.75rem;
+        }
+
+        .field-label {
+            display: block;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .field-label i { margin-right: 6px; color: #3b82f6; }
+
+        .input-wrap { position: relative; }
+
+        .input-icon {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            pointer-events: none;
+            font-size: 0.875rem;
+            transition: color 0.2s;
+        }
+
+        .toggle-pw-btn {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #94a3b8;
+            font-size: 0.875rem;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+
+        .toggle-pw-btn:hover { color: #3b82f6; }
+
+        .form-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 0.25rem;
+        }
+
+        .remember-wrap { display: flex; align-items: center; gap: 8px; }
+        .remember-wrap label { font-size: 0.8125rem; color: #475569; cursor: pointer; }
+
+        .forgot-link {
+            font-size: 0.8125rem;
+            color: #3b82f6;
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .forgot-link:hover { color: #1d4ed8; text-decoration: underline; }
+
+        .btn-login {
+            width: 100%;
+            padding: 0.9rem 1.5rem;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #fff;
+            font-size: 0.9375rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-login::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent);
+            pointer-events: none;
+        }
+
+        .btn-login:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px -4px rgba(59, 130, 246, 0.5);
+        }
+
+        .btn-login:active:not(:disabled) { transform: translateY(0); }
+        .btn-login:disabled { opacity: 0.7; cursor: not-allowed; }
+
+        .alert-error {
+            display: none;
+            align-items: flex-start;
+            gap: 10px;
+            background: rgba(239, 68, 68, 0.06);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 12px;
+            padding: 0.875rem 1rem;
+            margin-top: 1rem;
+        }
+
+        .alert-error.show { display: flex; }
+        .alert-error i { color: #ef4444; margin-top: 2px; flex-shrink: 0; }
+        .alert-error p {
+            font-size: 0.8125rem;
+            color: #b91c1c;
+            font-weight: 500;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .secure-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 1.25rem;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .secure-badge i { color: #10b981; }
+
+        .card-footer {
+            padding: 1rem 2.5rem 1.75rem;
+            border-top: 1px solid rgba(226, 232, 240, 0.6);
+            text-align: center;
+        }
+
+        .card-footer p { font-size: 0.75rem; color: #94a3b8; }
+        .card-footer a { color: #3b82f6; text-decoration: none; font-weight: 500; }
+        .card-footer a:hover { text-decoration: underline; }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 999px;
+        }
+
+        .status-pill.online {
+            background: rgba(16, 185, 129, 0.1);
+            color: #059669;
+        }
+
+        .status-pill.online::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: blink 1.4s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.3; }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.35);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .loading-overlay.show { opacity: 1; pointer-events: all; }
+
+        .loading-box {
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            min-width: 260px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.15);
+        }
+
+        .loading-box .spinner {
+            width: 52px;
+            height: 52px;
+            border: 3px solid rgba(59,130,246,0.12);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            margin: 0 auto 1.25rem;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .loading-box h3 {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.375rem;
+        }
+        .loading-box p { font-size: 0.8125rem; color: #64748b; }
+
+        .toast {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: rgba(255,255,255,0.96);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(226,232,240,0.8);
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            z-index: 1000;
+            transform: translateX(calc(100% + 2rem));
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            max-width: 340px;
+        }
+
+        .toast.show { transform: translateX(0); }
+        .toast-icon { font-size: 1.25rem; flex-shrink: 0; }
+        .toast-msg  { font-size: 0.875rem; font-weight: 500; color: #1e293b; }
+
+        .field-error {
+            font-size: 0.75rem;
+            color: #ef4444;
+            margin-top: 4px;
+            display: none;
+        }
+        .field-error.show { display: block; }
+        .premium-input.error {
+            border-color: #fca5a5;
+            background: rgba(254, 242, 242, 0.7);
+        }
+
+        .px-4  { padding-left: 1rem; padding-right: 1rem; }
+        .py-3  { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .w-full { width: 100%; }
+        .rounded-xl { border-radius: 0.75rem; }
+    </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
+<body>
     <!-- Animated Background Particles -->
     <div class="particles" id="particles"></div>
 
-    <!-- Main Container -->
-    <div class="glass-card w-full max-w-6xl overflow-hidden floating">
-        <!-- Header -->
-        <div class="relative p-8 text-center">
-            <!-- Decorative Elements -->
-            <div class="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full -translate-x-1/2 -translate-y-1/2 opacity-50"></div>
-            <div class="absolute bottom-0 right-0 w-48 h-48 bg-gradient-to-tl from-blue-100 to-purple-100 rounded-full translate-x-1/3 translate-y-1/3 opacity-30"></div>
-            
-            <div class="relative z-10">
-                <div class="flex flex-col items-center">
-                    <!-- Animated Logo -->
-                    <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mb-6 shadow-lg floating" style="animation-delay: 0.2s;">
-                        <i class="fas fa-shield-alt text-3xl text-white"></i>
-                    </div>
-                    
-                    <!-- Title with Gradient -->
-                    <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                        GIBSYSNET DEMO
-                    </h1>
-                    <p class="text-gray-600 mb-1">General Insurance Broker System - Demo Version</p>
-                    <div class="flex items-center space-x-2 mt-3">
-                        <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                        <p class="text-sm text-gray-500">Pilih user demo untuk login otomatis</p>
-                    </div>
-                </div>
-            </div>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" role="status" aria-live="polite">
+        <div class="loading-box">
+            <div class="spinner"></div>
+            <h3>Memverifikasi Identitas</h3>
+            <p>Mohon tunggu sebentar...</p>
         </div>
-        
-        <!-- Progress Indicator -->
-        <div class="px-8">
-            <div class="progress-bar mb-6" id="loginProgress"></div>
-        </div>
+    </div>
 
-        <!-- Demo User Selector -->
-        <div class="p-8">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-1">Pilih User Demo</h3>
-                    <p class="text-sm text-gray-600">Klik untuk mengisi form secara otomatis</p>
+    <!-- Main Wrapper -->
+    <div class="login-wrapper">
+        <div class="login-card">
+
+            <!-- Header -->
+            <div class="card-header">
+                <div class="logo-wrap">
+                    <i class="fas fa-shield-halved"></i>
                 </div>
-                <div class="flex items-center space-x-2">
-                    <div class="stats-card px-4 py-2">
-                        <div class="text-2xl font-bold text-blue-600" id="totalUsers">7</div>
-                        <div class="text-xs text-gray-500">Total Users</div>
+                <h1 class="card-title">GIBSYSNET</h1>
+                <p class="card-subtitle">General Insurance Broker System</p>
+            </div>
+
+            <!-- Body -->
+            <div class="card-body">
+                <div class="divider"></div>
+
+                <form id="loginForm" novalidate autocomplete="on">
+
+                    <!-- Username -->
+                    <div style="margin-bottom: 1.125rem;">
+                        <label for="username" class="field-label">
+                            <i class="fas fa-user-circle"></i>Username
+                        </label>
+                        <div class="input-wrap">
+                            <input
+                                type="text"
+                                id="username"
+                                name="username"
+                                class="premium-input w-full px-4 py-3 rounded-xl"
+                                placeholder="Masukkan username Anda"
+                                required
+                                autocomplete="username"
+                                autofocus
+                                spellcheck="false"
+                                style="padding-right: 2.5rem;"
+                            >
+                            <span class="input-icon"><i class="fas fa-user"></i></span>
+                        </div>
+                        <span class="field-error" id="usernameError">Username tidak boleh kosong.</span>
                     </div>
-                </div>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-2" id="demoUsers">
-                <!-- Demo users akan diisi oleh JavaScript -->
-            </div>
-        </div>
-        
-        <!-- Login Form -->
-        <div class="p-8 border-t border-gray-100">
-            <div class="grid md:grid-cols-2 gap-8">
-                <!-- Left Column - Login Form -->
-                <div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-6">Form Login</h3>
-                    
-                    <form id="loginForm" class="space-y-6">
-                        <div>
-                            <label for="username" class="block text-gray-700 text-sm font-semibold mb-2">
-                                <i class="fas fa-user-circle mr-2 text-blue-500"></i>Username
-                            </label>
-                            <div class="relative">
-                                <input type="text" id="username" 
-                                       class="premium-input w-full px-4 py-3 rounded-xl"
-                                       placeholder="Masukkan username"
-                                       required
-                                       autocomplete="username">
-                                <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                    <i class="fas fa-user text-gray-400"></i>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label for="password" class="block text-gray-700 text-sm font-semibold mb-2">
-                                <i class="fas fa-lock mr-2 text-blue-500"></i>Password
-                            </label>
-                            <div class="relative">
-                                <input type="password" id="password" 
-                                       class="premium-input w-full px-4 py-3 rounded-xl pr-12"
-                                       placeholder="Masukkan password"
-                                       required
-                                       autocomplete="current-password"
-                                       value="password123">
-                                <button type="button" id="togglePassword" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                            <div class="flex items-center mt-2 text-sm text-gray-500">
-                                <i class="fas fa-info-circle mr-2 text-blue-400"></i>
-                                Password demo: <code class="font-mono ml-2 px-2 py-1 rounded bg-blue-50 text-blue-600">password123</code>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center">
-                                <input type="checkbox" id="remember" class="premium-checkbox">
-                                <label for="remember" class="ml-3 text-sm text-gray-700">Ingat saya</label>
-                            </div>
-                            <a href="#" class="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                                Lupa Password?
-                            </a>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <button type="submit" 
-                                    id="loginBtn"
-                                    class="btn-primary flex items-center justify-center py-3">
-                                <i class="fas fa-sign-in-alt mr-3"></i> 
-                                <span>Login</span>
-                            </button>
-                            
-                            <button type="button" 
-                                    id="demoLoginBtn"
-                                    class="btn-secondary flex items-center justify-center py-3">
-                                <i class="fas fa-magic mr-3"></i> 
-                                <span>Demo Login</span>
+
+                    <!-- Password -->
+                    <div style="margin-bottom: 0.75rem;">
+                        <label for="password" class="field-label">
+                            <i class="fas fa-lock"></i>Password
+                        </label>
+                        <div class="input-wrap">
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                class="premium-input w-full px-4 py-3 rounded-xl"
+                                placeholder="Masukkan password Anda"
+                                required
+                                autocomplete="current-password"
+                                style="padding-right: 2.75rem;"
+                            >
+                            <button type="button" id="togglePassword" class="toggle-pw-btn" aria-label="Tampilkan password">
+                                <i class="fas fa-eye" id="toggleIcon"></i>
                             </button>
                         </div>
-                    </form>
-                </div>
-                
-                <!-- Right Column - Stats & Info -->
-                <div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-6">Info Sistem</h3>
-                    
-                    <div class="space-y-6">
-                        <!-- Stats Grid -->
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="stats-card text-center">
-                                <div class="text-2xl font-bold text-blue-600">5</div>
-                                <div class="text-sm text-gray-600 mt-1">Role Types</div>
-                            </div>
-                            <div class="stats-card text-center">
-                                <div class="text-2xl font-bold text-green-600">100%</div>
-                                <div class="text-sm text-gray-600 mt-1">Demo Ready</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Quick Tips -->
-                        <div class="stats-card">
-                            <h4 class="font-bold text-gray-800 mb-3">Quick Tips</h4>
-                            <ul class="space-y-2">
-                                <li class="flex items-start text-sm text-gray-600">
-                                    <i class="fas fa-check-circle text-green-500 mt-1 mr-2 text-xs"></i>
-                                    <span>Klik user card untuk auto-fill form</span>
-                                </li>
-                                <li class="flex items-start text-sm text-gray-600">
-                                    <i class="fas fa-check-circle text-green-500 mt-1 mr-2 text-xs"></i>
-                                    <span>Gunakan Demo Login untuk random user</span>
-                                </li>
-                                <li class="flex items-start text-sm text-gray-600">
-                                    <i class="fas fa-check-circle text-green-500 mt-1 mr-2 text-xs"></i>
-                                    <span>Password sama untuk semua demo user</span>
-                                </li>
-                            </ul>
-                        </div>
-                        
-                        <!-- System Status -->
-                        <div class="stats-card">
-                            <h4 class="font-bold text-gray-800 mb-3">System Status</h4>
-                            <div class="space-y-3">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600">API Status</span>
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        <i class="fas fa-circle text-xs mr-1"></i> Online
-                                    </span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600">Database</span>
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        Connected
-                                    </span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600">Demo Mode</span>
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                        Active
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                        <span class="field-error" id="passwordError">Password tidak boleh kosong.</span>
                     </div>
-                </div>
+
+                    <!-- Remember me + Forgot password -->
+                    <div class="form-row">
+                        <label class="remember-wrap">
+                            <input type="checkbox" id="remember" class="premium-checkbox" name="remember">
+                            <span>Ingat saya</span>
+                        </label>
+                        <a href="#" class="forgot-link" id="forgotPasswordLink">Lupa Password?</a>
+                    </div>
+
+                    <!-- Error Alert -->
+                    <div class="alert-error" id="loginError" role="alert">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p id="loginErrorMsg">Username atau password salah.</p>
+                    </div>
+
+                    <!-- Submit -->
+                    <button type="submit" id="loginBtn" class="btn-login">
+                        <i class="fas fa-arrow-right-to-bracket" id="loginBtnIcon"></i>
+                        <span id="loginBtnText">Masuk ke Sistem</span>
+                    </button>
+
+                    <!-- Secure badge -->
+                    <div class="secure-badge">
+                        <i class="fas fa-lock"></i>
+                        <span>Koneksi terenkripsi &middot; Akses dikontrol Administrator</span>
+                    </div>
+
+                </form>
             </div>
-            
-            <!-- Info Alert -->
-            <div class="mt-8 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl">
-                <div class="flex items-start">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-info-circle text-amber-500 text-lg"></i>
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm text-amber-800">
-                            <strong>Info Login Demo:</strong><br>
-                            Password untuk semua user demo: <code class="font-mono bg-white/80 px-2 py-1 rounded border border-amber-200">password123</code><br>
-                            Klik user demo di atas untuk login otomatis. Semua user akan diarahkan ke dashboard berdasarkan role masing-masing.
-                        </p>
-                    </div>
-                </div>
-            </div>
-            
+
             <!-- Footer -->
-            <div class="mt-8 pt-6 border-t border-gray-100">
-                <div class="flex flex-col md:flex-row items-center justify-between">
-                    <p class="text-sm text-gray-500">
-                        <i class="fas fa-copyright mr-2"></i>2025 GIBSYSNET • Platform v3.0 • Demo Environment
-                    </p>
-                    <div class="flex items-center space-x-4 mt-2 md:mt-0">
-                        <a href="#" class="text-sm text-gray-500 hover:text-blue-600 transition-colors">
-                            <i class="fas fa-question-circle mr-1"></i> Bantuan
-                        </a>
-                        <a href="#" class="text-sm text-gray-500 hover:text-blue-600 transition-colors">
-                            <i class="fas fa-book mr-1"></i> Dokumentasi
-                        </a>
-                        <a href="#" class="text-sm text-gray-500 hover:text-blue-600 transition-colors">
-                            <i class="fas fa-cog mr-1"></i> Settings
-                        </a>
-                    </div>
+            <div class="card-footer">
+                <div class="status-row">
+                    <span class="status-pill online" id="apiStatusPill">API Online</span>
                 </div>
+                <p style="margin-top: 0.75rem;">
+                    &copy; 2025 GIBSYSNET &middot; Platform v3.0 &middot;
+                    <a href="#" id="helpLink">Bantuan</a> &middot;
+                    <a href="#" id="privacyLink">Kebijakan Privasi</a>
+                </p>
             </div>
+
         </div>
     </div>
 
     <script>
-        // Data user demo
-        const demoUsers = [
-            {
-                username: 'superadmin',
-                password: 'password123',
-                user_id: 'SU001',
-                full_name: 'Super Administrator',
-                user_level: 'super_admin',
-                email: 'superadmin@gibsysnet.com',
-                badge_class: 'badge-superadmin',
-                badge_text: 'Super Admin',
-                description: 'Akses penuh ke semua fitur sistem',
-                role_icon: 'fa-crown'
-            },
-            {
-                username: 'admin',
-                password: 'password123',
-                user_id: 'AD001',
-                full_name: 'System Administrator',
-                user_level: 'admin',
-                email: 'admin@gibsysnet.com',
-                badge_class: 'badge-admin',
-                badge_text: 'Admin',
-                description: 'Akses administrator dengan kontrol penuh',
-                role_icon: 'fa-user-cog'
-            },
-            {
-                username: 'manager',
-                password: 'password123',
-                user_id: 'MN001',
-                full_name: 'Sales Manager',
-                user_level: 'manager',
-                email: 'manager@gibsysnet.com',
-                badge_class: 'badge-manager',
-                badge_text: 'Manager',
-                description: 'Manajemen tim sales dan laporan',
-                role_icon: 'fa-chart-line'
-            },
-            {
-                username: 'broker1',
-                password: 'password123',
-                user_id: 'BR001',
-                full_name: 'John Broker',
-                user_level: 'broker',
-                email: 'john.broker@gibsysnet.com',
-                badge_class: 'badge-broker',
-                badge_text: 'Broker',
-                description: 'Broker aktif dengan klien portfolio',
-                role_icon: 'fa-user-tie'
-            },
-            {
-                username: 'broker2',
-                password: 'password123',
-                user_id: 'BR002',
-                full_name: 'Sarah Broker',
-                user_level: 'broker',
-                email: 'sarah.broker@gibsysnet.com',
-                badge_class: 'badge-broker',
-                badge_text: 'Broker',
-                description: 'Broker spesialis asuransi properti',
-                role_icon: 'fa-user-tie'
-            },
-            {
-                username: 'user',
-                password: 'password123',
-                user_id: 'US001',
-                full_name: 'Regular User',
-                user_level: 'user',
-                email: 'user@gibsysnet.com',
-                badge_class: 'badge-user',
-                badge_text: 'User',
-                description: 'Akses terbatas untuk view data',
-                role_icon: 'fa-user'
-            },
-            {
-                username: 'compliance',
-                password: 'password123',
-                user_id: 'CO001',
-                full_name: 'Compliance Officer',
-                user_level: 'admin',
-                email: 'compliance@gibsysnet.com',
-                badge_class: 'badge-admin',
-                badge_text: 'Compliance',
-                description: 'Officer compliance dan regulasi',
-                role_icon: 'fa-user-cog'
-            }
-        ];
+    'use strict';
 
-        // Create animated particles
-        function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            for (let i = 0; i < 15; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                const size = Math.random() * 60 + 20;
-                particle.style.width = `${size}px`;
-                particle.style.height = `${size}px`;
-                particle.style.left = `${Math.random() * 100}%`;
-                particle.style.top = `${Math.random() * 100}%`;
-                particle.style.animationDelay = `${Math.random() * 5}s`;
-                particle.style.animationDuration = `${Math.random() * 10 + 15}s`;
-                particlesContainer.appendChild(particle);
-            }
+    /* ─────────────────────────────────────────────────
+       CONFIG — sesuaikan dengan endpoint backend Anda
+    ───────────────────────────────────────────────── */
+    var API_BASE       = 'http://localhost:3001/api';
+    var LOGIN_ENDPOINT = API_BASE + '/users';
+
+    /* Pemetaan user_level -> halaman (dioveride oleh user.redirect_url dari server) */
+    var ROLE_REDIRECT = {
+        super_admin : 'index.html',
+        admin       : 'index.html',
+        manager     : 'index.html',
+        broker      : 'index.html',
+        user        : 'index.html'
+    };
+
+    /* ─── Particles ─── */
+    function createParticles() {
+        var container = document.getElementById('particles');
+        for (var i = 0; i < 12; i++) {
+            var p    = document.createElement('div');
+            p.className = 'particle';
+            var size = Math.random() * 60 + 20;
+            p.style.width            = size + 'px';
+            p.style.height           = size + 'px';
+            p.style.left             = (Math.random() * 100) + '%';
+            p.style.top              = (Math.random() * 100) + '%';
+            p.style.animationDelay   = (Math.random() * 6)   + 's';
+            p.style.animationDuration= (Math.random() * 12 + 18) + 's';
+            container.appendChild(p);
         }
+    }
 
-        // Render demo user cards
-        function renderDemoUsers() {
-            const container = document.getElementById('demoUsers');
-            container.innerHTML = '';
-            
-            demoUsers.forEach((user, index) => {
-                const card = document.createElement('div');
-                card.className = 'user-card';
-                card.style.animationDelay = `${index * 0.1}s`;
-                card.innerHTML = `
-                    <div class="flex items-start">
-                        <div class="flex-shrink-0">
-                            <div class="role-icon">
-                                <i class="fas ${user.role_icon}"></i>
-                            </div>
-                        </div>
-                        <div class="ml-3 flex-1">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h4 class="font-bold text-gray-800">${user.full_name}</h4>
-                                    <p class="text-sm text-gray-600 mt-1">@${user.username}</p>
-                                </div>
-                                <span class="badge ${user.badge_class}">
-                                    ${user.badge_text}
-                                </span>
-                            </div>
-                            <p class="text-xs text-gray-500 mt-2">${user.description}</p>
-                            <div class="flex items-center mt-3 text-xs text-gray-400">
-                                <i class="fas fa-key mr-1"></i>
-                                <span>Password: ${user.password}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
+    /* ─── Toast ─── */
+    function showToast(type, message) {
+        var old = document.querySelector('.toast');
+        if (old) old.remove();
+
+        var t   = document.createElement('div');
+        t.className = 'toast';
+        var ok  = type === 'success';
+        t.innerHTML = '<i class="fas ' + (ok ? 'fa-circle-check' : 'fa-circle-exclamation') +
+            ' toast-icon" style="color:' + (ok ? '#10b981' : '#ef4444') + '"></i>' +
+            '<span class="toast-msg">' + escHtml(message) + '</span>';
+        document.body.appendChild(t);
+
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() { t.classList.add('show'); });
+        });
+
+        setTimeout(function() {
+            t.classList.remove('show');
+            setTimeout(function() { if (t.parentNode) t.remove(); }, 400);
+        }, ok ? 3500 : 5000);
+    }
+
+    function escHtml(s) {
+        var d = document.createElement('div');
+        d.appendChild(document.createTextNode(s));
+        return d.innerHTML;
+    }
+
+    /* ─── Loading state ─── */
+    function setLoading(on) {
+        var ov   = document.getElementById('loadingOverlay');
+        var btn  = document.getElementById('loginBtn');
+        var icon = document.getElementById('loginBtnIcon');
+        var txt  = document.getElementById('loginBtnText');
+        if (on) {
+            ov.classList.add('show');
+            btn.disabled     = true;
+            icon.className   = 'fas fa-spinner fa-spin';
+            txt.textContent  = 'Memverifikasi...';
+        } else {
+            ov.classList.remove('show');
+            btn.disabled     = false;
+            icon.className   = 'fas fa-arrow-right-to-bracket';
+            txt.textContent  = 'Masuk ke Sistem';
+        }
+    }
+
+    /* ─── Field error helpers ─── */
+    function setFieldError(fId, eId, show) {
+        var f = document.getElementById(fId);
+        var e = document.getElementById(eId);
+        if (show) { f.classList.add('error');    e.classList.add('show'); }
+        else       { f.classList.remove('error'); e.classList.remove('show'); }
+    }
+
+    function showLoginError(msg) {
+        document.getElementById('loginErrorMsg').textContent = msg;
+        document.getElementById('loginError').classList.add('show');
+    }
+
+    function hideLoginError() {
+        document.getElementById('loginError').classList.remove('show');
+    }
+
+    /* ─── Password toggle ─── */
+    function setupPasswordToggle() {
+        var btn   = document.getElementById('togglePassword');
+        var input = document.getElementById('password');
+        var icon  = document.getElementById('toggleIcon');
+        btn.addEventListener('click', function() {
+            var isPw     = input.type === 'password';
+            input.type   = isPw ? 'text' : 'password';
+            icon.className = isPw ? 'fas fa-eye-slash' : 'fas fa-eye';
+            btn.setAttribute('aria-label', isPw ? 'Sembunyikan password' : 'Tampilkan password');
+        });
+    }
+
+    /* ─── Remember me ─── */
+    function restoreRemembered() {
+        var saved = localStorage.getItem('gibsysnet_remember_user');
+        if (saved) {
+            document.getElementById('username').value = saved;
+            document.getElementById('remember').checked = true;
+        }
+    }
+
+    /* ─── Session check: skip login jika sudah ada token valid ─── */
+    function checkExistingSession() {
+        var token = sessionStorage.getItem('gibsysnet_token') || localStorage.getItem('gibsysnet_token');
+        var user  = sessionStorage.getItem('gibsysnet_user')  || localStorage.getItem('gibsysnet_user');
+        if (token && user) {
+            try { redirectBasedOnRole(JSON.parse(user)); }
+            catch (e) { clearSession(); }
+        }
+    }
+
+    function clearSession() {
+        ['gibsysnet_token','gibsysnet_user'].forEach(function(k) {
+            localStorage.removeItem(k);
+            sessionStorage.removeItem(k);
+        });
+    }
+
+    /* ─── Redirect sesuai role ─── */
+    function redirectBasedOnRole(user) {
+        var url = user.redirect_url || ROLE_REDIRECT[user.user_level] || 'dashboard-user.html';
+        window.location.replace(url);
+    }
+
+    /* ─── Kirim kredensial ke backend REST API ─── */
+    function authenticate(username, password) {
+        return fetch(LOGIN_ENDPOINT, {
+            method     : 'GET',
+            headers    : {
+                'Accept'          : 'application/json'
+            }
+        }).then(function(res) {
+            return res.json().catch(function() { return {}; }).then(function(responseObj) {
+                if (!res.ok) {
+                    var msg = responseObj.message || 'Kesalahan server (' + res.status + '). Hubungi administrator.';
+                    throw new Error(msg);
+                }
                 
-                card.addEventListener('click', () => {
-                    document.querySelectorAll('.user-card').forEach(c => {
-                        c.classList.remove('selected');
-                    });
-                    card.classList.add('selected');
-                    document.getElementById('username').value = user.username;
-                    document.getElementById('password').value = user.password;
-                    updateProgress(50);
+                var usersList = [];
+                if (Array.isArray(responseObj.data)) {
+                    usersList = responseObj.data;
+                } else if (Array.isArray(responseObj.message)) {
+                    usersList = responseObj.message;
+                } else if (Array.isArray(responseObj)) {
+                    usersList = responseObj;
+                }
+                
+                var matchedUser = usersList.find(function(u) {
+                    return u.username === username && u.password === password;
                 });
                 
-                container.appendChild(card);
-            });
-            
-            document.getElementById('totalUsers').textContent = demoUsers.length;
-        }
-
-        // Update progress bar
-        function updateProgress(value) {
-            const progressBar = document.getElementById('loginProgress');
-            progressBar.style.width = `${value}%`;
-        }
-
-        // Toggle password visibility
-        function setupPasswordToggle() {
-            const toggleBtn = document.getElementById('togglePassword');
-            const passwordInput = document.getElementById('password');
-            
-            toggleBtn.addEventListener('click', () => {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-                const icon = toggleBtn.querySelector('i');
-                icon.className = type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
-            });
-        }
-
-        // Show notification
-        function showNotification(type, message) {
-            const notification = document.createElement('div');
-            notification.className = 'notification fixed top-6 right-6 px-6 py-4 z-50 transform transition-all duration-300';
-            notification.style.transform = 'translateX(100%)';
-            
-            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
-            const color = type === 'success' ? 'text-green-600' : 'text-red-600';
-            const bgColor = type === 'success' ? 'bg-green-50' : 'bg-red-50';
-            
-            notification.innerHTML = `
-                <div class="flex items-center">
-                    <i class="fas ${icon} ${color} text-xl mr-3"></i>
-                    <div>
-                        <p class="font-semibold text-gray-800">${message}</p>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.style.transform = 'translateX(0)';
-            }, 10);
-            
-            setTimeout(() => {
-                notification.style.transform = 'translateX(100%)';
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
-                    }
-                }, 300);
-            }, 5000);
-        }
-
-        // Create loading overlay
-        function createLoadingOverlay(user) {
-            const overlay = document.createElement('div');
-            overlay.className = 'fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50';
-            overlay.innerHTML = `
-                <div class="glass-card p-8 max-w-sm w-full mx-4 text-center">
-                    <div class="loading-spinner mx-auto mb-6"></div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">Login Berhasil!</h3>
-                    <p class="text-gray-600 mb-6">Mengarahkan ke dashboard...</p>
-                    
-                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-6 border border-blue-100">
-                        <div class="flex items-center justify-center mb-3">
-                            <div class="role-icon mr-3">
-                                <i class="fas ${user.role_icon}"></i>
-                            </div>
-                            <div class="text-left">
-                                <div class="font-bold text-gray-800">${user.full_name}</div>
-                                <div class="text-sm text-gray-600">@${user.username}</div>
-                            </div>
-                        </div>
-                        <div class="badge ${user.badge_class} inline-block">${user.badge_text}</div>
-                    </div>
-                    
-                    <div class="text-sm text-gray-500">
-                        <i class="fas fa-clock mr-2"></i>Redirect dalam <span id="countdown">2</span> detik
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(overlay);
-            
-            // Countdown
-            let countdown = 2;
-            const countdownElement = overlay.querySelector('#countdown');
-            const countdownInterval = setInterval(() => {
-                countdown--;
-                countdownElement.textContent = countdown;
-                if (countdown <= 0) {
-                    clearInterval(countdownInterval);
+                if (!matchedUser) {
+                    throw new Error('Username atau password salah.');
                 }
-            }, 1000);
-            
-            return overlay;
-        }
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            createParticles();
-            renderDemoUsers();
-            setupPasswordToggle();
-            
-            // Auto-select first user
-            setTimeout(() => {
-                const firstCard = document.querySelector('.user-card');
-                if (firstCard) {
-                    firstCard.click();
-                }
-            }, 300);
-            
-            // Update progress on form interaction
-            document.getElementById('loginForm').addEventListener('input', () => {
-                updateProgress(75);
-            });
-        });
-
-        // Login form submission
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const loginBtn = document.getElementById('loginBtn');
-            
-            if (!username || !password) {
-                showNotification('error', 'Username dan password harus diisi');
-                return;
-            }
-            
-            updateProgress(100);
-            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-3"></i> Proses Login...';
-            loginBtn.disabled = true;
-            
-            try {
-                const user = demoUsers.find(u => u.username === username && u.password === password);
                 
-                if (user) {
-                    showNotification('success', `Login berhasil sebagai ${user.full_name}`);
-                    localStorage.setItem('gibsysnet_user', JSON.stringify(user));
-                    localStorage.setItem('gibsysnet_token', 'demo_token_' + Math.random().toString(36).substr(2));
-                    
-                    const loadingOverlay = createLoadingOverlay(user);
-                    
-                    setTimeout(() => {
-                        redirectBasedOnRole(user);
-                    }, 2000);
-                    
-                } else {
-                    showNotification('error', 'Username atau password salah');
-                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-3"></i> Login';
-                    loginBtn.disabled = false;
-                    updateProgress(75);
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                showNotification('error', 'Terjadi kesalahan saat login');
-                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-3"></i> Login';
-                loginBtn.disabled = false;
-                updateProgress(50);
-            }
-        });
-
-        // Demo login button
-        document.getElementById('demoLoginBtn').addEventListener('click', function() {
-            const randomUser = demoUsers[Math.floor(Math.random() * demoUsers.length)];
-            document.getElementById('username').value = randomUser.username;
-            document.getElementById('password').value = randomUser.password;
-            
-            document.querySelectorAll('.user-card').forEach((card, index) => {
-                card.classList.remove('selected');
-                if (demoUsers[index].username === randomUser.username) {
-                    card.classList.add('selected');
-                }
+                return {
+                    user: {
+                        id: matchedUser.id,
+                        username: matchedUser.username,
+                        full_name: matchedUser.fullname,
+                        email: matchedUser.email,
+                        department: matchedUser.department,
+                        user_level: matchedUser.role_id === 1 ? 'admin' : 'user',
+                        redirect_url: 'index.html'
+                    },
+                    token: 'dummy-token-' + matchedUser.id
+                };
             });
-            
-            setTimeout(() => {
-                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
-            }, 300);
+        });
+    }
+
+    /* ─── Form submit ─── */
+    function handleLogin(e) {
+        e.preventDefault();
+
+        var username = document.getElementById('username').value.trim();
+        var password = document.getElementById('password').value;
+        var remember = document.getElementById('remember').checked;
+
+        hideLoginError();
+        setFieldError('username', 'usernameError', false);
+        setFieldError('password', 'passwordError', false);
+
+        var ok = true;
+        if (!username) { setFieldError('username', 'usernameError', true); ok = false; }
+        if (!password) { setFieldError('password', 'passwordError', true); ok = false; }
+        if (!ok) return;
+
+        setLoading(true);
+
+        authenticate(username, password)
+            .then(function(data) {
+                var user  = data.user || data;
+                var token = data.token || data.access_token || '';
+
+                var store = remember ? localStorage : sessionStorage;
+                store.setItem('gibsysnet_token', token);
+                store.setItem('gibsysnet_user',  JSON.stringify(user));
+
+                if (remember) {
+                    localStorage.setItem('gibsysnet_remember_user', username);
+                } else {
+                    localStorage.removeItem('gibsysnet_remember_user');
+                }
+
+                showToast('success', 'Selamat datang, ' + (user.full_name || username) + '!');
+                setTimeout(function() { redirectBasedOnRole(user); }, 800);
+            })
+            .catch(function(err) {
+                setLoading(false);
+                showLoginError(err.message);
+                showToast('error', err.message);
+                document.getElementById('password').value = '';
+                document.getElementById('password').focus();
+            });
+    }
+
+    /* ─── API health check ─── */
+    function checkApiStatus() {
+        var pill = document.getElementById('apiStatusPill');
+        var ctrl = new AbortController();
+        setTimeout(function() { ctrl.abort(); }, 4000);
+
+        fetch(API_BASE + '/health', { method: 'GET', signal: ctrl.signal })
+            .then(function(res) {
+                if (!res.ok) throw new Error();
+                pill.textContent = 'API Online';
+                pill.className   = 'status-pill online';
+            })
+            .catch(function() {
+                pill.textContent        = 'API Offline';
+                pill.className          = 'status-pill';
+                pill.style.background   = 'rgba(239,68,68,0.1)';
+                pill.style.color        = '#dc2626';
+            });
+    }
+
+    /* ─── Init ─── */
+    document.addEventListener('DOMContentLoaded', function() {
+        createParticles();
+        setupPasswordToggle();
+        restoreRemembered();
+        checkExistingSession();
+        checkApiStatus();
+
+        document.getElementById('loginForm').addEventListener('submit', handleLogin);
+
+        ['username','password'].forEach(function(id) {
+            document.getElementById(id).addEventListener('input', function() {
+                setFieldError(id, id + 'Error', false);
+                hideLoginError();
+            });
         });
 
-        // ============================================
-        // FUNGSI REDIRECT BERDASARKAN ROLE (Tetap sama)
-        // ============================================
-        function redirectBasedOnRole(user) {
-            console.log(`Redirecting user ${user.username} with role: ${user.user_level}`);
-            
-            let redirectUrl = 'dashboard-user.html';
-            
-            if (user.user_level === 'super_admin' || user.user_level === 'admin') {
-                redirectUrl = 'dashboard-admin.html';
-            }
-            
-            console.log(`User: ${user.username}, Role: ${user.user_level}, Redirect to: ${redirectUrl}`);
-            
-            window.location.href = redirectUrl;
-        }
-
-        // Enter key support
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
-            }
+        document.getElementById('forgotPasswordLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            showToast('error', 'Silakan hubungi Administrator sistem untuk reset password.');
         });
+    });
     </script>
 </body>
 </html>
-

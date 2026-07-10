@@ -51,16 +51,17 @@
     window.handleLogout = function() {
         if (window.Auth && typeof window.Auth.logout === 'function') {
             window.Auth.logout();
-            return;
         }
         localStorage.removeItem('gibsysnet_token');
         localStorage.removeItem('gibsysnet_user');
+        sessionStorage.removeItem('gibsysnet_token');
+        sessionStorage.removeItem('gibsysnet_user');
         window.location.href = 'login.html';
     };
 
     // 4. Update status-bar user info from localStorage
     window.updateStatusBarUserInfo = function() {
-        const userData = localStorage.getItem('gibsysnet_user');
+        const userData = sessionStorage.getItem('gibsysnet_user') || localStorage.getItem('gibsysnet_user');
         const user = userData ? JSON.parse(userData) : null;
 
         const userId = document.getElementById('userId');
@@ -72,11 +73,11 @@
         const menuUserName = document.getElementById('menuUserName');
         const menuUserEmail = document.getElementById('menuUserEmail');
 
-        const fullName = user?.full_name || 'Administrator';
+        const fullName = user?.full_name || user?.fullname || 'Administrator';
         const email = user?.email || 'admin@gibsysnet.com';
         const level = (user?.user_level || 'admin').toUpperCase();
         const department = user?.department || 'Administration';
-        const id = user?.user_id || 'N/A';
+        const id = user?.id || user?.user_id || 'N/A';
 
         if (userId) userId.textContent = `ID: ${id}`;
         if (userFullName) userFullName.textContent = `User Name: ${fullName}`;
@@ -165,6 +166,7 @@
                 el.textContent = currentYear;
             });
         }
+
 
         updateDateTime();
         window.updateStatusBarUserInfo();
