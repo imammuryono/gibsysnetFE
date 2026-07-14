@@ -15,10 +15,10 @@
                     <i class="fas fa-chevron-down text-xs ml-1"></i>
                 </button>
                 <div class="menu-dropdown">
-                    <a href="#" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-sign-in-alt mr-2"></i>Sign In</a>
-                    <a href="#" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-sign-out-alt mr-2"></i>Sign Out</a>
+                    <a href="#" data-perm="signin" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-sign-in-alt mr-2"></i>Sign In</a>
+                    <a href="#" data-perm="signout" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-sign-out-alt mr-2"></i>Sign Out</a>
                     <div class="border-t my-1"></div>
-                    <a href="#" onclick="handleLogout()" class="block px-4 py-2 hover:bg-red-50 text-red-600"><i class="fas fa-power-off mr-2"></i>Exit</a>
+                    <a href="#" data-perm="exit" onclick="handleLogout()" class="block px-4 py-2 hover:bg-red-50 text-red-600"><i class="fas fa-power-off mr-2"></i>Exit</a>
                 </div>
             </div>
 
@@ -29,19 +29,19 @@
                     <i class="fas fa-chevron-down text-xs ml-1"></i>
                 </button>
                 <div class="menu-dropdown w-64">
-                    <a href="company.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-building mr-2"></i>Company Profile</a>
-                    <a href="partners.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-handshake mr-2"></i>Partners</a>
-                    <a href="cob.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-list-alt mr-2"></i>COB</a>
-                    <a href="subcob.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-layer-group mr-2"></i>Sub COB</a>
-                    <a href="currency.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-money-bill-wave mr-2"></i>Currency</a>
-                    <a href="#" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-exclamation-triangle mr-2"></i>Default Quotation</a>
-                    <a href="modelriskbaru.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-chart-line mr-2"></i>Model Risks</a>
-                    <a href="occupations.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-user-tie mr-2"></i>Occupations</a>
-                    <a href="class.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-hard-hat mr-2"></i>Class Construction</a>
-                    <a href="coverages.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-umbrella mr-2"></i>Coverage</a>
-                    <a href="objectgroup.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-object-group mr-2"></i>Object Group</a>
-                    <a href="commission.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-hand-holding-usd mr-2"></i>Commission Management</a>
-                    <a href="target.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-bullseye mr-2"></i>Production Target</a>
+                    <a href="company.html" data-perm="company" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-building mr-2"></i>Company Profile</a>
+                    <a href="partners.html" data-perm="partners" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-handshake mr-2"></i>Partners</a>
+                    <a href="cob.html" data-perm="cob" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-list-alt mr-2"></i>COB</a>
+                    <a href="subcob.html" data-perm="subcob" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-layer-group mr-2"></i>Sub COB</a>
+                    <a href="currency.html" data-perm="currency" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-money-bill-wave mr-2"></i>Currency</a>
+                    <a href="Defaultquotation.html" data-perm="default_quotation" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-exclamation-triangle mr-2"></i>Default Quotation</a>
+                    <a href="modelriskbaru.html" data-perm="model_risks" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-chart-line mr-2"></i>Model Risks</a>
+                    <a href="occupations.html" data-perm="occupations" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-user-tie mr-2"></i>Occupations</a>
+                    <a href="class.html" data-perm="class_construction" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-hard-hat mr-2"></i>Class Construction</a>
+                    <a href="coverages.html" data-perm="coverage" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-umbrella mr-2"></i>Coverage</a>
+                    <a href="objectgroup.html" data-perm="object_group" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-object-group mr-2"></i>Object Group</a>
+                    <a href="commission.html" data-perm="contribution" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-hand-holding-usd mr-2"></i>Commission Management</a>
+                    <a href="target.html" data-perm="production_target" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-bullseye mr-2"></i>Production Target</a>
                 </div>
             </div>
 
@@ -52,14 +52,14 @@
                     <i class="fas fa-chevron-down text-xs ml-1"></i>
                 </button>
                 <div class="menu-dropdown w-64">
-                    <a href="transactions.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-file-invoice-dollar mr-2"></i>Quotation</a>
-                    <a href="quotation.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-edit mr-2"></i>Quotation Registration</a>
-                    <a href="transactions.html?action=renewal" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-search mr-2"></i>Renewal Quotation</a>
-                    <a href="transactions.html?action=endorsement" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-gem mr-2"></i>Endorsement Quotation</a>
-                    <a href="transactions.html?action=closed" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-times-circle mr-2"></i>Closed Quotations</a>
-                    <a href="transactions.html?action=delete" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-window-maximize mr-2"></i>Delete Quotation</a>
-                    <a href="transactions.html?action=rollback" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-undo mr-2"></i>Rollback Quotation</a>
-                    <a href="transactions.html?action=note" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-circle mr-2"></i>Note</a>
+                    <a href="transactions.html" data-perm="quotation" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-file-invoice-dollar mr-2"></i>Quotation</a>
+                    <a href="quotation.html" data-perm="quotation_reg" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-edit mr-2"></i>Quotation Registration</a>
+                    <a href="transactions.html?action=renewal" data-perm="renewal_quotation" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-search mr-2"></i>Renewal Quotation</a>
+                    <a href="transactions.html?action=endorsement" data-perm="endorsement_quotation" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-gem mr-2"></i>Endorsement Quotation</a>
+                    <a href="transactions.html?action=closed" data-perm="closed_quotations" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-times-circle mr-2"></i>Closed Quotations</a>
+                    <a href="transactions.html?action=delete" data-perm="delete_quotation" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-window-maximize mr-2"></i>Delete Quotation</a>
+                    <a href="transactions.html?action=rollback" data-perm="rollback_quotation" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-undo mr-2"></i>Rollback Quotation</a>
+                    <a href="transactions.html?action=note" data-perm="note" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-circle mr-2"></i>Note</a>
                 </div>
             </div>
 
@@ -70,10 +70,10 @@
                     <i class="fas fa-chevron-down text-xs ml-1"></i>
                 </button>
                 <div class="menu-dropdown">
-                    <a href="reports.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-chart-line mr-2"></i>Monthly Production</a>
-                    <a href="reports.html?type=renewal" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-bell mr-2"></i>Renewal Reminder</a>
-                    <a href="reports.html?type=renewal-notes" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-sticky-note mr-2"></i>Renewal Notice</a>
-                    <a href="reports.html?type=earning" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-money-check-alt mr-2"></i>Earned - Unearned Premium</a>
+                    <a href="reports.html" data-perm="monthly_production" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-chart-line mr-2"></i>Monthly Production</a>
+                    <a href="reports.html?type=renewal" data-perm="renewal_reminder" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-bell mr-2"></i>Renewal Reminder</a>
+                    <a href="reports.html?type=renewal-notes" data-perm="renewal_notice" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-sticky-note mr-2"></i>Renewal Notice</a>
+                    <a href="reports.html?type=earning" data-perm="premium_earned" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-money-check-alt mr-2"></i>Earned - Unearned Premium</a>
                 </div>
             </div>
 
@@ -84,15 +84,15 @@
                     <i class="fas fa-chevron-down text-xs ml-1"></i>
                 </button>
                 <div class="menu-dropdown w-64">
-                    <a href="https://ereporting.ojk.go.id/ereporting/Account/Login" target="_blank" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-file-export mr-2"></i>e-Reporting</a>
-                    <a href="https://sipo.ojk.go.id/Login" target="_blank" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-shield-alt mr-2"></i>Sippo</a>
-                    <a href="https://sprint.ojk.go.id/" target="_blank" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-balance-scale mr-2"></i>Sprint</a>
-                    <a href="https://pelaporan.id/Account/Login?PartnerSP=https%3A%2F%2Fapolo.ojk.go.id&RelayState=%2F" target="_blank" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-handshake mr-2"></i>Apolo</a>
-                    <a href="https://sigap.ojk.go.id/Cores/Account/Login" target="_blank" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-file-contract mr-2"></i>Sigap</a>
-                    <a href="https://sipesat.ppatk.go.id/sipesat/login.xhtml" target="_blank" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-university mr-2"></i>Sipesat</a>
-                    <a href="https://member.apparindo.or.id/login" target="_blank" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-industry mr-2"></i>Apparindo</a>
-                    <a href="https://siap.apari.or.id/" target="_blank" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-rocket mr-2"></i>Siap Apari</a>
-                    <a href="https://ojk.go.id/id/Default.aspx" target="_blank" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-file-signature mr-2"></i>OJK</a>
+                    <a href="https://ereporting.ojk.go.id/ereporting/Account/Login" target="_blank" data-perm="e_reporting" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-file-export mr-2"></i>e-Reporting</a>
+                    <a href="https://sipo.ojk.go.id/Login" target="_blank" data-perm="sippo" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-shield-alt mr-2"></i>Sippo</a>
+                    <a href="https://sprint.ojk.go.id/" target="_blank" data-perm="sprint" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-balance-scale mr-2"></i>Sprint</a>
+                    <a href="https://pelaporan.id/Account/Login?PartnerSP=https%3A%2F%2Fapolo.ojk.go.id&RelayState=%2F" target="_blank" data-perm="apolo" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-handshake mr-2"></i>Apolo</a>
+                    <a href="https://sigap.ojk.go.id/Cores/Account/Login" target="_blank" data-perm="sigap" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-file-contract mr-2"></i>Sigap</a>
+                    <a href="https://sipesat.ppatk.go.id/sipesat/login.xhtml" target="_blank" data-perm="sipesat" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-university mr-2"></i>Sipesat</a>
+                    <a href="https://member.apparindo.or.id/login" target="_blank" data-perm="apparindo" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-industry mr-2"></i>Apparindo</a>
+                    <a href="https://siap.apari.or.id/" target="_blank" data-perm="siap_apari" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-rocket mr-2"></i>Siap Apari</a>
+                    <a href="https://ojk.go.id/id/Default.aspx" target="_blank" data-perm="ojk" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-file-signature mr-2"></i>OJK</a>
                 </div>
             </div>
 
@@ -103,8 +103,8 @@
                     <i class="fas fa-chevron-down text-xs ml-1"></i>
                 </button>
                 <div class="menu-dropdown">
-                    <a href="administration.html?action=password" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-key mr-2"></i>Change Password</a>
-                    <a href="users.html" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-users-cog mr-2"></i>User Management</a>
+                    <a href="administration.html?action=password" data-perm="change_password" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-key mr-2"></i>Change Password</a>
+                    <a href="users.html" data-perm="user_management" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-users-cog mr-2"></i>User Management</a>
                 </div>
             </div>
 
@@ -115,8 +115,8 @@
                     <i class="fas fa-chevron-down text-xs ml-1"></i>
                 </button>
                 <div class="menu-dropdown">
-                    <a href="#" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-sign-in-alt mr-2"></i>Log On Local</a>
-                    <a href="#" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-upload mr-2"></i>Upload Local</a>
+                    <a href="#" data-perm="log_on_local" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-sign-in-alt mr-2"></i>Log On Local</a>
+                    <a href="#" data-perm="upload_local" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-upload mr-2"></i>Upload Local</a>
                 </div>
             </div>
 
@@ -127,9 +127,9 @@
                     <i class="fas fa-chevron-down text-xs ml-1"></i>
                 </button>
                 <div class="menu-dropdown">
-                    <a href="#" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-life-ring mr-2"></i>Usage Help</a>
-                    <a href="#" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-book mr-2"></i>Documentation</a>
-                    <a href="#" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-phone-alt mr-2"></i>Contact Support</a>
+                    <a href="#" data-perm="usage_help" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-life-ring mr-2"></i>Usage Help</a>
+                    <a href="#" data-perm="documentation" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-book mr-2"></i>Documentation</a>
+                    <a href="#" data-perm="contact_support" class="block px-4 py-2 hover:bg-blue-50 text-gray-700"><i class="fas fa-phone-alt mr-2"></i>Contact Support</a>
                 </div>
             </div>
         </div>

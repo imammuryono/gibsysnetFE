@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Default Quotation - GIBSYSNET</title>
+    <link href="assets/css/output.css" rel="stylesheet">
+    <script src="assets/js/tailwind.config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/custom.css">
+    <link rel="stylesheet" href="assets/css/administration.css">
+    <script src="https://cdn.ckeditor.com/ckeditor5/40.0.0/classic/ckeditor.js"></script>
+    <style>
+        /* Word editor styling */
+        .word-editor-container {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background: #f8fafc;
+            padding: 24px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .word-page {
+            background: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+            border: 1px solid #e2e8f0;
+            min-height: 600px;
+            margin: 0 auto;
+            max-width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        /* Override CKEditor default border to merge into Word Page layout */
+        .ck.ck-editor {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .ck.ck-editor__top {
+            border: none !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+            background: #f1f5f9 !important;
+        }
+        .ck-editor__editable_inline {
+            min-height: 500px !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 40px !important;
+        }
+        /* ── Quotation page specific CSS ── */
+        .health-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+        }
+
+        .health-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+            border: 1px solid #e5e7eb;
+            text-align: center;
+        }
+
+        .health-label {
+            color: #6b7280;
+            font-size: .75rem;
+            margin-bottom: 4px;
+        }
+
+        .health-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 8px 12px 8px 32px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: .875rem;
+            outline: none;
+            transition: border .2s;
+        }
+
+        .search-box input:focus {
+            border-color: #3b82f6;
+        }
+
+        .filter-select {
+            padding: 8px 32px 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: .875rem;
+            background: #fff;
+            cursor: pointer;
+            outline: none;
+            appearance: auto;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: .875rem;
+            outline: none;
+            transition: border .2s;
+        }
+
+        .form-control:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, .15);
+        }
+
+        .form-label-custom {
+            display: block;
+            font-weight: 600;
+            font-size: .85rem;
+            margin-bottom: 4px;
+            color: #374151;
+        }
+
+        .req {
+            color: #ef4444;
+        }
+
+        .form-error {
+            display: none;
+            font-size: .75rem;
+            color: #ef4444;
+            margin-top: 2px;
+        }
+
+        .form-error.show {
+            display: block;
+        }
+
+        .form-hint {
+            font-size: .75rem;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .toggle-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: #d1d5db;
+            border-radius: 24px;
+            transition: .2s;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            left: 3px;
+            top: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: .2s;
+        }
+
+        .toggle input:checked+.toggle-slider {
+            background: #3b82f6;
+        }
+
+        .toggle input:checked+.toggle-slider::before {
+            transform: translateX(20px);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: #6b7280;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 12px;
+            color: #d1d5db;
+        }
+
+        .empty-state h3 {
+            font-size: 1.1rem;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+
+        .empty-state p {
+            font-size: .85rem;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .file-upload-area:hover {
+            border-color: #3b82f6;
+            background: #f8fafc;
+        }
+
+        .file-upload-area.dragover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .file-upload-area i {
+            font-size: 2rem;
+            color: #9ca3af;
+            margin-bottom: 8px;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #f3f4f6;
+            border-radius: 6px;
+            margin-top: 8px;
+        }
+
+        .file-info i {
+            color: #3b82f6;
+        }
+
+        .file-info .file-size {
+            color: #6b7280;
+            font-size: .75rem;
+        }
+
+        .file-info .remove-file {
+            color: #ef4444;
+            cursor: pointer;
+            margin-left: auto;
+        }
+
+        .file-info .remove-file:hover {
+            opacity: .7;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: .75rem;
+            font-weight: 600;
+        }
+
+        .status-draft {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-published {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-archived {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .status-template {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .btn-icon {
+            padding: 6px;
+            border-radius: 6px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            transition: background .2s;
+        }
+
+        .btn-icon:hover {
+            background: #f3f4f6;
+        }
+
+        .btn-icon i {
+            font-size: .9rem;
+        }
+
+        .version-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #e5e7eb;
+            border-radius: 12px;
+            font-size: .65rem;
+            color: #4b5563;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+        <div class="menu-bar text-white" id="menu-bar-container"></div>
+        <div class="status-bar text-white text-sm" id="status-bar-container"></div>
+        <div class="sidebar" id="sidebar-container" data-title="Default Quotation" data-icon="fas fa-file-word"
+            data-type="master"></div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+
+            <!-- Page Header -->
+            <div class="mb-6">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">Default Quotation</h1>
+                        <p class="text-gray-500 text-sm mt-1">Manage quotation templates and documents for GIBSYSNET</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="health-grid mb-6">
+                <div class="health-card">
+                    <p class="health-label">Total Quotations</p>
+                    <p class="health-value" id="statTotal">0</p>
+                </div>
+                <div class="health-card">
+                    <p class="health-label">Templates</p>
+                    <p class="health-value" id="statTemplates">0</p>
+                </div>
+                <div class="health-card">
+                    <p class="health-label">Published</p>
+                    <p class="health-value" id="statPublished">0</p>
+                </div>
+                <div class="health-card">
+                    <p class="health-label">Drafts</p>
+                    <p class="health-value" id="statDrafts">0</p>
+                </div>
+                <div class="health-card">
+                    <p class="health-label">Archived</p>
+                    <p class="health-value" id="statArchived">0</p>
+                </div>
+            </div>
+
+            <!-- Quotation Form -->
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+                <div class="xl:col-span-2 bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b flex justify-between items-center">
+                        <h3 class="font-bold text-gray-800" id="quotationFormTitle">
+                            <i class="fas fa-file-word text-blue-500 mr-2"></i>Quotation Information
+                        </h3>
+                    </div>
+                    <form id="quotationForm" class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4" onsubmit="return false;">
+                        <input type="hidden" id="formQuotationId">
+                        <input type="hidden" id="formFileData" value="">
+
+                        <div class="md:col-span-2">
+                            <label class="form-label-custom">Quotation Title <span class="req">*</span></label>
+                            <input type="text" class="form-control" id="formTitle"
+                                placeholder="Example: Standard Quotation Template 2024">
+                            <span class="form-error" id="errTitle">Title is required.</span>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="form-label-custom">Description</label>
+                            <textarea class="form-control" id="formDescription" rows="2"
+                                placeholder="Brief description of this quotation template"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="form-label-custom">Quotation Code <span class="req">*</span></label>
+                            <input type="text" class="form-control" id="formCode" placeholder="Q-2024-001">
+                            <span class="form-error" id="errCode">Quotation code is required.</span>
+                        </div>
+
+                        <div>
+                            <label class="form-label-custom">Version</label>
+                            <input type="text" class="form-control" id="formVersion" placeholder="1.0" value="1.0">
+                        </div>
+
+                        <div>
+                            <label class="form-label-custom">Status <span class="req">*</span></label>
+                            <select class="form-control" id="formStatus">
+                                <option value="draft">Draft</option>
+                                <option value="template">Template</option>
+                                <option value="published">Published</option>
+                                <option value="archived">Archived</option>
+                            </select>
+                            <span class="form-error" id="errStatus">Status is required.</span>
+                        </div>
+
+                        <div>
+                            <label class="form-label-custom">Category</label>
+                            <select class="form-control" id="formCategory">
+                                <option value="">-- Select Category --</option>
+                                <option value="standard">Standard</option>
+                                <option value="premium">Premium</option>
+                                <option value="custom">Custom</option>
+                                <option value="promotional">Promotional</option>
+                                <option value="government">Government</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="form-label-custom">Valid Until</label>
+                            <input type="date" class="form-control" id="formValidUntil">
+                        </div>
+
+                        <div>
+                            <label class="form-label-custom">Currency</label>
+                            <select class="form-control" id="formCurrency">
+                                <option value="IDR">IDR - Indonesian Rupiah</option>
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="SGD">SGD - Singapore Dollar</option>
+                            </select>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="form-label-custom">Master Quotation Template (Word Editor) <span class="req">*</span></label>
+                            <div class="word-editor-container">
+                                <div class="word-page">
+                                    <textarea id="editor" placeholder="Write your master quotation template content here..."></textarea>
+                                </div>
+                            </div>
+                            <div id="fileInfoContainer"></div>
+                            <span class="form-error" id="errFile">Quotation content is required.</span>
+                            <p class="form-hint">Type or paste your quotation template text. You can insert tables, style text, and add variables (e.g. {{client_name}}).</p>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="form-label-custom">Tags</label>
+                            <input type="text" class="form-control" id="formTags" placeholder="comma, separated, tags">
+                            <p class="form-hint">Add tags to help organize and search for quotations.</p>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <div class="flex items-center gap-4">
+                                <div class="toggle-wrap">
+                                    <label class="toggle">
+                                        <input type="checkbox" id="formIsDefault" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <span class="text-sm text-gray-600">Set as Default Quotation</span>
+                                </div>
+                                <div class="toggle-wrap">
+                                    <label class="toggle">
+                                        <input type="checkbox" id="formIsActive" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <span class="text-sm text-gray-600">Active</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="form-label-custom">Notes</label>
+                            <textarea class="form-control" id="formNotes" rows="2"
+                                placeholder="Additional notes about this quotation"></textarea>
+                        </div>
+
+                    </form>
+                </div>
+
+                <!-- Right Side Panel: Quick Actions -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b">
+                        <h3 class="font-bold text-gray-800"><i class="fas fa-bolt mr-2 text-yellow-500"></i>Quick
+                            Actions</h3>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <button class="w-full btn btn-success btn-sm" onclick="downloadTemplate()">
+                            <i class="fas fa-download mr-1"></i> Download Template
+                        </button>
+                        <button class="w-full btn btn-primary btn-sm" onclick="previewQuotation()">
+                            <i class="fas fa-eye mr-1"></i> Preview Quotation
+                        </button>
+                        <button class="w-full btn btn-warning btn-sm" onclick="duplicateQuotation()">
+                            <i class="fas fa-copy mr-1"></i> Duplicate Quotation
+                        </button>
+                        <button class="w-full btn btn-info btn-sm" onclick="exportQuotation()">
+                            <i class="fas fa-file-export mr-1"></i> Export as PDF
+                        </button>
+                        <hr>
+                        <div class="text-xs text-gray-500">
+                            <p><i class="fas fa-info-circle mr-1"></i> File Version: <span id="fileVersion">-</span></p>
+                            <p><i class="fas fa-clock mr-1"></i> Last Modified: <span id="fileLastModified">-</span></p>
+                            <p><i class="fas fa-database mr-1"></i> File Size: <span id="fileSize">-</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quotation List Card -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-6 py-4 border-b flex flex-wrap items-center justify-between gap-3">
+                    <h3 class="font-bold text-gray-800">
+                        <i class="fas fa-list mr-2 text-blue-600"></i>Quotation List
+                    </h3>
+                    <div class="flex gap-2 flex-wrap items-center">
+                        <div class="search-box" style="min-width: 240px;">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchInput" placeholder="Search title, code, tags..."
+                                oninput="handleSearch()">
+                        </div>
+                        <select class="filter-select" id="filterStatus" onchange="handleFilter()">
+                            <option value="">All Status</option>
+                            <option value="draft">Draft</option>
+                            <option value="template">Template</option>
+                            <option value="published">Published</option>
+                            <option value="archived">Archived</option>
+                        </select>
+                        <select class="filter-select" id="filterCategory" onchange="handleFilter()">
+                            <option value="">All Categories</option>
+                            <option value="standard">Standard</option>
+                            <option value="premium">Premium</option>
+                            <option value="custom">Custom</option>
+                            <option value="promotional">Promotional</option>
+                            <option value="government">Government</option>
+                        </select>
+                        <button class="btn-ghost btn-sm" onclick="resetFilters()">
+                            <i class="fas fa-rotate-right"></i> Reset
+                        </button>
+                        <button class="btn-ghost btn-sm" onclick="exportQuotations()" title="Export CSV">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="min-w-full divide-y divide-gray-200" id="quotationTable">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                                    style="width:40px;">
+                                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"
+                                        style="accent-color:#3b82f6; width:15px; height:15px;">
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Version</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">File</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                                    style="width:170px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="quotationTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="empty-state hidden" id="emptyState">
+                    <i class="fas fa-file-word"></i>
+                    <h3>No quotations found</h3>
+                    <p>Try changing filters or add a new quotation.</p>
+                </div>
+                <div class="px-6 py-4 border-t bg-gray-50 flex flex-wrap items-center justify-between gap-3">
+                    <div class="text-sm text-gray-700">
+                        <span id="paginationInfo">Showing 0 quotations</span>
+                    </div>
+                    <div class="pagination" id="paginationBtns"></div>
+                </div>
+            </div>
+
+            <!-- Bulk Actions Bar -->
+            <div id="bulkBar"
+                class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-4 z-50">
+                <span class="text-sm font-medium" id="bulkCount">0 selected</span>
+                <div class="w-px h-4 bg-white/20"></div>
+                <button class="btn btn-sm btn-success" onclick="bulkPublish()"><i class="fas fa-check"></i>
+                    Publish</button>
+                <button class="btn btn-sm btn-warning" onclick="bulkArchive()"><i class="fas fa-archive"></i>
+                    Archive</button>
+                <button class="btn btn-sm btn-danger" onclick="bulkDelete()"><i class="fas fa-trash"></i>
+                    Delete</button>
+                <button class="btn btn-sm btn-ghost text-white border-white/20" onclick="clearSelection()"><i
+                        class="fas fa-times"></i></button>
+            </div>
+
+            <div id="footer-container" class="mt-6"></div>
+        </div><!-- /main-content -->
+    </div><!-- /dashboard-grid -->
+
+    <!-- MODAL: Delete Confirm -->
+    <div class="modal-backdrop" id="deleteModal">
+        <div class="modal modal-sm">
+            <div class="modal-body" style="text-align:center; padding:32px 24px;">
+                <div class="danger-icon"><i class="fas fa-trash-alt"></i></div>
+                <h2 class="text-lg font-bold text-gray-800 mb-2">Delete Quotation?</h2>
+                <p class="text-sm text-gray-500 mb-2">You are about to delete quotation <strong
+                        id="deleteQuotationTitle"></strong>.</p>
+                <p class="text-xs text-amber-500">This action will permanently remove the quotation and its associated
+                    file.</p>
+            </div>
+            <div class="modal-footer" style="justify-content:center;">
+                <button class="btn-ghost" onclick="closeModal('deleteModal')">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmDelete()">
+                    <i class="fas fa-trash mr-1"></i>Yes, Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Preview -->
+    <div class="modal-backdrop" id="previewModal">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2><i class="fas fa-file-word mr-2 text-blue-500"></i>Quotation Preview &mdash; <span id="previewTitle"
+                        class="font-normal text-gray-500"></span></h2>
+                <button class="modal-close" onclick="closeModal('previewModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent" class="p-4 bg-gray-50 rounded-lg min-h-[300px]">
+                    <div class="text-center text-gray-500">
+                        <i class="fas fa-file-word text-4xl mb-4"></i>
+                        <p>Document preview will be displayed here.</p>
+                        <p class="text-sm">You can download the file to view the full content.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" onclick="closeModal('previewModal')">Close</button>
+                <button class="btn-primary" onclick="downloadPreviewFile()"><i class="fas fa-download mr-1"></i>Download
+                    File</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .danger-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #fee2e2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+        }
+
+        .danger-icon i {
+            color: #ef4444;
+            font-size: 1.5rem;
+        }
+    </style>
+
+    <script>
+        // ─── API Base URL ──────────────────────────────────────────────────
+        const API_BASE = 'http://localhost:3001/api';
+
+        // ─── Toast System ──────────────────────────────────────────────────
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+            <div class="toast-content">
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                <span>${message}</span>
+            </div>
+            <button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+        `;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        }
+
+        // ─── Global Variables ──────────────────────────────────────────────
+        let editingQuotationId = null;
+        let deleteTargetId = null;
+        let editorInstance = null;
+
+        // ─── Initialize Page ──────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', function () {
+            loadQuotations();
+            setupFormValidation();
+            setupSidebarButtons();
+            
+            // Initialize CKEditor 5
+            ClassicEditor
+                .create(document.querySelector('#editor'), {
+                    toolbar: [
+                        'heading', '|',
+                        'bold', 'italic', 'underline', 'strikethrough', '|',
+                        'bulletedList', 'numberedList', '|',
+                        'outdent', 'indent', 'alignment', '|',
+                        'insertTable', '|',
+                        'undo', 'redo'
+                    ]
+                })
+                .then(editor => {
+                    editorInstance = editor;
+                })
+                .catch(error => {
+                    console.error('Error initializing CKEditor:', error);
+                });
+        });
+
+        function setupSidebarButtons() {
+            document.addEventListener('sidebarLoaded', function () {
+                const btnNew = document.querySelector('[data-action="new"]');
+                if (btnNew) btnNew.addEventListener('click', () => resetForm());
+
+                const btnSave = document.querySelector('[data-action="save"]');
+                if (btnSave) btnSave.addEventListener('click', () => saveQuotation());
+
+                const btnDelete = document.querySelector('[data-action="delete"]');
+                if (btnDelete) btnDelete.addEventListener('click', () => {
+                    if (editingQuotationId) {
+                        openDeleteModal(editingQuotationId);
+                    } else {
+                        showToast('Please select a quotation to delete', 'warning');
+                    }
+                });
+            });
+        }
+
+        function displayLegacyFileInfo(file) {
+            const container = document.getElementById('fileInfoContainer');
+            const size = file.size ? `${(file.size / 1024).toFixed(1)} KB` : 'N/A';
+            container.innerHTML = `
+            <div class="file-info bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-lg flex items-start gap-2 mt-2">
+                <i class="fas fa-file-word text-xl text-amber-600 mt-0.5"></i>
+                <div>
+                    <span class="font-semibold text-sm">Legacy uploaded file: ${file.name}</span>
+                    <p class="text-xs text-amber-700 mt-1">This template uses a legacy Word file. You can enter new text in the editor above to overwrite it.</p>
+                </div>
+            </div>
+        `;
+            document.getElementById('fileVersion').textContent = file.version || '1.0';
+            document.getElementById('fileLastModified').textContent = file.lastModified || '-';
+            document.getElementById('fileSize').textContent = size;
+        }
+
+        // ─── CRUD Functions ──────────────────────────────────────────────────
+        function resetForm() {
+            document.getElementById('quotationForm').reset();
+            document.getElementById('formQuotationId').value = '';
+            document.getElementById('formFileData').value = '';
+            document.getElementById('formVersion').value = '1.0';
+            document.getElementById('formIsDefault').checked = true;
+            document.getElementById('formIsActive').checked = true;
+            document.getElementById('quotationFormTitle').innerHTML = '<i class="fas fa-file-word text-blue-500 mr-2"></i>Quotation Information';
+            editingQuotationId = null;
+            if (editorInstance) {
+                editorInstance.setData('');
+            }
+            document.getElementById('fileInfoContainer').innerHTML = '';
+            document.getElementById('fileVersion').textContent = '-';
+            document.getElementById('fileLastModified').textContent = '-';
+            document.getElementById('fileSize').textContent = '-';
+            clearErrors();
+            showToast('Form has been reset', 'info');
+        }
+
+        function clearErrors() {
+            document.querySelectorAll('.form-error').forEach(el => el.classList.remove('show'));
+        }
+
+        function setupFormValidation() {
+            // Auto-generate code if empty
+            document.getElementById('formTitle').addEventListener('input', function () {
+                if (!document.getElementById('formCode').value) {
+                    const prefix = 'Q-';
+                    const year = new Date().getFullYear();
+                    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+                    document.getElementById('formCode').value = `${prefix}${year}-${random}`;
+                }
+            });
+        }
+
+        function saveQuotation() {
+            if (!validateForm()) return;
+
+            let fileData = document.getElementById('formFileData').value;
+            let fileName = 'template.html';
+            let fileSize = 0;
+            let fileType = 'text/html';
+
+            if (editorInstance && editorInstance.getData().trim()) {
+                const htmlContent = editorInstance.getData();
+                fileData = 'data:text/html;base64,' + btoa(unescape(encodeURIComponent(htmlContent)));
+                const code = document.getElementById('formCode').value.trim();
+                fileName = `${code}_template.html`;
+                fileSize = new Blob([htmlContent]).size;
+            } else if (fileData && fileData.startsWith('data:application/')) {
+                // Keep legacy file info
+                const legacyNameEl = document.querySelector('#fileInfoContainer .font-semibold');
+                fileName = legacyNameEl ? legacyNameEl.textContent.replace('Legacy uploaded file: ', '') : 'legacy_document.docx';
+                fileSize = parseInt(document.getElementById('fileSize').textContent) * 1024 || 0;
+                fileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            }
+
+            const quotationData = {
+                title: document.getElementById('formTitle').value.trim(),
+                description: document.getElementById('formDescription').value.trim(),
+                code: document.getElementById('formCode').value.trim(),
+                version: document.getElementById('formVersion').value.trim(),
+                status: document.getElementById('formStatus').value,
+                category: document.getElementById('formCategory').value,
+                valid_until: document.getElementById('formValidUntil').value,
+                currency: document.getElementById('formCurrency').value,
+                file_data: fileData,
+                file_name: fileName,
+                file_size: fileSize,
+                file_type: fileType,
+                tags: document.getElementById('formTags').value.trim(),
+                is_default: document.getElementById('formIsDefault').checked ? 1 : 0,
+                is_active: document.getElementById('formIsActive').checked ? 1 : 0,
+                notes: document.getElementById('formNotes').value.trim()
+            };
+
+            const quotationId = document.getElementById('formQuotationId').value;
+            const method = quotationId ? 'PUT' : 'POST';
+            const url = quotationId ? `${API_BASE}/quotations/${quotationId}` : `${API_BASE}/quotations`;
+
+            fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(quotationData)
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error('Failed to save quotation');
+                    return res.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        showToast(quotationId ? 'Quotation updated successfully' : 'Quotation created successfully', 'success');
+                        resetForm();
+                        loadQuotations();
+                    }
+                })
+                .catch(err => {
+                    console.error('Error saving quotation:', err);
+                    showToast('Failed to save quotation: ' + err.message, 'error');
+                });
+        }
+
+        function validateForm() {
+            clearErrors();
+            let isValid = true;
+
+            const title = document.getElementById('formTitle').value.trim();
+            if (!title) {
+                document.getElementById('errTitle').classList.add('show');
+                isValid = false;
+            }
+
+            const code = document.getElementById('formCode').value.trim();
+            if (!code) {
+                document.getElementById('errCode').classList.add('show');
+                isValid = false;
+            }
+
+            const status = document.getElementById('formStatus').value;
+            if (!status) {
+                document.getElementById('errStatus').classList.add('show');
+                isValid = false;
+            }
+
+            const editorContent = editorInstance ? editorInstance.getData().trim() : '';
+            const legacyFileData = document.getElementById('formFileData').value;
+            if (!editorContent && !legacyFileData) {
+                document.getElementById('errFile').classList.add('show');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        // ─── Load Quotations ──────────────────────────────────────────────────
+        function loadQuotations() {
+            fetch(`${API_BASE}/quotations`)
+                .then(res => {
+                    if (!res.ok) throw new Error('Failed to fetch quotations');
+                    return res.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        renderQuotations(data.quotations);
+                        updateStats(data.quotations);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading quotations:', err);
+                    showToast('Failed to load quotations', 'error');
+                });
+        }
+
+        function renderQuotations(quotations) {
+            const tbody = document.getElementById('quotationTableBody');
+            const emptyState = document.getElementById('emptyState');
+
+            if (!quotations || quotations.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                document.getElementById('paginationInfo').textContent = 'Showing 0 quotations';
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            let html = '';
+            quotations.forEach(q => {
+                const statusClass = `status-${q.status}`;
+                const hasFile = q.file_name && q.file_data;
+
+                html += `
+                <tr>
+                    <td class="px-4 py-3">
+                        <input type="checkbox" class="row-checkbox" value="${q.id}" onchange="updateBulkBar()">
+                    </td>
+                    <td class="px-4 py-3">
+                        <div>
+                            <p class="font-medium text-gray-800">${q.title}</p>
+                            ${q.tags ? `<p class="text-xs text-gray-500">${q.tags}</p>` : ''}
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 text-sm">${q.code}</td>
+                    <td class="px-4 py-3"><span class="status-badge ${statusClass}">${q.status.charAt(0).toUpperCase() + q.status.slice(1)}</span></td>
+                    <td class="px-4 py-3"><span class="version-tag">v${q.version}</span></td>
+                    <td class="px-4 py-3 text-sm">${q.category || '-'}</td>
+                    <td class="px-4 py-3">
+                        ${hasFile ?
+                        `<span class="text-green-600"><i class="fas fa-check-circle"></i> Uploaded</span>` :
+                        `<span class="text-gray-400"><i class="fas fa-times-circle"></i> No file</span>`
+                    }
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <button class="btn-icon" onclick="editQuotation('${q.id}')" title="Edit">
+                                <i class="fas fa-pen text-blue-500"></i>
+                            </button>
+                            <button class="btn-icon" onclick="previewQuotation('${q.id}')" title="Preview">
+                                <i class="fas fa-eye text-green-500"></i>
+                            </button>
+                            <button class="btn-icon" onclick="downloadQuotation('${q.id}')" title="Download">
+                                <i class="fas fa-download text-indigo-500"></i>
+                            </button>
+                            <button class="btn-icon" onclick="duplicateQuotation('${q.id}')" title="Duplicate">
+                                <i class="fas fa-copy text-yellow-500"></i>
+                            </button>
+                            <button class="btn-icon" onclick="openDeleteModal('${q.id}')" title="Delete">
+                                <i class="fas fa-trash text-red-500"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            });
+            tbody.innerHTML = html;
+            document.getElementById('paginationInfo').textContent = `Showing ${quotations.length} quotations`;
+        }
+
+        function updateStats(quotations) {
+            const total = quotations.length;
+            const templates = quotations.filter(q => q.status === 'template').length;
+            const published = quotations.filter(q => q.status === 'published').length;
+            const drafts = quotations.filter(q => q.status === 'draft').length;
+            const archived = quotations.filter(q => q.status === 'archived').length;
+
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statTemplates').textContent = templates;
+            document.getElementById('statPublished').textContent = published;
+            document.getElementById('statDrafts').textContent = drafts;
+            document.getElementById('statArchived').textContent = archived;
+        }
+
+        // ─── Edit Quotation ──────────────────────────────────────────────────
+        function editQuotation(quotationId) {
+            fetch(`${API_BASE}/quotations/${quotationId}`)
+                .then(res => {
+                    if (!res.ok) throw new Error('Failed to fetch quotation');
+                    return res.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        const q = data.quotation;
+                        document.getElementById('formQuotationId').value = q.id;
+                        document.getElementById('formTitle').value = q.title || '';
+                        document.getElementById('formDescription').value = q.description || '';
+                        document.getElementById('formCode').value = q.code || '';
+                        document.getElementById('formVersion').value = q.version || '1.0';
+                        document.getElementById('formStatus').value = q.status || 'draft';
+                        document.getElementById('formCategory').value = q.category || '';
+                        document.getElementById('formValidUntil').value = q.valid_until || '';
+                        document.getElementById('formCurrency').value = q.currency || 'IDR';
+                        document.getElementById('formTags').value = q.tags || '';
+                        document.getElementById('formIsDefault').checked = q.is_default == 1;
+                        document.getElementById('formIsActive').checked = q.is_active == 1;
+                        document.getElementById('formNotes').value = q.notes || '';
+                        document.getElementById('formFileData').value = q.file_data || '';
+
+                        // Show file info or populate editor
+                        if (q.file_name) {
+                            if (q.file_data && q.file_data.startsWith('data:text/html;base64,')) {
+                                try {
+                                    const base64Data = q.file_data.split(',')[1];
+                                    const decodedHtml = decodeURIComponent(escape(atob(base64Data)));
+                                    if (editorInstance) {
+                                        editorInstance.setData(decodedHtml);
+                                    }
+                                } catch (e) {
+                                    console.error('Failed to decode template HTML:', e);
+                                }
+                                document.getElementById('fileInfoContainer').innerHTML = '';
+                            } else {
+                                const fakeFile = {
+                                    name: q.file_name,
+                                    size: q.file_size || 0,
+                                    type: q.file_type || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                    lastModified: q.updated_at ? new Date(q.updated_at).toLocaleString() : '-'
+                                };
+                                displayLegacyFileInfo(fakeFile);
+                                if (editorInstance) {
+                                    editorInstance.setData('');
+                                }
+                            }
+                            document.getElementById('fileVersion').textContent = q.version || '1.0';
+                        }
+
+                        document.getElementById('quotationFormTitle').innerHTML = '<i class="fas fa-file-word text-blue-500 mr-2"></i>Edit Quotation';
+                        editingQuotationId = q.id;
+                        clearErrors();
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading quotation:', err);
+                    showToast('Failed to load quotation data', 'error');
+                });
+        }
+
+        // ─── Delete Functions ──────────────────────────────────────────────
+        function openDeleteModal(quotationId) {
+            deleteTargetId = quotationId;
+            const q = findQuotationById(quotationId);
+            if (q) {
+                document.getElementById('deleteQuotationTitle').textContent = q.title || q.code;
+            }
+            openModal('deleteModal');
+        }
+
+        function findQuotationById(quotationId) {
+            const rows = document.querySelectorAll('#quotationTableBody tr');
+            for (const row of rows) {
+                const checkbox = row.querySelector('.row-checkbox');
+                if (checkbox && checkbox.value === quotationId) {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length > 1) {
+                        const titleEl = cells[1]?.querySelector('.font-medium');
+                        return { id: quotationId, title: titleEl ? titleEl.textContent : quotationId };
+                    }
+                }
+            }
+            return { id: quotationId, title: quotationId };
+        }
+
+        function confirmDelete() {
+            if (!deleteTargetId) return;
+
+            fetch(`${API_BASE}/quotations/${deleteTargetId}`, { method: 'DELETE' })
+                .then(res => {
+                    if (!res.ok) throw new Error('Failed to delete quotation');
+                    return res.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        showToast('Quotation deleted successfully', 'success');
+                        closeModal('deleteModal');
+                        loadQuotations();
+                        deleteTargetId = null;
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    showToast('Failed to delete quotation: ' + err.message, 'error');
+                });
+        }
+
+        // ─── Preview Functions ──────────────────────────────────────────────
+        function previewQuotation(quotationId = null) {
+            const id = quotationId || editingQuotationId;
+            if (!id) {
+                showToast('Please select a quotation to preview', 'warning');
+                return;
+            }
+
+            fetch(`${API_BASE}/quotations/${id}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const q = data.quotation;
+                        document.getElementById('previewTitle').textContent = q.title || q.code;
+                        const content = document.getElementById('previewContent');
+
+                        if (q.file_data) {
+                            if (q.file_data.startsWith('data:text/html;base64,')) {
+                                try {
+                                    const base64Data = q.file_data.split(',')[1];
+                                    const decodedHtml = decodeURIComponent(escape(atob(base64Data)));
+                                    content.innerHTML = `
+                                        <div class="bg-white border p-10 max-w-[800px] mx-auto min-h-[500px] shadow rounded-lg prose text-gray-800 text-left">
+                                            ${decodedHtml}
+                                        </div>
+                                    `;
+                                } catch (e) {
+                                    content.innerHTML = `<p class="text-red-500 p-4">Error decoding preview: ${e.message}</p>`;
+                                }
+                            } else {
+                                // Show file info with download option
+                                content.innerHTML = `
+                                <div class="text-center p-8">
+                                    <i class="fas fa-file-word text-5xl text-blue-500 mb-4"></i>
+                                    <h3 class="text-lg font-bold">${q.title}</h3>
+                                    <p class="text-sm text-gray-600">${q.code} - v${q.version}</p>
+                                    <p class="text-sm text-gray-500 mt-2">${q.description || 'No description'}</p>
+                                    <div class="mt-4 p-4 bg-white rounded-lg border text-left mx-auto max-w-sm">
+                                        <p class="text-sm"><strong>Status:</strong> ${q.status}</p>
+                                        <p class="text-sm"><strong>Category:</strong> ${q.category || '-'}</p>
+                                        <p class="text-sm"><strong>Currency:</strong> ${q.currency}</p>
+                                        <p class="text-sm"><strong>File:</strong> ${q.file_name}</p>
+                                        <p class="text-sm"><strong>Size:</strong> ${q.file_size ? (q.file_size / 1024).toFixed(1) : 0} KB</p>
+                                        ${q.tags ? `<p class="text-sm"><strong>Tags:</strong> ${q.tags}</p>` : ''}
+                                    </div>
+                                    <div class="mt-4">
+                                        <button class="btn-primary" onclick="downloadPreviewFile('${id}')">
+                                            <i class="fas fa-download mr-1"></i> Download Document
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                            }
+                        } else {
+                            content.innerHTML = `
+                            <div class="text-center text-gray-500 p-8">
+                                <i class="fas fa-file-word text-4xl mb-4"></i>
+                                <p>No document file attached to this quotation.</p>
+                            </div>
+                        `;
+                        }
+                        openModal('previewModal');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading preview:', err);
+                    showToast('Failed to load preview', 'error');
+                });
+        }
+
+        function downloadPreviewFile(quotationId = null) {
+            const id = quotationId || editingQuotationId;
+            if (!id) {
+                showToast('No quotation selected', 'warning');
+                return;
+            }
+            downloadQuotation(id);
+        }
+
+        // ─── Download Functions ────────────────────────────────────────────
+        function downloadQuotation(quotationId) {
+            fetch(`${API_BASE}/quotations/${quotationId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.quotation.file_data) {
+                        const q = data.quotation;
+                        // Create download link
+                        const link = document.createElement('a');
+                        link.href = q.file_data;
+                        link.download = q.file_name || `quotation_${q.code}.docx`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        showToast('Download started', 'success');
+                    } else {
+                        showToast('No file available for download', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error downloading:', err);
+                    showToast('Failed to download file', 'error');
+                });
+        }
+
+        function downloadTemplate() {
+            // Create a sample template
+            showToast('Downloading template...', 'info');
+            // In production, this would generate a template file
+            setTimeout(() => {
+                const blob = new Blob(['Sample Quotation Template'], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'quotation_template.docx';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showToast('Template downloaded', 'success');
+            }, 1000);
+        }
+
+        // ─── Duplicate Functions ────────────────────────────────────────────
+        function duplicateQuotation(quotationId = null) {
+            const id = quotationId || editingQuotationId;
+            if (!id) {
+                showToast('Please select a quotation to duplicate', 'warning');
+                return;
+            }
+
+            fetch(`${API_BASE}/quotations/${id}/duplicate`, { method: 'POST' })
+                .then(res => {
+                    if (!res.ok) throw new Error('Failed to duplicate quotation');
+                    return res.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        showToast('Quotation duplicated successfully', 'success');
+                        loadQuotations();
+                    }
+                })
+                .catch(err => {
+                    console.error('Error duplicating:', err);
+                    showToast('Failed to duplicate quotation', 'error');
+                });
+        }
+
+        function exportQuotation() {
+            if (!editingQuotationId) {
+                showToast('Please select a quotation to export', 'warning');
+                return;
+            }
+            // In production, this would generate a PDF
+            showToast('Exporting as PDF... (Coming soon)', 'info');
+        }
+
+        // ─── Bulk Operations ──────────────────────────────────────────────
+        function updateBulkBar() {
+            const checked = document.querySelectorAll('.row-checkbox:checked');
+            const bar = document.getElementById('bulkBar');
+            const count = document.getElementById('bulkCount');
+
+            if (checked.length > 0) {
+                bar.classList.remove('hidden');
+                count.textContent = `${checked.length} selected`;
+            } else {
+                bar.classList.add('hidden');
+            }
+        }
+
+        function clearSelection() {
+            document.querySelectorAll('.row-checkbox:checked').forEach(cb => cb.checked = false);
+            updateBulkBar();
+        }
+
+        function getSelectedIds() {
+            return Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
+        }
+
+        function bulkPublish() {
+            const ids = getSelectedIds();
+            if (ids.length === 0) return;
+            bulkUpdateStatus(ids, 'published');
+        }
+
+        function bulkArchive() {
+            const ids = getSelectedIds();
+            if (ids.length === 0) return;
+            bulkUpdateStatus(ids, 'archived');
+        }
+
+        function bulkUpdateStatus(ids, status) {
+            Promise.all(ids.map(id =>
+                fetch(`${API_BASE}/quotations/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                })
+            ))
+                .then(responses => {
+                    const allOk = responses.every(r => r.ok);
+                    if (allOk) {
+                        showToast(`Quotations ${status === 'published' ? 'published' : 'archived'} successfully`, 'success');
+                        clearSelection();
+                        loadQuotations();
+                    } else {
+                        throw new Error('Some operations failed');
+                    }
+                })
+                .catch(err => {
+                    console.error('Bulk update error:', err);
+                    showToast('Failed to update quotations', 'error');
+                });
+        }
+
+        function bulkDelete() {
+            const ids = getSelectedIds();
+            if (ids.length === 0) return;
+            if (!confirm(`Are you sure you want to delete ${ids.length} quotation(s)?`)) return;
+
+            Promise.all(ids.map(id =>
+                fetch(`${API_BASE}/quotations/${id}`, { method: 'DELETE' })
+            ))
+                .then(responses => {
+                    const allOk = responses.every(r => r.ok);
+                    if (allOk) {
+                        showToast(`${ids.length} quotations deleted successfully`, 'success');
+                        clearSelection();
+                        loadQuotations();
+                    } else {
+                        throw new Error('Some operations failed');
+                    }
+                })
+                .catch(err => {
+                    console.error('Bulk delete error:', err);
+                    showToast('Failed to delete quotations', 'error');
+                });
+        }
+
+        // ─── Filter/Search ──────────────────────────────────────────────────
+        function handleSearch() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#quotationTableBody tr');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const isVisible = text.includes(searchTerm);
+                row.style.display = isVisible ? '' : 'none';
+                if (isVisible) visibleCount++;
+            });
+
+            document.getElementById('paginationInfo').textContent = `Showing ${visibleCount} quotations`;
+        }
+
+        function handleFilter() {
+            const statusFilter = document.getElementById('filterStatus').value;
+            const categoryFilter = document.getElementById('filterCategory').value;
+            const rows = document.querySelectorAll('#quotationTableBody tr');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                let show = true;
+                const statusBadge = row.querySelector('.status-badge');
+                const categoryCell = row.querySelector('td:nth-child(6)');
+
+                if (statusFilter && statusBadge) {
+                    const status = statusBadge.textContent.toLowerCase();
+                    if (status !== statusFilter) show = false;
+                }
+
+                if (categoryFilter && categoryCell) {
+                    const category = categoryCell.textContent.trim().toLowerCase();
+                    if (category !== categoryFilter) show = false;
+                }
+
+                row.style.display = show ? '' : 'none';
+                if (show) visibleCount++;
+            });
+
+            document.getElementById('paginationInfo').textContent = `Showing ${visibleCount} quotations`;
+        }
+
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterCategory').value = '';
+            document.querySelectorAll('#quotationTableBody tr').forEach(row => row.style.display = '');
+            handleSearch();
+        }
+
+        // ─── Export Quotations ──────────────────────────────────────────────
+        function exportQuotations() {
+            const rows = document.querySelectorAll('#quotationTableBody tr:not([style*="display: none"])');
+            if (rows.length === 0) {
+                showToast('No quotations to export', 'warning');
+                return;
+            }
+
+            let csv = 'Title,Code,Status,Version,Category,Tags,File\n';
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 7) {
+                    const title = cells[1]?.querySelector('.font-medium')?.textContent || '';
+                    const code = cells[2]?.textContent?.trim() || '';
+                    const status = cells[3]?.textContent?.trim() || '';
+                    const version = cells[4]?.textContent?.trim() || '';
+                    const category = cells[5]?.textContent?.trim() || '';
+                    const tags = cells[1]?.querySelector('.text-xs')?.textContent || '';
+                    const file = cells[6]?.textContent?.trim() || '';
+                    csv += `"${title}","${code}","${status}","${version}","${category}","${tags}","${file}"\n`;
+                }
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `quotations_export_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Quotations exported successfully', 'success');
+        }
+
+        // ─── Modal Functions ──────────────────────────────────────────────────
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function toggleSelectAll(checkbox) {
+            document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = checkbox.checked);
+            updateBulkBar();
+        }
+
+        // ─── Load sidebar buttons after layout loads ──────────────────────
+        document.addEventListener('DOMContentLoaded', function () {
+            const checkSidebar = setInterval(() => {
+                const sidebar = document.getElementById('sidebar-container');
+                if (sidebar && sidebar.querySelector('[data-action]')) {
+                    clearInterval(checkSidebar);
+                    setupSidebarButtons();
+                }
+            }, 500);
+        });
+    </script>
+
+    <!-- Load external scripts -->
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/layout-loader.js"></script>
+</body>
+
+</html>

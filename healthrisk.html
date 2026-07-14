@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Health Risk Details</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: #f1f5f9;
+            padding: 1.5rem;
+        }
+
+        .navbar {
+            background: #0f172a;
+            padding: 1rem 2rem;
+            border-radius: 28px;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+        }
+
+        .nav-brand {
+            color: #f8fafc;
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            letter-spacing: -0.3px;
+        }
+
+        .nav-brand i {
+            color: #60a5fa;
+        }
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .page-header h1 i {
+            color: #2563eb;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 28px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            background: #f8fbff;
+            padding: 1rem 1.8rem;
+            border-bottom: 1px solid #dbeafe;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .risk-badge {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #1e3a8a;
+            background: #dbeafe;
+            padding: 0.3rem 1rem;
+            border-radius: 30px;
+        }
+
+        .status-badge {
+            background: #dcfce7;
+            color: #166534;
+            font-weight: 600;
+            font-size: 0.75rem;
+            padding: 0.3rem 1rem;
+            border-radius: 30px;
+            letter-spacing: 0.2px;
+            text-transform: uppercase;
+        }
+
+        .card-body {
+            padding: 1.8rem;
+        }
+
+        .risk-switcher {
+            margin-bottom: 1.5rem;
+            border: 1px solid #dbeafe;
+            background: #f8fbff;
+            border-radius: 18px;
+            padding: 1rem 1.2rem;
+        }
+
+        .risk-switcher-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.7rem;
+            margin-bottom: 0.7rem;
+        }
+
+        .risk-switcher-title {
+            font-weight: 700;
+            color: #1e3a8a;
+            font-size: 0.95rem;
+        }
+
+        .risk-list {
+            display: flex;
+            gap: 0.55rem;
+            flex-wrap: wrap;
+        }
+
+        .risk-pill {
+            border: 1px solid #bfdbfe;
+            background: #ffffff;
+            color: #1e3a8a;
+            border-radius: 999px;
+            padding: 0.4rem 1rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 700;
+            transition: all 0.15s;
+        }
+
+        .risk-pill.active {
+            background: linear-gradient(120deg, #2563eb, #1d4ed8);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25);
+        }
+
+        .btn-add-risk {
+            border: 1px solid #93c5fd;
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-radius: 10px;
+            padding: 0.45rem 0.9rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.8rem;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .info-item.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .info-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: #475569;
+            font-weight: 700;
+        }
+
+        .risk-input,
+        .summary-input {
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 0.6rem 0.8rem;
+            font-size: 0.95rem;
+            width: 100%;
+            color: #0f172a;
+            background: #ffffff;
+            transition: 0.15s;
+        }
+
+        .risk-input:focus {
+            border-color: #2563eb;
+            outline: 2px solid #bfdbfe;
+            outline-offset: 1px;
+        }
+
+        .risk-textarea {
+            resize: vertical;
+            min-height: 80px;
+            line-height: 1.45;
+            font-family: inherit;
+        }
+
+        .summary-input[readonly] {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1d4ed8;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+        }
+
+        .tabs-shell {
+            background: linear-gradient(165deg, #f8fbff, #f1f5ff);
+            border: 1px solid #dbeafe;
+            border-radius: 20px;
+            padding: 1.2rem;
+            margin-top: 0.5rem;
+        }
+
+        .tab-controls {
+            display: flex;
+            gap: 0.7rem;
+            margin-bottom: 1.2rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            border: 1px solid #bfdbfe;
+            background: #ffffff;
+            color: #1e3a8a;
+            border-radius: 999px;
+            padding: 0.5rem 1.2rem;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(120deg, #2563eb, #1d4ed8);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+        }
+
+        .tab-panel {
+            display: none;
+            border: 1px solid #dbeafe;
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 1rem;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .lookup-hint {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 1rem;
+            background: #f1f5f9;
+            padding: 0.5rem 0.9rem;
+            border-radius: 40px;
+            display: inline-block;
+        }
+
+        .entry-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+        }
+
+        .entry-row {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: #f8fafc;
+            padding: 0.8rem;
+            display: grid;
+            grid-template-columns: minmax(200px, 2fr) minmax(150px, 1fr) auto;
+            gap: 0.7rem;
+            align-items: end;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .field-group label {
+            font-size: 0.7rem;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            color: #475569;
+            font-weight: 700;
+        }
+
+        .field-group select,
+        .field-group input,
+        .field-group textarea {
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 0.5rem 0.7rem;
+            font-size: 0.92rem;
+            background: #ffffff;
+            color: #0f172a;
+        }
+
+        .row-action {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            border: 1px solid #fecaca;
+            background: #fff1f2;
+            color: #dc2626;
+            cursor: pointer;
+            transition: 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-icon:hover {
+            background: #fee2e2;
+            border-color: #fca5a5;
+        }
+
+        .tab-tools {
+            margin-top: 0.9rem;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .btn-add-row {
+            border: 1px solid #93c5fd;
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-radius: 10px;
+            padding: 0.5rem 0.9rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .calc-card {
+            margin-top: 1.5rem;
+            border-radius: 18px;
+            background: linear-gradient(145deg, #eff6ff, #e0ecff);
+            border: 1px solid #bfdbfe;
+            padding: 1.2rem;
+        }
+
+        .calc-card h4 {
+            margin-bottom: 0.3rem;
+            color: #1e3a8a;
+            font-size: 1.05rem;
+        }
+
+        .calc-desc {
+            margin-bottom: 0.9rem;
+            font-size: 0.9rem;
+            color: #334155;
+        }
+
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(140px, 1fr));
+            gap: 0.65rem;
+        }
+
+        .calc-item {
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            background: #ffffff;
+            padding: 0.65rem;
+        }
+
+        .calc-label {
+            display: block;
+            font-size: 0.7rem;
+            letter-spacing: 0.2px;
+            text-transform: uppercase;
+            color: #64748b;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+        }
+
+        .calc-value {
+            display: block;
+            font-size: 0.95rem;
+            color: #0f172a;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+        }
+
+        .premium-box {
+            margin-top: 0.6rem;
+            border-top: 1px dashed #93c5fd;
+            padding-top: 0.6rem;
+        }
+
+        .premium-value {
+            font-size: 1.3rem;
+            color: #1d4ed8;
+            font-weight: 800;
+            font-family: 'Courier New', monospace;
+        }
+
+        .footnote {
+            margin-top: 1.8rem;
+            font-size: 0.85rem;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        @media (max-width: 700px) {
+            .entry-row {
+                grid-template-columns: 1fr;
+            }
+
+            .calc-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .card-body {
+                padding: 1rem;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .calc-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-brand"><i class="fas fa-heartbeat"></i> HealthRisk</div>
+    </nav>
+
+    <div class="container" id="healthRiskSection">
+        <div class="page-header">
+            <h1><i class="fas fa-user-md"></i> Health Risk Details</h1>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span id="riskBadge" class="risk-badge">Risk No: 1/1</span>
+                <span class="status-badge">Active</span>
+            </div>
+
+            <div class="card-body">
+                <!-- Multi risk switcher -->
+                <div class="risk-switcher">
+                    <div class="risk-switcher-head" style="flex-wrap: wrap; gap: 8px;">
+                        <span class="risk-switcher-title"><i class="fas fa-users"></i> Multi Risk Setup</span>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <button type="button" id="downloadHealthTemplateBtn" class="btn-add-risk" style="background-color: #10b981; border-color: #10b981; color: white;">
+                                <i class="fas fa-file-excel"></i> Template
+                            </button>
+                            <button type="button" id="uploadHealthExcelBtn" class="btn-add-risk" style="background-color: #8b5cf6; border-color: #8b5cf6; color: white;">
+                                <i class="fas fa-upload"></i> Bulk Upload
+                            </button>
+                            <button type="button" id="deleteRiskBtn" class="btn-add-risk" style="background-color: #fee2e2; border-color: #fecaca; color: #dc2626;">
+                                <i class="fas fa-trash-alt"></i> Delete Risk
+                            </button>
+                            <button type="button" id="addRiskBtn" class="btn-add-risk"><i class="fas fa-plus-circle"></i>
+                                Add Risk</button>
+                        </div>
+                        <input type="file" id="healthExcelFileInput" class="hidden" accept=".xlsx, .xls" style="display: none;">
+                    </div>
+                    <div id="riskList" class="risk-list"></div>
+                </div>
+
+                <!-- Main fields -->
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Client Type</span>
+                        <select id="clientTypeSelect" class="risk-input">
+                            <option value="Individual">Individual</option>
+                            <option value="Corporate">Corporate</option>
+                        </select>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Risk Number (Auto)</span>
+                        <input type="text" id="riskNumberInput" class="risk-input" readonly value="1">
+                    </div>
+                    <div class="info-item full-width">
+                        <span class="info-label" id="policyHolderLabel">Full Name / Policy Holder</span>
+                        <input type="text" id="policyHolderInput" class="risk-input"
+                            placeholder="Full name of insured" />
+                    </div>
+                    
+                    <!-- Scope of Cover - Shown for Corporate -->
+                    <div class="info-item full-width" id="luasJaminanContainer" style="display: none;">
+                        <span class="info-label">Scope of Cover</span>
+                        <div style="display: flex; gap: 1.2rem; flex-wrap: wrap; margin-top: 0.4rem; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 12px; background: #f8fafc;">
+                            <label style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; font-weight: 600; color: #334155; cursor: pointer;">
+                                <input type="checkbox" class="luas-jaminan-checkbox" value="INP" checked> Inpatient
+                            </label>
+                            <label style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; font-weight: 600; color: #334155; cursor: pointer;">
+                                <input type="checkbox" class="luas-jaminan-checkbox" value="OUT"> Outpatient
+                            </label>
+                            <label style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; font-weight: 600; color: #334155; cursor: pointer;">
+                                <input type="checkbox" class="luas-jaminan-checkbox" value="DENT"> Dental
+                            </label>
+                            <label style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; font-weight: 600; color: #334155; cursor: pointer;">
+                                <input type="checkbox" class="luas-jaminan-checkbox" value="MAT"> Maternity
+                            </label>
+                            <label style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; font-weight: 600; color: #334155; cursor: pointer;">
+                                <input type="checkbox" class="luas-jaminan-checkbox" value="OPT"> Optical
+                            </label>
+                            <label style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; font-weight: 600; color: #334155; cursor: pointer;">
+                                <input type="checkbox" class="luas-jaminan-checkbox" value="MCU"> Medical Check Up
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="info-item" id="dobWrapper">
+                        <span class="info-label">Date of Birth</span>
+                        <input type="date" id="dobInput" class="risk-input" />
+                    </div>
+                    <div class="info-item" id="genderWrapper">
+                        <span class="info-label">Gender</span>
+                        <select id="genderSelect" class="risk-input">
+                            <option value="">-- Select --</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                    <div class="info-item" id="occupationWrapper">
+                        <span class="info-label">Occupation</span>
+                        <select id="occupationSelect" class="risk-input">
+                            <option value="">-- Select Occupation --</option>
+                            <option value="Office Worker">Office Worker</option>
+                            <option value="Healthcare">Healthcare</option>
+                            <option value="Teacher">Teacher</option>
+                            <option value="Driver">Driver</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="info-item" id="planWrapper">
+                        <span class="info-label">Plan Type</span>
+                        <select id="planSelect" class="risk-input">
+                            <option value="">-- Select Plan --</option>
+                            <option value="Basic">Basic</option>
+                            <option value="Standard">Standard</option>
+                            <option value="Premium">Premium</option>
+                            <option value="Elite">Elite</option>
+                        </select>
+                    </div>
+                    <div class="info-item full-width">
+                        <span class="info-label">Sum Insured (total coverage limit from all risks)</span>
+                        <input type="text" id="sumInsuredInput" class="summary-input" readonly value="0,00">
+                    </div>
+                    <div class="info-item full-width">
+                        <span class="info-label">Premium (sum of each risk premium, rate per mil / 1000)</span>
+                        <input type="text" id="premiumInput" class="summary-input" readonly value="0,00">
+                    </div>
+                </div>
+
+                <!-- Asset Breakdown Tabs -->
+                <div class="breakdown-section" id="healthBreakdownTabs">
+                    <h3 style="margin-bottom: 0.6rem; color: #0f172a;">Coverage Breakdown</h3>
+
+                    <div class="tabs-shell">
+                        <div class="tab-controls" role="tablist">
+                            <button type="button" class="tab-btn active" data-target="member-tab"
+                                aria-selected="true"><i class="fas fa-user-injured"></i> Member / Dependent</button>
+                            <button type="button" class="tab-btn" data-target="coverage-tab" aria-selected="false"><i
+                                    class="fas fa-umbrella"></i> Coverage & Rate</button>
+                            <button type="button" class="tab-btn" data-target="benefit-tab" aria-selected="false"><i
+                                    class="fas fa-gift"></i> Benefits</button>
+                        </div>
+
+                        <!-- Member tab -->
+                        <div id="member-tab" class="tab-panel active" role="tabpanel">
+                            <p class="lookup-hint"><i class="fas fa-info-circle"></i> Member rows for active risk. Total
+                                sum insured from all members.</p>
+                            <div id="memberRows" class="entry-list"></div>
+                            <div class="tab-tools">
+                                <button type="button" id="addMemberRowBtn" class="btn-add-row"><i
+                                        class="fas fa-plus-circle"></i> Add Member</button>
+                            </div>
+                        </div>
+
+                        <!-- Coverage tab -->
+                        <div id="coverage-tab" class="tab-panel" role="tabpanel" aria-hidden="true">
+                            <p class="lookup-hint"><i class="fas fa-info-circle"></i> Coverage rows (e.g. Inpatient,
+                                Outpatient). Rate per mil (‰).</p>
+                            <div id="coverageRows" class="entry-list"></div>
+                            <div class="tab-tools">
+                                <button type="button" id="addCoverageRowBtn" class="btn-add-row"><i
+                                        class="fas fa-plus-circle"></i> Add Coverage</button>
+                            </div>
+                        </div>
+
+                        <!-- Benefit tab -->
+                        <div id="benefit-tab" class="tab-panel" role="tabpanel" aria-hidden="true">
+                            <p class="lookup-hint"><i class="fas fa-info-circle"></i> Benefit rows for active risk. Filtered by active Scope of Cover.</p>
+                            <div id="benefitRows" class="entry-list"></div>
+                            <div class="tab-tools">
+                                <button type="button" id="addBenefitRowBtn" class="btn-add-row"><i
+                                        class="fas fa-plus-circle"></i> Add Benefit</button>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+
+                    <!-- Premium calc card -->
+                    <div class="calc-card">
+                        <h4><i class="fas fa-calculator" style="margin-right:0.4rem;"></i>Premium Calculation — Per Risk
+                        </h4>
+                        <p class="calc-desc">Premium = Sum Insured (member total) × (Total Rate per Mil ÷ 1,000)</p>
+
+                        <div id="riskPremiumBreakdown"
+                            style="margin-bottom:1rem; overflow-x:auto; border-radius:12px; border:1px solid #bfdbfe;">
+                        </div>
+
+                        <!-- Active risk detail -->
+                        <div
+                            style="border:1px solid #93c5fd; border-radius:14px; padding:0.8rem; background:#f0f7ff; margin-bottom:0.9rem;">
+                            <div
+                                style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.3px; color:#1e40af; font-weight:700; margin-bottom:0.5rem;">
+                                <i class="fas fa-dot-circle"></i> Active Risk Detail
+                            </div>
+                            <div class="calc-grid"
+                                style="grid-template-columns:repeat(2,minmax(140px,1fr)); margin-bottom:0.6rem;">
+                                <div class="calc-item">
+                                    <span class="calc-label">Member Total (SI)</span>
+                                    <span id="activeMemberDisplay" class="calc-value">0,00</span>
+                                </div>
+                                <div class="calc-item">
+                                    <span class="calc-label">Total Rate (permil)</span>
+                                    <span id="activeRateDisplay" class="calc-value">0,0000</span>
+                                </div>
+                            </div>
+                            <div class="premium-box"
+                                style="margin-top:0; border-top:1px dashed #93c5fd; padding-top:0.6rem;">
+                                <span class="calc-label">Active Risk Premium</span>
+                                <div id="premiumDisplay" class="premium-value">0,00</div>
+                                <span id="formulaDisplay" class="calc-value"
+                                    style="font-size:0.8rem; color:#475569; margin-top:0.2rem; display:block;"></span>
+                            </div>
+                        </div>
+
+                        <!-- Grand total -->
+                        <div style="border:2px solid #2563eb; border-radius:14px; padding:0.85rem; background:#eff6ff;">
+                            <div
+                                style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.3px; color:#1e3a8a; font-weight:700; margin-bottom:0.65rem;">
+                                <i class="fas fa-layer-group"></i> Grand Total — All Risks
+                            </div>
+                            <div
+                                style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.7rem; align-items:flex-end;">
+                                <div>
+                                    <span class="calc-label">Total Sum Insured</span>
+                                    <div id="globalMemberDisplay" class="premium-value"
+                                        style="font-size:1.1rem; color:#1e3a8a;">0,00</div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <span class="calc-label">Total Premium</span>
+                                    <div id="globalPremiumDisplay" class="premium-value" style="font-size:1.4rem;">0,00
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="footnote"><i class="fas fa-info-circle"></i> Health risk module — ready to embed in quotation
+                    flow.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            // ---------- helpers ----------
+            const moneyFormatter = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const rateFormatter = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+
+            function parseNumber(v) {
+                if (typeof v === 'number' && isFinite(v)) return v;
+                if (v === null || v === undefined || v === '') return 0;
+                const raw = String(v).trim().replace(/\s/g, '');
+                if (!raw) return 0;
+                const lastComma = raw.lastIndexOf(',');
+                const lastDot = raw.lastIndexOf('.');
+                let normalized = raw;
+                if (lastComma !== -1 && lastDot !== -1) {
+                    if (lastComma > lastDot) normalized = raw.replace(/\./g, '').replace(',', '.');
+                    else normalized = raw.replace(/,/g, '');
+                } else if (lastComma !== -1) normalized = raw.replace(',', '.');
+                const n = Number(normalized);
+                return isFinite(n) ? n : 0;
+            }
+
+            function formatMoney(v) { return moneyFormatter.format(v); }
+            function formatRate(v) { return rateFormatter.format(v); }
+
+            function formatFieldNumeric(input, decimals) {
+                const raw = String(input.value || '').trim();
+                if (!raw) { input.value = ''; return; }
+                const val = parseNumber(raw);
+                const fmt = new Intl.NumberFormat('id-ID', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+                input.value = fmt.format(val);
+            }
+
+            // ---------- state ----------
+            const risks = [];
+            let activeRiskIndex = 0;
+
+            // fallback lookup data
+            const memberLookup = [
+                { code: 'M1', name: 'Primary Insured' },
+                { code: 'M2', name: 'Spouse' },
+                { code: 'M3', name: 'Child 1' },
+                { code: 'M4', name: 'Child 2' }
+            ];
+            const coverageLookup = [
+                { code: 'INP', name: 'Inpatient' },
+                { code: 'OUT', name: 'Outpatient' },
+                { code: 'DENT', name: 'Dental' },
+                { code: 'MAT', name: 'Maternity' },
+                { code: 'OPT', name: 'Optical' },
+                { code: 'MCU', name: 'Medical Check Up' }
+            ];
+
+            function createDefaultRisk() {
+                return {
+                    clientType: 'Individual', // 'Individual' or 'Corporate'
+                    policyHolder: '',
+                    dob: '',
+                    gender: '',
+                    occupation: '',
+                    plan: '',
+                    luasJaminan: ['INP'], // Default: Inpatient
+                    members: [
+                        { memberName: '', memberType: '', dob: '', gender: '', sumInsured: '' }
+                    ],
+                    coverages: [
+                        { coverage: '', ratePerMil: '' }
+                    ],
+                    benefits: [
+                        { coverage: '', benefitName: '', limitValue: '' }
+                    ]
+                };
+            }
+
+            function getActiveRisk() { return risks[activeRiskIndex] || null; }
+
+            // ---------- DOM refs ----------
+            const riskBadge = document.getElementById('riskBadge');
+            const riskList = document.getElementById('riskList');
+            const addRiskBtn = document.getElementById('addRiskBtn');
+            const deleteRiskBtn = document.getElementById('deleteRiskBtn');
+
+            const downloadHealthTemplateBtn = document.getElementById('downloadHealthTemplateBtn');
+            const uploadHealthExcelBtn = document.getElementById('uploadHealthExcelBtn');
+            const healthExcelFileInput = document.getElementById('healthExcelFileInput');
+
+            const clientTypeSelect = document.getElementById('clientTypeSelect');
+            const policyHolderLabel = document.getElementById('policyHolderLabel');
+            const luasJaminanContainer = document.getElementById('luasJaminanContainer');
+
+            const dobWrapper = document.getElementById('dobWrapper');
+            const genderWrapper = document.getElementById('genderWrapper');
+            const occupationWrapper = document.getElementById('occupationWrapper');
+            const planWrapper = document.getElementById('planWrapper');
+
+            const riskNumberInput = document.getElementById('riskNumberInput');
+            const policyHolderInput = document.getElementById('policyHolderInput');
+            const dobInput = document.getElementById('dobInput');
+            const genderSelect = document.getElementById('genderSelect');
+            const occupationSelect = document.getElementById('occupationSelect');
+            const planSelect = document.getElementById('planSelect');
+
+            const memberRowsContainer = document.getElementById('memberRows');
+            const coverageRowsContainer = document.getElementById('coverageRows');
+            const benefitRowsContainer = document.getElementById('benefitRows');
+            const addMemberRowBtn = document.getElementById('addMemberRowBtn');
+            const addCoverageRowBtn = document.getElementById('addCoverageRowBtn');
+            const addBenefitRowBtn = document.getElementById('addBenefitRowBtn');
+
+            const sumInsuredInput = document.getElementById('sumInsuredInput');
+            const premiumInput = document.getElementById('premiumInput');
+
+            const activeMemberDisplay = document.getElementById('activeMemberDisplay');
+            const activeRateDisplay = document.getElementById('activeRateDisplay');
+            const globalMemberDisplay = document.getElementById('globalMemberDisplay');
+            const globalPremiumDisplay = document.getElementById('globalPremiumDisplay');
+            const premiumDisplay = document.getElementById('premiumDisplay');
+            const formulaDisplay = document.getElementById('formulaDisplay');
+
+            // ---------- render functions ----------
+            function renderRiskList() {
+                riskList.innerHTML = risks.map((_, idx) =>
+                    `<button type="button" class="risk-pill${idx === activeRiskIndex ? ' active' : ''}" data-risk-index="${idx}">Risk ${idx + 1}</button>`
+                ).join('');
+                riskNumberInput.value = String(activeRiskIndex + 1);
+                riskBadge.textContent = `Risk No: ${activeRiskIndex + 1}/${risks.length}`;
+            }
+
+            function renderRiskFields() {
+                const risk = getActiveRisk();
+                if (!risk) return;
+                clientTypeSelect.value = risk.clientType || 'Individual';
+                policyHolderInput.value = risk.policyHolder || '';
+                dobInput.value = risk.dob || '';
+                genderSelect.value = risk.gender || '';
+                occupationSelect.value = risk.occupation || '';
+                planSelect.value = risk.plan || '';
+
+                // Toggle visibility based on Client Type
+                const isCorporate = risk.clientType === 'Corporate';
+                if (isCorporate) {
+                    policyHolderLabel.textContent = 'Corporate Client Name';
+                    dobWrapper.style.display = 'none';
+                    genderWrapper.style.display = 'none';
+                    occupationWrapper.style.display = 'none';
+                    planWrapper.style.display = 'none';
+                    luasJaminanContainer.style.display = 'block';
+
+                    // Update checkboxes
+                    document.querySelectorAll('.luas-jaminan-checkbox').forEach(cb => {
+                        cb.checked = (risk.luasJaminan || []).includes(cb.value);
+                    });
+                } else {
+                    policyHolderLabel.textContent = 'Full Name / Policy Holder';
+                    dobWrapper.style.display = 'block';
+                    genderWrapper.style.display = 'block';
+                    occupationWrapper.style.display = 'block';
+                    planWrapper.style.display = 'block';
+                    luasJaminanContainer.style.display = 'none';
+                }
+            }
+
+            function getOptionLabel(item) {
+                const code = item.code || '';
+                const name = item.name || '';
+                return code && name ? `${code} - ${name}` : (code || name || '-');
+            }
+
+            function renderOptions(items, placeholder, selectedValue) {
+                let html = `<option value="">${placeholder}</option>`;
+                items.forEach(item => {
+                    const val = item.code || item.name || '';
+                    const sel = String(val) === String(selectedValue || '') ? ' selected' : '';
+                    html += `<option value="${String(val)}"${sel}>${getOptionLabel(item)}</option>`;
+                });
+                return html;
+            }
+
+            function renderMemberRows() {
+                const risk = getActiveRisk();
+                if (!risk) return;
+
+                const isCorporate = risk.clientType === 'Corporate';
+                
+                if (isCorporate) {
+                    memberRowsContainer.innerHTML = risk.members.map((item, idx) => `
+                        <div class="entry-row" data-index="${idx}" style="grid-template-columns: repeat(5, 1fr) auto;">
+                            <div class="field-group">
+                                <label>Member Name</label>
+                                <input type="text" class="member-name-input" value="${item.memberName || ''}" placeholder="Name">
+                            </div>
+                            <div class="field-group">
+                                <label>Relation/Type</label>
+                                <select class="member-type-select">${renderOptions(memberLookup, '-- Select Relation --', item.memberType)}</select>
+                            </div>
+                            <div class="field-group">
+                                <label>DOB</label>
+                                <input type="date" class="member-dob-input" value="${item.dob || ''}">
+                            </div>
+                            <div class="field-group">
+                                <label>Gender</label>
+                                <select class="member-gender-select">
+                                    <option value="">- Select -</option>
+                                    <option value="Male" ${item.gender === 'Male' ? 'selected' : ''}>Male</option>
+                                    <option value="Female" ${item.gender === 'Female' ? 'selected' : ''}>Female</option>
+                                </select>
+                            </div>
+                            <div class="field-group">
+                                <label>Sum Insured (IDR)</label>
+                                <input type="text" class="member-value-input" inputmode="decimal" value="${item.sumInsured !== '' ? formatMoney(parseNumber(item.sumInsured)) : ''}" placeholder="e.g. 100.000,00">
+                            </div>
+                            <div class="row-action">
+                                <button type="button" class="btn-icon remove-member-row"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    memberRowsContainer.innerHTML = risk.members.map((item, idx) => `
+                        <div class="entry-row" data-index="${idx}">
+                            <div class="field-group">
+                                <label>Member Type</label>
+                                <select class="member-type-select">${renderOptions(memberLookup, '-- Select Member --', item.memberType)}</select>
+                            </div>
+                            <div class="field-group">
+                                <label>Sum Insured (IDR)</label>
+                                <input type="text" class="member-value-input" inputmode="decimal" value="${item.sumInsured !== '' ? formatMoney(parseNumber(item.sumInsured)) : ''}" placeholder="e.g. 100.000,00">
+                            </div>
+                            <div class="row-action">
+                                <button type="button" class="btn-icon remove-member-row"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            function renderCoverageRows() {
+                const risk = getActiveRisk();
+                if (!risk) return;
+                
+                const isCorporate = risk.clientType === 'Corporate';
+                let filteredCoverageLookup = coverageLookup;
+                if (isCorporate) {
+                    const activeCodes = risk.luasJaminan || ['INP'];
+                    filteredCoverageLookup = coverageLookup.filter(item => activeCodes.includes(item.code));
+                }
+
+                coverageRowsContainer.innerHTML = risk.coverages.map((item, idx) => `
+                    <div class="entry-row" data-index="${idx}">
+                        <div class="field-group">
+                            <label>Coverage</label>
+                            <select class="coverage-select">${renderOptions(filteredCoverageLookup, '-- Select Coverage --', item.coverage)}</select>
+                        </div>
+                        <div class="field-group">
+                            <label>Rate (permil)</label>
+                            <input type="text" class="coverage-rate-input" inputmode="decimal" value="${String(item.ratePerMil || '')}" placeholder="e.g. 2.5">
+                        </div>
+                        <div class="row-action">
+                            <button type="button" class="btn-icon remove-coverage-row"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            function renderBenefitRows() {
+                const risk = getActiveRisk();
+                if (!risk) return;
+                
+                const isCorporate = risk.clientType === 'Corporate';
+                let filteredCoverageLookup = coverageLookup;
+                if (isCorporate) {
+                    const activeCodes = risk.luasJaminan || ['INP'];
+                    filteredCoverageLookup = coverageLookup.filter(item => activeCodes.includes(item.code));
+                }
+
+                benefitRowsContainer.innerHTML = (risk.benefits || []).map((item, idx) => `
+                    <div class="entry-row" data-index="${idx}">
+                        <div class="field-group">
+                            <label>Scope / Coverage</label>
+                            <select class="benefit-coverage-select">${renderOptions(filteredCoverageLookup, '-- Select Scope --', item.coverage)}</select>
+                        </div>
+                        <div class="field-group">
+                            <label>Benefit Name</label>
+                            <input type="text" class="benefit-name-input" value="${item.benefitName || ''}" placeholder="e.g. Room & Board">
+                        </div>
+                        <div class="field-group">
+                            <label>Limit Value (IDR / Text)</label>
+                            <input type="text" class="benefit-limit-input" value="${item.limitValue || ''}" placeholder="e.g. 1.000.000 or As Charged">
+                        </div>
+                        <div class="row-action">
+                            <button type="button" class="btn-icon remove-benefit-row"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // calc helpers
+            function getRiskMemberTotal(risk) {
+                return risk.members.reduce((sum, m) => sum + parseNumber(m.sumInsured), 0);
+            }
+
+            // check if a coverage matches active checklit for Corporate
+            function getRiskRateTotal(risk) {
+                return risk.coverages.reduce((sum, c) => sum + parseNumber(c.ratePerMil), 0);
+            }
+
+            function recalculateAll() {
+                let globalMemberTotal = 0;
+                let globalPremiumTotal = 0;
+
+                risks.forEach(risk => {
+                    const memberTotal = getRiskMemberTotal(risk);
+                    const rateTotal = getRiskRateTotal(risk);
+                    const premium = memberTotal * (rateTotal / 1000);
+                    globalMemberTotal += memberTotal;
+                    globalPremiumTotal += premium;
+                });
+
+                const active = getActiveRisk();
+                const activeMemberTotal = active ? getRiskMemberTotal(active) : 0;
+                const activeRateTotal = active ? getRiskRateTotal(active) : 0;
+                const activePremium = activeMemberTotal * (activeRateTotal / 1000);
+
+                sumInsuredInput.value = formatMoney(globalMemberTotal);
+                premiumInput.value = formatMoney(globalPremiumTotal);
+
+                activeMemberDisplay.textContent = formatMoney(activeMemberTotal);
+                activeRateDisplay.textContent = formatRate(activeRateTotal);
+                globalMemberDisplay.textContent = formatMoney(globalMemberTotal);
+                globalPremiumDisplay.textContent = formatMoney(globalPremiumTotal);
+                premiumDisplay.textContent = formatMoney(activePremium);
+                formulaDisplay.textContent = `${formatMoney(activeMemberTotal)} × (${formatRate(activeRateTotal)} / 1000)`;
+
+                renderRiskPremiumBreakdown();
+            }
+
+            function renderRiskPremiumBreakdown() {
+                const container = document.getElementById('riskPremiumBreakdown');
+                if (!container) return;
+                if (!risks.length) {
+                    container.innerHTML = '<p style="color:#64748b;padding:0.5rem;">No risks defined.</p>';
+                    return;
+                }
+                let rows = risks.map((risk, i) => {
+                    const mTotal = getRiskMemberTotal(risk);
+                    const rTotal = getRiskRateTotal(risk);
+                    const prem = mTotal * (rTotal / 1000);
+                    const isActive = i === activeRiskIndex;
+                    const bg = isActive ? 'background:#dbeafe;' : (i % 2 === 0 ? 'background:#f8fafc;' : 'background:#ffffff;');
+                    const style = isActive ? 'font-weight:700;' : '';
+                    return `<tr style="${bg}">
+                        <td style="padding:0.4rem 0.6rem;text-align:center;${style}">${isActive ? '<i class="fas fa-caret-right" style="color:#2563eb;margin-right:4px;"></i>' : ''}Risk ${i + 1}</td>
+                        <td style="padding:0.4rem 0.6rem;text-align:right;font-family:monospace;${style}">${formatMoney(mTotal)}</td>
+                        <td style="padding:0.4rem 0.6rem;text-align:right;font-family:monospace;${style}">${formatRate(rTotal)}</td>
+                        <td style="padding:0.4rem 0.6rem;text-align:right;font-family:monospace;color:#1d4ed8;font-weight:700;">${formatMoney(prem)}</td>
+                        <td style="padding:0.4rem 0.6rem;font-size:0.75rem;color:#64748b;font-family:monospace;white-space:nowrap;">${formatMoney(mTotal)} × (${formatRate(rTotal)} / 1000)</td>
+                    </tr>`;
+                }).join('');
+
+                container.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:0.88rem;">
+                    <thead><tr style="background:#1e3a8a;color:#fff;">
+                        <th style="padding:0.4rem 0.6rem;text-align:center;font-size:0.7rem;text-transform:uppercase;">Risk</th>
+                        <th style="padding:0.4rem 0.6rem;text-align:right;font-size:0.7rem;text-transform:uppercase;">Sum Insured</th>
+                        <th style="padding:0.4rem 0.6rem;text-align:right;font-size:0.7rem;text-transform:uppercase;">Rate (‰)</th>
+                        <th style="padding:0.4rem 0.6rem;text-align:right;font-size:0.7rem;text-transform:uppercase;">Premium</th>
+                        <th style="padding:0.4rem 0.6rem;text-align:left;font-size:0.7rem;text-transform:uppercase;">Formula</th>
+                    </tr></thead><tbody>${rows}</tbody></table>`;
+            }
+
+            function renderAll() {
+                renderRiskList();
+                renderRiskFields();
+                renderMemberRows();
+                renderCoverageRows();
+                renderBenefitRows();
+                recalculateAll();
+            }
+
+            // ---------- event binding ----------
+            function bindDelegatedEvents() {
+                // risk pills
+                riskList.addEventListener('click', (e) => {
+                    const pill = e.target.closest('.risk-pill');
+                    if (!pill) return;
+                    const idx = parseInt(pill.dataset.riskIndex, 10);
+                    if (!isNaN(idx) && idx >= 0 && idx < risks.length) {
+                        activeRiskIndex = idx;
+                        renderAll();
+                    }
+                });
+
+                addRiskBtn.addEventListener('click', () => {
+                    risks.push(createDefaultRisk());
+                    activeRiskIndex = risks.length - 1;
+                    renderAll();
+                });
+
+                // delete risk
+                if (deleteRiskBtn) {
+                    deleteRiskBtn.addEventListener('click', () => {
+                        if (risks.length <= 1) {
+                            alert("Cannot delete the only remaining risk.");
+                            return;
+                        }
+                        if (confirm("Are you sure you want to delete the active risk?")) {
+                            risks.splice(activeRiskIndex, 1);
+                            activeRiskIndex = Math.max(0, activeRiskIndex - 1);
+                            renderAll();
+                        }
+                    });
+                }
+
+                // client type selection
+                if (clientTypeSelect) {
+                    clientTypeSelect.addEventListener('change', function () {
+                        const risk = getActiveRisk();
+                        if (risk) {
+                            risk.clientType = this.value;
+                            if (risk.clientType === 'Corporate' && risk.members.length === 1 && !risk.members[0].memberName) {
+                                // Init name fields for corporate
+                                risk.members[0].memberName = '';
+                                risk.members[0].dob = '';
+                                risk.members[0].gender = '';
+                            }
+                            renderAll();
+                        }
+                    });
+                }
+
+                // luas jaminan checklist change
+                document.querySelectorAll('.luas-jaminan-checkbox').forEach(cb => {
+                    cb.addEventListener('change', function () {
+                        const risk = getActiveRisk();
+                        if (!risk) return;
+                        if (!risk.luasJaminan) risk.luasJaminan = [];
+                        if (this.checked) {
+                            if (!risk.luasJaminan.includes(this.value)) {
+                                risk.luasJaminan.push(this.value);
+                            }
+                        } else {
+                            risk.luasJaminan = risk.luasJaminan.filter(val => val !== this.value);
+                            // Auto filter out coverage from risk coverages if unchecked
+                            risk.coverages = risk.coverages.filter(cov => cov.coverage !== this.value);
+                            if (risk.coverages.length === 0) {
+                                risk.coverages.push({ coverage: '', ratePerMil: '' });
+                            }
+                            // Auto filter out benefits if unchecked
+                            if (risk.benefits) {
+                                risk.benefits = risk.benefits.filter(ben => ben.coverage !== this.value);
+                            }
+                        }
+                        renderCoverageRows();
+                        renderBenefitRows();
+                        recalculateAll();
+                    });
+                });
+
+                // main fields
+                policyHolderInput.addEventListener('input', function () {
+                    const risk = getActiveRisk();
+                    if (risk) risk.policyHolder = this.value;
+                });
+                dobInput.addEventListener('change', function () {
+                    const risk = getActiveRisk();
+                    if (risk) risk.dob = this.value;
+                });
+                genderSelect.addEventListener('change', function () {
+                    const risk = getActiveRisk();
+                    if (risk) risk.gender = this.value;
+                });
+                occupationSelect.addEventListener('change', function () {
+                    const risk = getActiveRisk();
+                    if (risk) risk.occupation = this.value;
+                });
+                planSelect.addEventListener('change', function () {
+                    const risk = getActiveRisk();
+                    if (risk) risk.plan = this.value;
+                });
+
+                // member rows
+                addMemberRowBtn.addEventListener('click', () => {
+                    const risk = getActiveRisk();
+                    if (!risk) return;
+                    risk.members.push({ memberName: '', memberType: '', dob: '', gender: '', sumInsured: '' });
+                    renderMemberRows();
+                    recalculateAll();
+                });
+
+                memberRowsContainer.addEventListener('input', (e) => {
+                    const input = e.target;
+                    const row = input.closest('.entry-row');
+                    if (!row) return;
+                    const idx = parseInt(row.dataset.index, 10);
+                    const risk = getActiveRisk();
+                    if (!risk || !risk.members[idx]) return;
+                    
+                    if (input.classList.contains('member-value-input')) {
+                        risk.members[idx].sumInsured = input.value;
+                        recalculateAll();
+                    } else if (input.classList.contains('member-name-input')) {
+                        risk.members[idx].memberName = input.value;
+                    } else if (input.classList.contains('member-dob-input')) {
+                        risk.members[idx].dob = input.value;
+                    }
+                });
+                memberRowsContainer.addEventListener('change', (e) => {
+                    const input = e.target;
+                    const row = input.closest('.entry-row');
+                    if (!row) return;
+                    const idx = parseInt(row.dataset.index, 10);
+                    const risk = getActiveRisk();
+                    if (!risk || !risk.members[idx]) return;
+
+                    if (input.classList.contains('member-type-select')) {
+                        risk.members[idx].memberType = input.value;
+                        recalculateAll();
+                    } else if (input.classList.contains('member-gender-select')) {
+                        risk.members[idx].gender = input.value;
+                    }
+                });
+                memberRowsContainer.addEventListener('focusout', (e) => {
+                    if (e.target.classList.contains('member-value-input')) {
+                        formatFieldNumeric(e.target, 2);
+                    }
+                });
+                memberRowsContainer.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.remove-member-row');
+                    if (!btn) return;
+                    const risk = getActiveRisk();
+                    if (!risk || risk.members.length <= 1) return;
+                    const row = btn.closest('.entry-row');
+                    if (!row) return;
+                    const idx = parseInt(row.dataset.index, 10);
+                    if (!isNaN(idx) && idx >= 0 && idx < risk.members.length) {
+                        risk.members.splice(idx, 1);
+                        renderMemberRows();
+                        recalculateAll();
+                    }
+                });
+
+                // coverage rows
+                addCoverageRowBtn.addEventListener('click', () => {
+                    const risk = getActiveRisk();
+                    if (!risk) return;
+                    risk.coverages.push({ coverage: '', ratePerMil: '' });
+                    renderCoverageRows();
+                    recalculateAll();
+                });
+
+                coverageRowsContainer.addEventListener('input', (e) => {
+                    const input = e.target;
+                    const row = input.closest('.entry-row');
+                    if (!row) return;
+                    const idx = parseInt(row.dataset.index, 10);
+                    const risk = getActiveRisk();
+                    if (!risk || !risk.coverages[idx]) return;
+                    if (input.classList.contains('coverage-rate-input')) {
+                        risk.coverages[idx].ratePerMil = input.value;
+                        recalculateAll();
+                    }
+                });
+                coverageRowsContainer.addEventListener('change', (e) => {
+                    const input = e.target;
+                    const row = input.closest('.entry-row');
+                    if (!row) return;
+                    const idx = parseInt(row.dataset.index, 10);
+                    const risk = getActiveRisk();
+                    if (!risk || !risk.coverages[idx]) return;
+                    if (input.classList.contains('coverage-select')) {
+                        risk.coverages[idx].coverage = input.value;
+                        recalculateAll();
+                    }
+                });
+                coverageRowsContainer.addEventListener('focusout', (e) => {
+                    if (e.target.classList.contains('coverage-rate-input')) {
+                        e.target.value = String(e.target.value || '').trim();
+                    }
+                });
+                coverageRowsContainer.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.remove-coverage-row');
+                    if (!btn) return;
+                    const risk = getActiveRisk();
+                    if (!risk || risk.coverages.length <= 1) return;
+                    const row = btn.closest('.entry-row');
+                    if (!row) return;
+                    const idx = parseInt(row.dataset.index, 10);
+                    if (!isNaN(idx) && idx >= 0 && idx < risk.coverages.length) {
+                        risk.coverages.splice(idx, 1);
+                        renderCoverageRows();
+                        recalculateAll();
+                    }
+                });
+
+                // benefit rows
+                if (addBenefitRowBtn) {
+                    addBenefitRowBtn.addEventListener('click', () => {
+                        const risk = getActiveRisk();
+                        if (!risk) return;
+                        if (!risk.benefits) risk.benefits = [];
+                        risk.benefits.push({ coverage: '', benefitName: '', limitValue: '' });
+                        renderBenefitRows();
+                    });
+                }
+
+                benefitRowsContainer.addEventListener('input', (e) => {
+                    const input = e.target;
+                    const row = input.closest('.entry-row');
+                    if (!row) return;
+                    const idx = parseInt(row.dataset.index, 10);
+                    const risk = getActiveRisk();
+                    if (!risk || !risk.benefits || !risk.benefits[idx]) return;
+                    if (input.classList.contains('benefit-name-input')) {
+                        risk.benefits[idx].benefitName = input.value;
+                    } else if (input.classList.contains('benefit-limit-input')) {
+                        risk.benefits[idx].limitValue = input.value;
+                    }
+                });
+
+                benefitRowsContainer.addEventListener('change', (e) => {
+                    const input = e.target;
+                    const row = input.closest('.entry-row');
+                    if (!row) return;
+                    const idx = parseInt(row.dataset.index, 10);
+                    const risk = getActiveRisk();
+                    if (!risk || !risk.benefits || !risk.benefits[idx]) return;
+                    if (input.classList.contains('benefit-coverage-select')) {
+                        risk.benefits[idx].coverage = input.value;
+                    }
+                });
+
+                benefitRowsContainer.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.remove-benefit-row');
+                    if (!btn) return;
+                    const risk = getActiveRisk();
+                    if (!risk || !risk.benefits || risk.benefits.length <= 1) return;
+                    const row = btn.closest('.entry-row');
+                    if (!row) return;
+                    const idx = parseInt(row.dataset.index, 10);
+                    if (!isNaN(idx) && idx >= 0 && idx < risk.benefits.length) {
+                        risk.benefits.splice(idx, 1);
+                        renderBenefitRows();
+                    }
+                });
+
+                // tabs
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        document.querySelectorAll('.tab-btn').forEach(b => {
+                            b.classList.remove('active');
+                            b.setAttribute('aria-selected', 'false');
+                        });
+                        document.querySelectorAll('.tab-panel').forEach(p => {
+                            p.classList.remove('active');
+                            p.setAttribute('aria-hidden', 'true');
+                        });
+                        this.classList.add('active');
+                        this.setAttribute('aria-selected', 'true');
+                        const panel = document.getElementById(this.dataset.target);
+                        if (panel) {
+                            panel.classList.add('active');
+                            panel.setAttribute('aria-hidden', 'false');
+                        }
+                    });
+                });
+
+                // Excel template download & bulk upload
+                if (downloadHealthTemplateBtn) {
+                    downloadHealthTemplateBtn.addEventListener('click', () => {
+                        // Sheet 1: health_risk
+                        const riskHeaders = [
+                            ['client_type', 'policy_holder', 'dob', 'gender', 'occupation', 'plan_type', 'scope_of_cover']
+                        ];
+                        const riskSampleData = [
+                            ['Individual', 'Budi Santoso', '1990-05-15', 'Male', 'Office Worker', 'Standard', ''],
+                            ['Corporate', 'PT Maju Jaya', '', '', '', '', 'INP,OUT,DENT']
+                        ];
+
+                        // Sheet 2: health_member
+                        const memberHeaders = [
+                            ['policy_holder', 'member_name', 'relation_type', 'dob', 'gender', 'sum_insured']
+                        ];
+                        const memberSampleData = [
+                            ['Budi Santoso', 'Budi Santoso', 'M1', '1990-05-15', 'Male', 50000000],
+                            ['PT Maju Jaya', 'Andi', 'M1', '1985-10-10', 'Male', 100000000],
+                            ['PT Maju Jaya', 'Siti (Spouse)', 'M2', '1987-12-12', 'Female', 50000000]
+                        ];
+
+                        // Sheet 3: health_coverage
+                        const coverageHeaders = [
+                            ['policy_holder', 'coverage_code', 'rate_permil']
+                        ];
+                        const coverageSampleData = [
+                            ['Budi Santoso', 'INP', 1.5],
+                            ['Budi Santoso', 'OUT', 2.0],
+                            ['PT Maju Jaya', 'INP', 1.2]
+                        ];
+
+                        // Sheet 4: health_benefit
+                        const benefitHeaders = [
+                            ['policy_holder', 'coverage_code', 'benefit_name', 'limit_value']
+                        ];
+                        const benefitSampleData = [
+                            ['Budi Santoso', 'INP', 'Room & Board', '500,000'],
+                            ['PT Maju Jaya', 'INP', 'Room & Board', '1,000,000'],
+                            ['PT Maju Jaya', 'INP', 'ICU Limit', 'As Charged']
+                        ];
+
+                        const wb = XLSX.utils.book_new();
+
+                        const wsRisk = XLSX.utils.aoa_to_sheet([...riskHeaders, ...riskSampleData]);
+                        XLSX.utils.book_append_sheet(wb, wsRisk, "health_risk");
+
+                        const wsMember = XLSX.utils.aoa_to_sheet([...memberHeaders, ...memberSampleData]);
+                        XLSX.utils.book_append_sheet(wb, wsMember, "health_member");
+
+                        const wsCoverage = XLSX.utils.aoa_to_sheet([...coverageHeaders, ...coverageSampleData]);
+                        XLSX.utils.book_append_sheet(wb, wsCoverage, "health_coverage");
+
+                        const wsBenefit = XLSX.utils.aoa_to_sheet([...benefitHeaders, ...benefitSampleData]);
+                        XLSX.utils.book_append_sheet(wb, wsBenefit, "health_benefit");
+
+                        XLSX.writeFile(wb, "health_risk_bulk_template.xlsx");
+                    });
+                }
+
+                if (uploadHealthExcelBtn && healthExcelFileInput) {
+                    uploadHealthExcelBtn.addEventListener('click', () => {
+                        healthExcelFileInput.click();
+                    });
+
+                    healthExcelFileInput.addEventListener('change', (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        const reader = new FileReader();
+                        reader.onload = (evt) => {
+                            try {
+                                const data = evt.target.result;
+                                const workbook = XLSX.read(data, { type: 'binary' });
+
+                                const riskSheetName = workbook.SheetNames[0];
+                                const memberSheetName = workbook.SheetNames[1];
+                                const coverageSheetName = workbook.SheetNames[2];
+                                const benefitSheetName = workbook.SheetNames[3];
+
+                                const riskRows = XLSX.utils.sheet_to_json(workbook.Sheets[riskSheetName]);
+                                
+                                let memberRows = [];
+                                if (memberSheetName && workbook.Sheets[memberSheetName]) {
+                                    memberRows = XLSX.utils.sheet_to_json(workbook.Sheets[memberSheetName]);
+                                }
+
+                                let coverageRows = [];
+                                if (coverageSheetName && workbook.Sheets[coverageSheetName]) {
+                                    coverageRows = XLSX.utils.sheet_to_json(workbook.Sheets[coverageSheetName]);
+                                }
+
+                                let benefitRows = [];
+                                if (benefitSheetName && workbook.Sheets[benefitSheetName]) {
+                                    benefitRows = XLSX.utils.sheet_to_json(workbook.Sheets[benefitSheetName]);
+                                }
+
+                                if (riskRows.length === 0) {
+                                    alert("Excel file: 'health_risk' sheet is empty!");
+                                    return;
+                                }
+
+                                const importedRisks = riskRows.map(row => {
+                                    const policyHolder = String(row.policy_holder || '').trim();
+                                    const clientType = String(row.client_type || 'Individual').trim();
+                                    
+                                    // Parse Scope of Cover list (check scope_of_cover or luas_jaminan for compatibility)
+                                    const luasJaminanRaw = String(row.scope_of_cover || row.luas_jaminan || '').trim();
+                                    const luasJaminanList = luasJaminanRaw ? luasJaminanRaw.split(',').map(s => s.trim().toUpperCase()) : ['INP'];
+
+                                    // Filter members
+                                    const matchingMembers = memberRows
+                                        .filter(m => String(m.policy_holder || '').trim() === policyHolder)
+                                        .map(m => ({
+                                            memberName: String(m.member_name || '').trim(),
+                                            memberType: String(m.relation_type || 'M1').trim(),
+                                            dob: String(m.dob || '').trim(),
+                                            gender: String(m.gender || '').trim(),
+                                            sumInsured: String(m.sum_insured || '')
+                                        }));
+
+                                    const finalMembers = matchingMembers.length > 0 ? matchingMembers : [
+                                        { memberName: '', memberType: 'M1', dob: '', gender: '', sumInsured: '' }
+                                    ];
+
+                                    // Filter coverages
+                                    const matchingCoverages = coverageRows
+                                        .filter(c => String(c.policy_holder || '').trim() === policyHolder)
+                                        .map(c => ({
+                                            coverage: String(c.coverage_code || 'INP').trim().toUpperCase(),
+                                            ratePerMil: String(c.rate_permil || '')
+                                        }));
+
+                                    const finalCoverages = matchingCoverages.length > 0 ? matchingCoverages : [
+                                        { coverage: 'INP', ratePerMil: '1.5' }
+                                    ];
+
+                                    // Filter benefits
+                                    const matchingBenefits = benefitRows
+                                        .filter(b => String(b.policy_holder || '').trim() === policyHolder)
+                                        .map(b => ({
+                                            coverage: String(b.coverage_code || 'INP').trim().toUpperCase(),
+                                            benefitName: String(b.benefit_name || '').trim(),
+                                            limitValue: String(b.limit_value || '')
+                                        }));
+
+                                    const finalBenefits = matchingBenefits.length > 0 ? matchingBenefits : [
+                                        { coverage: '', benefitName: '', limitValue: '' }
+                                    ];
+
+                                    return {
+                                        clientType: clientType,
+                                        policyHolder: policyHolder,
+                                        dob: String(row.dob || ''),
+                                        gender: String(row.gender || ''),
+                                        occupation: String(row.occupation || ''),
+                                        plan: String(row.plan_type || ''),
+                                        luasJaminan: luasJaminanList,
+                                        members: finalMembers,
+                                        coverages: finalCoverages,
+                                        benefits: finalBenefits
+                                    };
+                                });
+
+                                // Clear the initial default risk if it's empty
+                                if (risks.length === 1 && !risks[0].policyHolder && getRiskMemberTotal(risks[0]) === 0) {
+                                    risks.length = 0;
+                                    risks.push(...importedRisks);
+                                } else {
+                                    risks.push(...importedRisks);
+                                }
+
+                                activeRiskIndex = risks.length - 1;
+                                renderAll();
+                                alert(`Successfully imported ${importedRisks.length} health risks with their members, coverages, and benefits.`);
+                            } catch (err) {
+                                console.error(err);
+                                alert("Failed to parse Excel file. Please ensure it matches the template format.");
+                            }
+                        };
+                        reader.readAsBinaryString(file);
+                        e.target.value = '';
+                    });
+                }
+            }
+
+            // ---------- init ----------
+            risks.push(createDefaultRisk());
+            activeRiskIndex = 0;
+            bindDelegatedEvents();
+            renderAll();
+        })();
+    </script>
+</body>
+
+</html>

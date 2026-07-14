@@ -889,6 +889,164 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Excel Download Template & Bulk Upload
+    const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+    const uploadExcelBtn = document.getElementById('uploadExcelBtn');
+    const excelFileInput = document.getElementById('excelFileInput');
+
+    if (downloadTemplateBtn) {
+        downloadTemplateBtn.addEventListener('click', () => {
+            // Sheet 1: Vehicles
+            const vehicleHeaders = [
+                ['plate_no', 'brand_code', 'model_code', 'vehicle_type', 'series_code', 'sub_series_code', 'chassis_no', 'engine_no', 'color', 'region_code', 'vehicle_year']
+            ];
+            const vehicleSampleData = [
+                ['B 1234 CD', 'TOY', 'AVN', 'Sedan', '1.5G', 'M/T', 'MR0123456', 'ENG987654', 'Black', 'JAK', 2022],
+                ['B 5678 EFG', 'HON', 'BRV', 'SUV', '1.5E', 'A/T', 'MR0987654', 'ENG123456', 'White', 'JAK', 2023]
+            ];
+
+            // Sheet 2: Objects (Breakdown of Sum Insured values)
+            const objectHeaders = [
+                ['plate_no', 'object_group_code', 'object_description', 'object_value']
+            ];
+            const objectSampleData = [
+                ['B 1234 CD', 'VEH', 'Vehicle Body', 150000000],
+                ['B 1234 CD', 'ACC', 'Audio & Speaker', 10000000],
+                ['B 5678 EFG', 'VEH', 'Vehicle Body', 220000000]
+            ];
+
+            // Sheet 3: Coverages
+            const coverageHeaders = [
+                ['plate_no', 'coverage_code', 'coverage_rate_percent']
+            ];
+            const coverageSampleData = [
+                ['B 1234 CD', 'COMP', 2.5],
+                ['B 1234 CD', 'TPL', 0.5],
+                ['B 5678 EFG', 'COMP', 2.5]
+            ];
+
+            const wb = XLSX.utils.book_new();
+            
+            const wsVehicles = XLSX.utils.aoa_to_sheet([...vehicleHeaders, ...vehicleSampleData]);
+            XLSX.utils.book_append_sheet(wb, wsVehicles, "risk_vehicle");
+
+            const wsObjects = XLSX.utils.aoa_to_sheet([...objectHeaders, ...objectSampleData]);
+            XLSX.utils.book_append_sheet(wb, wsObjects, "risk_vehicle_object");
+
+            const wsCoverages = XLSX.utils.aoa_to_sheet([...coverageHeaders, ...coverageSampleData]);
+            XLSX.utils.book_append_sheet(wb, wsCoverages, "risk_vehicle_coverage");
+
+            XLSX.writeFile(wb, "vehicle_risk_bulk_template.xlsx");
+        });
+    }
+
+    if (uploadExcelBtn && excelFileInput) {
+        uploadExcelBtn.addEventListener('click', () => {
+            excelFileInput.click();
+        });
+
+        excelFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                try {
+                    const data = evt.target.result;
+                    const workbook = XLSX.read(data, { type: 'binary' });
+
+                    // Load Sheets
+                    const vehicleSheetName = workbook.SheetNames[0];
+                    const objectSheetName = workbook.SheetNames[1];
+                    const coverageSheetName = workbook.SheetNames[2];
+
+                    const vehicleRows = XLSX.utils.sheet_to_json(workbook.Sheets[vehicleSheetName]);
+                    
+                    let objectRows = [];
+                    if (objectSheetName && workbook.Sheets[objectSheetName]) {
+                        objectRows = XLSX.utils.sheet_to_json(workbook.Sheets[objectSheetName]);
+                    }
+
+                    let coverageRows = [];
+                    if (coverageSheetName && workbook.Sheets[coverageSheetName]) {
+                        coverageRows = XLSX.utils.sheet_to_json(workbook.Sheets[coverageSheetName]);
+                    }
+
+                    if (vehicleRows.length === 0) {
+                        alert("Excel file: 'risk_vehicle' sheet is empty!");
+                        return;
+                    }
+
+                    // Map Excel structure to FE State Model
+                    const importedRisks = vehicleRows.map((row) => {
+                        const plate = String(row.plate_no || row.Plate || '').trim();
+
+                        // Find matching objects
+                        const matchedObjects = objectRows
+                            .filter(obj => String(obj.plate_no || '').trim() === plate)
+                            .map(obj => ({
+                                group: String(obj.object_group_code || 'VEH').trim().toUpperCase(),
+                                description: String(obj.object_description || 'Vehicle Body').trim(),
+                                value: parseFloat(obj.object_value || 0)
+                            }));
+
+                        const finalObjects = matchedObjects.length > 0 ? matchedObjects : [
+                            { group: 'VEH', description: 'Vehicle Body', value: 0 }
+                        ];
+
+                        // Calculate Sum Insured from objects
+                        const calculatedSumInsured = finalObjects.reduce((sum, o) => sum + o.value, 0);
+
+                        // Find matching coverages
+                        const matchedCoverages = coverageRows
+                            .filter(cov => String(cov.plate_no || '').trim() === plate)
+                            .map(cov => ({
+                                coverage: String(cov.coverage_code || 'COMP').trim().toUpperCase(),
+                                ratePerMil: parseFloat(cov.coverage_rate_percent || 2.5)
+                            }));
+
+                        const finalCoverages = matchedCoverages.length > 0 ? matchedCoverages : [
+                            { coverage: 'COMP', ratePerMil: 2.5 }
+                        ];
+
+                        return {
+                            brand: String(row.brand_code || row.Brand || '').toUpperCase().trim(),
+                            model: String(row.model_code || row.Model || '').toUpperCase().trim(),
+                            vehicleType: String(row.vehicle_type || row.Type || '').trim(),
+                            series: String(row.series_code || row.Series || '').trim(),
+                            subSeries: String(row.sub_series_code || row.SubSeries || '').trim(),
+                            plateNo: plate,
+                            chassisNo: String(row.chassis_no || row.Chassis || '').trim(),
+                            engineNo: String(row.engine_no || row.Engine || '').trim(),
+                            color: String(row.color || row.Color || '').trim(),
+                            region: String(row.region_code || row.Region || '').toUpperCase().trim(),
+                            year: parseInt(row.vehicle_year || row.Year || new Date().getFullYear(), 10),
+                            sumInsured: calculatedSumInsured,
+                            objects: finalObjects,
+                            coverages: finalCoverages
+                        };
+                    });
+
+                    // Clear the initial default risk if it's empty
+                    if (risks.length === 1 && !risks[0].plateNo && risks[0].sumInsured === 0) {
+                        risks = importedRisks;
+                    } else {
+                        risks = risks.concat(importedRisks);
+                    }
+
+                    activeRiskIndex = risks.length - 1;
+                    renderAll();
+                    alert(`Successfully imported ${importedRisks.length} vehicles with their objects and coverages from Excel.`);
+                } catch (error) {
+                    console.error("Failed to parse Excel file:", error);
+                    alert("Failed to parse Excel file. Please ensure it follows the multi-sheet template format.");
+                }
+            };
+            reader.readAsBinaryString(file);
+            e.target.value = ''; // Reset file input
+        });
+    }
+
     // Load initial data
     risks.push(createDefaultRisk());
     activeRiskIndex = 0;

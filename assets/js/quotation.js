@@ -35,7 +35,9 @@ class QuotationManager {
         this.bindEvents();
         this.bindRiskDetailBridge();
         this.renderAll();
+        this.attachments = [];
         this.initInsuranceTab();
+        this.initAttachmentTab();
         this.applyAuditDefaultsForNewRecord();
         this.applyRequiredQuotationDefaults();
         this.syncAutoQuotationFields(true);
@@ -48,6 +50,7 @@ class QuotationManager {
         this.form = document.getElementById('quotationForm');
 
         this.quotationId = document.getElementById('quotationId');
+        this.typeIns = document.getElementById('typeIns');
         this.cob = document.getElementById('cob');
         this.cobName = document.getElementById('cobName');
         this.subCob = document.getElementById('subCob');
@@ -276,6 +279,15 @@ class QuotationManager {
         if (this.closingStatus) {
             this.closingStatus.addEventListener('change', () => {
                 this.syncClosingStatusFrom('closingStatus');
+            });
+        }
+
+        if (this.typeIns) {
+            this.typeIns.addEventListener('change', () => {
+                this.populateCobOptions('');
+                this.handleCobSelectionChange();
+                this.updateCobNameFields();
+                this.updateRiskTabState();
             });
         }
 
@@ -776,6 +788,7 @@ class QuotationManager {
         this.loadCobLookupData();
         this.loadPartnerLookupData();
         this.loadCurrencyLookupData();
+        this.populateTypeInsOptions();
         this.populateCobOptions();
         this.populateSubCobOptions('');
         this.populatePartnerOptions();
@@ -810,11 +823,11 @@ class QuotationManager {
         if (Array.isArray(this.cobProducts) && this.cobProducts.length) return;
 
         this.cobProducts = [
-            { cob: 'MOT', cobName: 'Motor', subCob: 'Comprehensive', subCobName: 'Comprehensive' },
-            { cob: 'MOT', cobName: 'Motor', subCob: 'Total Loss Only (TLO)', subCobName: 'Total Loss Only (TLO)' },
-            { cob: 'MAR', cobName: 'Marine', subCob: 'Marine Cargo', subCobName: 'Marine Cargo' },
-            { cob: 'PROP', cobName: 'Property', subCob: 'Fire Insurance', subCobName: 'Fire Insurance' },
-            { cob: 'IL', cobName: 'Individual Life', subCob: 'Term Life', subCobName: 'Term Life' }
+            { cob: 'MOT', cobName: 'Motor', subCob: 'Comprehensive', subCobName: 'Comprehensive', typeLabel: 'General Insurance' },
+            { cob: 'MOT', cobName: 'Motor', subCob: 'Total Loss Only (TLO)', subCobName: 'Total Loss Only (TLO)', typeLabel: 'General Insurance' },
+            { cob: 'MAR', cobName: 'Marine', subCob: 'Marine Cargo', subCobName: 'Marine Cargo', typeLabel: 'General Insurance' },
+            { cob: 'PROP', cobName: 'Property', subCob: 'Fire Insurance', subCobName: 'Fire Insurance', typeLabel: 'General Insurance' },
+            { cob: 'IL', cobName: 'Individual Life', subCob: 'Term Life', subCobName: 'Term Life', typeLabel: 'Life Insurance' }
         ];
     }
 
@@ -862,11 +875,18 @@ class QuotationManager {
 
                 if (!cobValue) return null;
 
+                const typeLabelVal = String(
+                    item.typeLabel
+                    ?? item.type_label
+                    ?? (item.type === 'LI' || item.cob_type === 'LI' ? 'Life Insurance' : (item.type === 'GI' || item.cob_type === 'GI' ? 'General Insurance' : ''))
+                ).trim();
+
                 return {
                     cob: cobValue,
                     cobName: cobDisplayName || cobValue,
                     subCob: subCobValue,
-                    subCobName: subCobValue
+                    subCobName: subCobValue,
+                    typeLabel: typeLabelVal || (cobValue === 'IL' ? 'Life Insurance' : 'General Insurance')
                 };
             })
             .filter(Boolean);
@@ -918,6 +938,9 @@ class QuotationManager {
         if (!rowsFromDatabase) return;
 
         this.cobProducts = rowsFromDatabase;
+        const cobEntry = this.cobProducts.find(item => item.cob === selectedCob);
+        const resolvedTypeLabel = cobEntry ? cobEntry.typeLabel : (this.typeIns?.value || '');
+        this.populateTypeInsOptions(resolvedTypeLabel);
         this.populateCobOptions(selectedCob);
 
         const cobValue = this.cob?.value || selectedCob;
@@ -1032,8 +1055,19 @@ class QuotationManager {
         selectElement.innerHTML = html;
     }
 
+    populateTypeInsOptions(selectedValue = '') {
+        const uniqueTypes = Array.from(new Set(this.cobProducts.map(p => p.typeLabel).filter(Boolean)));
+        const options = uniqueTypes.map(type => ({ value: type, label: type }));
+        this.rebuildSelectOptions(this.typeIns, options, '-- Select Type Ins. --', selectedValue);
+    }
+
     populateCobOptions(selectedCob = '') {
-        const options = this.cobProducts.map((item) => ({ value: item.cob, label: item.cobName || item.cob }));
+        const selectedType = this.typeIns?.value || '';
+        const filteredCobProducts = selectedType
+            ? this.cobProducts.filter(item => item.typeLabel === selectedType)
+            : this.cobProducts;
+
+        const options = filteredCobProducts.map((item) => ({ value: item.cob, label: item.cobName || item.cob }));
         this.rebuildSelectOptions(this.cob, options, '-- Select COB (Lookup) --', selectedCob);
     }
 
@@ -1357,9 +1391,15 @@ class QuotationManager {
             || /property|properti|fire/i.test(cobLabel)
             || /property|properti|fire/i.test(subCobCode)
             || /property|properti|fire/i.test(subCobLabel);
+        // Vessel / Marine Hull: code VESSEL / HULL / MAR / MARINE, or display name contains vessel/hull/marine
+        const isVessel = ['VESSEL', 'HULL', 'MAR', 'MARINE'].includes(codeUpper)
+            || /vessel|hull|marine|ship/i.test(cobLabel)
+            || /vessel|hull|marine|ship/i.test(subCobCode)
+            || /vessel|hull|marine|ship/i.test(subCobLabel);
 
         if (isMotor)          srcFile = 'riskvehicle.html';
         else if (isProperty)  srcFile = 'riskproperty.html';
+        else if (isVessel)    srcFile = 'riskvessel.html';
 
         if (!srcFile) {
             // COB has no dedicated risk form — stay on basic info panel
@@ -1385,7 +1425,12 @@ class QuotationManager {
     }
 
     loadRiskType(type) {
-        const srcFile = type === 'vehicle' ? 'riskvehicle.html' : 'riskproperty.html';
+        let srcFile = 'riskproperty.html';
+        if (type === 'vehicle') {
+            srcFile = 'riskvehicle.html';
+        } else if (type === 'vessel') {
+            srcFile = 'riskvessel.html';
+        }
         const frame = document.getElementById('riskDetailFrame');
         if (!frame) return;
 
@@ -1471,6 +1516,12 @@ class QuotationManager {
         const detail    = document.getElementById('tab-risk-detail');
         if (basicInfo) basicInfo.classList.remove('hidden');
         if (detail)    detail.classList.add('hidden');
+    }
+
+    handleCobSelectionChange() {
+        const selectedCob = this.cob?.value || '';
+        this.populateSubCobOptions(selectedCob, '');
+        this.autoGenerateRegNo();
     }
 
     updateCobNameFields() {
@@ -1761,6 +1812,176 @@ class QuotationManager {
         this.populateInsuranceCompanyDropdown(this.insCompanySingle);
         this.toggleCoInsuranceMode();
         this.calcInsPremiNet();
+    }
+
+    initAttachmentTab() {
+        const dropZone = document.getElementById('attachmentDropZone');
+        const fileInput = document.getElementById('attachmentFileInput');
+
+        if (dropZone && fileInput) {
+            dropZone.addEventListener('click', () => fileInput.click());
+
+            // Drag and drop events
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-blue-500', 'bg-blue-50');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    this.handleAttachmentFiles(e.dataTransfer.files);
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                    this.handleAttachmentFiles(e.target.files);
+                }
+            });
+        }
+    }
+
+    handleAttachmentFiles(files) {
+        const errorDiv = document.getElementById('attachmentError');
+        if (errorDiv) errorDiv.classList.add('hidden');
+
+        Array.from(files).forEach((file) => {
+            // Check size (10MB limit)
+            if (file.size > 10 * 1024 * 1024) {
+                this.showAttachmentError(`File "${file.name}" exceeds 10MB limit.`);
+                return;
+            }
+
+            // Check type (PDF, JPG, JPEG)
+            const fileType = file.type;
+            const fileName = file.name.toLowerCase();
+            const isValidType = fileType === 'application/pdf' || 
+                                fileType === 'image/jpeg' || 
+                                fileType === 'image/jpg' ||
+                                fileName.endsWith('.pdf') ||
+                                fileName.endsWith('.jpg') ||
+                                fileName.endsWith('.jpeg');
+
+            if (!isValidType) {
+                this.showAttachmentError(`File "${file.name}" has invalid format. Only PDF and JPG are allowed.`);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                // Prevent duplicate files by checking name and size
+                const exists = this.attachments.some(att => att.name === file.name && att.size === file.size);
+                if (exists) return;
+
+                this.attachments.push({
+                    id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                    name: file.name,
+                    size: file.size,
+                    type: file.type || (fileName.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'),
+                    data: e.target.result // Base64 data
+                });
+                this.renderAttachments();
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    showAttachmentError(msg) {
+        const errorDiv = document.getElementById('attachmentError');
+        const errorText = document.getElementById('attachmentErrorText');
+        if (errorDiv && errorText) {
+            errorText.textContent = msg;
+            errorDiv.classList.remove('hidden');
+        }
+    }
+
+    renderAttachments() {
+        const listContainer = document.getElementById('attachmentList');
+        const countSpan = document.getElementById('attachmentCount');
+        if (!listContainer) return;
+
+        if (countSpan) {
+            countSpan.textContent = `${this.attachments.length} file${this.attachments.length !== 1 ? 's' : ''}`;
+        }
+
+        if (this.attachments.length === 0) {
+            listContainer.innerHTML = `
+                <div id="noAttachments" class="text-center py-6 border border-dashed border-gray-100 rounded-lg bg-gray-50 text-gray-400 text-xs">
+                    <i class="far fa-folder-open text-xl mb-1 block"></i>
+                    No documents uploaded yet.
+                </div>
+            `;
+            return;
+        }
+
+        // Render attachment list items with a preview (eye icon) and delete (trash icon)
+        listContainer.innerHTML = this.attachments.map((att) => {
+            const sizeKB = (att.size / 1024).toFixed(1);
+            const isPdf = att.type === 'application/pdf' || att.name.toLowerCase().endsWith('.pdf');
+            const iconClass = isPdf ? 'fa-file-pdf text-red-500' : 'fa-file-image text-green-500';
+
+            return `
+                <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-white hover:shadow-sm transition-all" data-id="${att.id}">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded bg-gray-50 flex items-center justify-center border border-gray-100">
+                            <i class="fas ${iconClass} text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold text-gray-800 truncate max-w-[200px] md:max-w-md" title="${att.name}">${att.name}</div>
+                            <div class="text-[10px] text-gray-400">${sizeKB} KB • ${isPdf ? 'PDF Document' : 'JPEG Image'}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" class="btn-preview-attachment p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Preview File">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button type="button" class="btn-delete-attachment p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete File">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Bind delete action
+        listContainer.querySelectorAll('.btn-delete-attachment').forEach((btn, i) => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.attachments.splice(i, 1);
+                this.renderAttachments();
+            });
+        });
+
+        // Bind preview action
+        listContainer.querySelectorAll('.btn-preview-attachment').forEach((btn, i) => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const att = this.attachments[i];
+                const win = window.open();
+                if (win) {
+                    win.document.write(`
+                        <html>
+                        <head><title>Preview - ${att.name}</title></head>
+                        <body style="margin:0;display:flex;align-items:center;justify-content:center;background:#525659;">
+                            ${att.type === 'application/pdf' || att.name.toLowerCase().endsWith('.pdf')
+                                ? `<iframe src="${att.data}" frameborder="0" style="border:0; width:100%; height:100vh;"></iframe>`
+                                : `<img src="${att.data}" style="max-width:100%; max-height:100vh; object-fit:contain; box-shadow: 0 4px 10px rgba(0,0,0,0.3);" />`
+                            }
+                        </body>
+                        </html>
+                    `);
+                    win.document.close();
+                } else {
+                    alert("Please allow popups to preview files.");
+                }
+            });
+        });
     }
 
     toggleCoInsuranceMode() {
@@ -2212,6 +2433,9 @@ class QuotationManager {
         this.loadCobLookupData();
         this.loadPartnerLookupData();
         this.loadCurrencyLookupData();
+        const cobEntry = this.cobProducts.find(item => item.cob === quotation.cob);
+        const resolvedTypeLabel = cobEntry ? cobEntry.typeLabel : '';
+        this.populateTypeInsOptions(resolvedTypeLabel);
         this.populateCobOptions(quotation.cob || '');
         this.populateSubCobOptions(quotation.cob || '', quotation.subCob || '');
         this.populatePartnerOptions({
@@ -2659,6 +2883,7 @@ class QuotationManager {
         this.loadCobLookupData();
         this.loadPartnerLookupData();
         this.loadCurrencyLookupData();
+        this.populateTypeInsOptions();
         this.populateCobOptions();
         this.populateSubCobOptions('');
         this.populatePartnerOptions();

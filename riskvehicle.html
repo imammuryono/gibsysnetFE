@@ -36,11 +36,20 @@
             <div class="card-body">
                 <!-- Multi Risk Switcher -->
                 <div class="risk-switcher">
-                    <div class="risk-switcher-head">
+                    <div class="risk-switcher-head" style="flex-wrap: wrap; gap: 8px;">
                         <span class="risk-switcher-title">Multi Vehicle Setup</span>
-                        <button type="button" id="addRiskBtn" class="btn-add-risk">
-                            <i class="fas fa-plus-circle"></i> Add Vehicle
-                        </button>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <button type="button" id="downloadTemplateBtn" class="btn-add-risk" style="background-color: #10b981; border-color: #10b981;">
+                                <i class="fas fa-file-excel"></i> Template
+                            </button>
+                            <button type="button" id="uploadExcelBtn" class="btn-add-risk" style="background-color: #8b5cf6; border-color: #8b5cf6;">
+                                <i class="fas fa-upload"></i> Bulk Upload
+                            </button>
+                            <button type="button" id="addRiskBtn" class="btn-add-risk">
+                                <i class="fas fa-plus-circle"></i> Add Vehicle
+                            </button>
+                        </div>
+                        <input type="file" id="excelFileInput" class="hidden" accept=".xlsx, .xls" style="display: none;">
                     </div>
                     <div id="riskList" class="risk-list"></div>
                 </div>
@@ -110,6 +119,7 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="../assets/js/api.js?v=20260422-node-api-2"></script>
     <script src="../assets/js/riskvehicle.js?v=20260422-node-api-2"></script>
 </body>

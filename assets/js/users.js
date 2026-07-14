@@ -47,6 +47,7 @@ var PERMISSIONS = [
     { key:'sprint', label:'Sprint', section:'compliance' },
     { key:'apolo', label:'Apolo', section:'compliance' },
     { key:'sigap', label:'Sigap', section:'compliance' },
+    { key:'sipesat', label:'Sipesat', section:'compliance' },
     { key:'apparindo', label:'Apparindo', section:'compliance' },
     { key:'siap_apari', label:'Siap Apari', section:'compliance' },
     { key:'ojk', label:'OJK', section:'compliance' },
@@ -384,6 +385,7 @@ const MENU_STRUCTURE = {
             { name: 'Sprint', icon: 'fa-balance-scale', perm: 'sprint' },
             { name: 'Apolo', icon: 'fa-handshake', perm: 'apolo' },
             { name: 'Sigap', icon: 'fa-file-contract', perm: 'sigap' },
+            { name: 'Sipesat', icon: 'fa-university', perm: 'sipesat' },
             { name: 'Apparindo', icon: 'fa-industry', perm: 'apparindo' },
             { name: 'Siap Apari', icon: 'fa-rocket', perm: 'siap_apari' },
             { name: 'OJK', icon: 'fa-file-signature', perm: 'ojk' }
