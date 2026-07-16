@@ -1051,10 +1051,20 @@
                 activeRateDisplay.textContent = formatRate(activeRateTotal);
                 globalMemberDisplay.textContent = formatMoney(globalMemberTotal);
                 globalPremiumDisplay.textContent = formatMoney(globalPremiumTotal);
-                premiumDisplay.textContent = formatMoney(activePremium);
                 formulaDisplay.textContent = `${formatMoney(activeMemberTotal)} × (${formatRate(activeRateTotal)} / 1000)`;
 
                 renderRiskPremiumBreakdown();
+
+                // Send totals to parent
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'healthrisk:totals',
+                        payload: {
+                            totalSumInsured: globalMemberTotal,
+                            totalPremium: globalPremiumTotal
+                        }
+                    }, '*');
+                }
             }
 
             function renderRiskPremiumBreakdown() {

@@ -307,6 +307,24 @@ class QuotationManager {
             });
         }
 
+        if (this.client) {
+            this.client.addEventListener('change', () => {
+                const selectedClientName = this.client.value;
+                const clientEntry = this.partnerRows.find(
+                    (p) => p.name === selectedClientName && p.category === 'client'
+                );
+                if (clientEntry && this.address) {
+                    const addressParts = [
+                        clientEntry.address,
+                        clientEntry.city,
+                        clientEntry.province,
+                        clientEntry.postalCode
+                    ].map(s => String(s || '').trim()).filter(Boolean);
+                    this.address.value = addressParts.join(', ');
+                }
+            });
+        }
+
         if (this.effectiveDate) {
             this.effectiveDate.addEventListener('change', () => {
                 this.handleIssueDateChange();
@@ -707,7 +725,7 @@ class QuotationManager {
     async saveQuotationToBackend(payload, statusRecord = 'active') {
         const initialBody = this.mapFormPayloadToQuotationBody(payload, statusRecord);
         const quotationId = String(payload.id || payload.quotation_id || '').trim();
-        const useUpdateEndpoint = Boolean(quotationId);
+        const useUpdateEndpoint = Boolean(quotationId) && !payload.isNew;
         const { responsePayload, body } = useUpdateEndpoint
             ? await this.putQuotationWithSchemaFallback(initialBody, quotationId)
             : await this.postQuotationWithSchemaFallback(initialBody);
@@ -832,8 +850,8 @@ class QuotationManager {
     }
 
     getCobProductsEndpointCandidates() {
-        const fromWindowConfig = String(window?.GIBSYSNET_API?.COB_PRODUCTS_ENDPOINT || '').trim();
-        const candidates = [fromWindowConfig].filter(Boolean);
+        const fromWindowConfig = String(window?.GibsyNetApi?.endpoints?.cob || window?.GIBSYSNET_API?.COB_PRODUCTS_ENDPOINT || '').trim();
+        const candidates = [fromWindowConfig, 'http://localhost:3001/api/cob'].filter(Boolean);
 
         return Array.from(new Set(candidates));
     }
@@ -938,6 +956,11 @@ class QuotationManager {
         if (!rowsFromDatabase) return;
 
         this.cobProducts = rowsFromDatabase;
+        try {
+            localStorage.setItem(this.cobLookupKey, JSON.stringify(rowsFromDatabase));
+        } catch (e) {
+            console.warn('Failed to persist cob products to localStorage:', e);
+        }
         const cobEntry = this.cobProducts.find(item => item.cob === selectedCob);
         const resolvedTypeLabel = cobEntry ? cobEntry.typeLabel : (this.typeIns?.value || '');
         this.populateTypeInsOptions(resolvedTypeLabel);
@@ -957,7 +980,11 @@ class QuotationManager {
                 .map((item) => ({
                     partnerId: String(item.partnerId || item.partner_id || item.partnerid || '').trim(),
                     name: String(item.name || '').trim(),
-                    category: String(item.category || '').trim().toLowerCase()
+                    category: String(item.category || '').trim().toLowerCase(),
+                    address: String(item.address ?? '').trim(),
+                    city: String(item.city ?? '').trim(),
+                    province: String(item.province ?? '').trim(),
+                    postalCode: String(item.postal_code ?? item.postalCode ?? '').trim()
                 }))
                 .filter((item) => item.name)
             : [];
@@ -972,6 +999,7 @@ class QuotationManager {
 
     async fetchPartnerRowsFromDatabase() {
         const endpoint = window.GibsyNetApi?.endpoints?.partners || 'http://localhost:3001/api/partners';
+        console.debug('[Partner Lookup] fetching from backend:', endpoint);
         try {
             const response = await fetch(endpoint, {
                 method: 'GET',
@@ -981,15 +1009,22 @@ class QuotationManager {
                 cache: 'no-store'
             });
 
+            console.debug('[Partner Lookup] backend response status:', response.status);
             if (!response.ok) {
                 throw new Error(`Failed to load partners from backend: ${response.status}`);
             }
 
             const payload = await response.json();
-            if (Array.isArray(payload?.data)) return payload.data;
-            if (Array.isArray(payload)) return payload;
-            if (Array.isArray(payload?.partners)) return payload.partners;
-            return [];
+            const rows = Array.isArray(payload?.data)
+                ? payload.data
+                : Array.isArray(payload)
+                    ? payload
+                    : Array.isArray(payload?.partners)
+                        ? payload.partners
+                        : [];
+
+            console.debug('[Partner Lookup] backend rows count:', rows.length);
+            return rows;
         } catch (error) {
             console.warn('Partner lookup refresh failed:', error.message);
             return [];
@@ -998,7 +1033,16 @@ class QuotationManager {
 
     async refreshPartnerLookupFromDatabase() {
         const rows = await this.fetchPartnerRowsFromDatabase();
-        if (!Array.isArray(rows) || !rows.length) return;
+        if (!Array.isArray(rows) || !rows.length) {
+            console.debug('[Partner Lookup] no backend rows available, keeping existing lookup values.');
+            return;
+        }
+
+        try {
+            localStorage.setItem(this.partnerLookupKey, JSON.stringify(rows));
+        } catch (err) {
+            console.warn('[Partner Lookup] failed to persist backend rows to localStorage:', err);
+        }
 
         this.loadPartnerLookupData(rows);
         this.populatePartnerOptions();
@@ -1271,12 +1315,10 @@ class QuotationManager {
     }
 
     generateRegNo() {
-        // Use COB display name for initials (e.g. "Motor Vehicle Insurance" → "MVI")
-        const cobEntry   = this.cobProducts.find((item) => item.cob === (this.cob?.value || ''));
-        const cobLabel   = cobEntry?.cobName || this.cobName?.value || this.cob?.value || '';
-        const cobInitial = this.toCodeSegment(cobLabel, 'COB');      // max 3 uppercase letters
-        const issue      = this.getIssueDateParts();
-        const prefix     = `${cobInitial}-${issue.yearMonth}`;       // e.g. MOT-202604
+        const cobValue = String(this.cob?.value || 'GEN').trim().toUpperCase();
+        const cobCode = cobValue.slice(-3);
+        const issue = this.getIssueDateParts();
+        const prefix = `QS-${cobCode}-${issue.year}`;
 
         const maxSequence = this.quotations.reduce((max, item) => {
             const regNo = String(item.regNo || '').trim();
@@ -1288,17 +1330,21 @@ class QuotationManager {
         }, 0);
 
         const nextSequence = String(maxSequence + 1).padStart(4, '0');
-        return `${prefix}-${nextSequence}`;                          // e.g. MOT-202604-0001
+        return `${prefix}-${nextSequence}`;
     }
 
     autoGenerateRegNo() {
         if (!this.regNo) return;
         const currentId  = (this.quotationId?.value || '').trim();
-        if (currentId) return;   // editing existing record — don't overwrite
+        const currentRegNo = (this.regNo.value || '').trim();
+
+        // Allow update if: no ID yet, or the current regNo is still a temporary placeholder (QS-YEAR-XXXX without COB code)
+        const isTempRegNo = /^QS-\d{4}-\d+$/.test(currentRegNo);
+        if (currentId && !isTempRegNo) return;   // editing existing saved record — don't overwrite
 
         const cobValue = String(this.cob?.value || '').trim();
         if (!cobValue) {
-            this.regNo.value = '';
+            if (!currentId) this.regNo.value = '';
             return;
         }
 
@@ -1396,10 +1442,16 @@ class QuotationManager {
             || /vessel|hull|marine|ship/i.test(cobLabel)
             || /vessel|hull|marine|ship/i.test(subCobCode)
             || /vessel|hull|marine|ship/i.test(subCobLabel);
+        // Employee Benefit / Health: code HLT / HEALTH / EMP / BENEFIT / EB, or display name contains health/employee benefit
+        const isHealth = ['HLT', 'HEALTH', 'EMP', 'BENEFIT', 'EB'].includes(codeUpper)
+            || /health|employee benefit|benefit/i.test(cobLabel)
+            || /health|employee benefit|benefit/i.test(subCobCode)
+            || /health|employee benefit|benefit/i.test(subCobLabel);
 
         if (isMotor)          srcFile = 'riskvehicle.html';
         else if (isProperty)  srcFile = 'riskproperty.html';
         else if (isVessel)    srcFile = 'riskvessel.html';
+        else if (isHealth)    srcFile = 'healthrisk.html';
 
         if (!srcFile) {
             // COB has no dedicated risk form — stay on basic info panel
@@ -1430,6 +1482,8 @@ class QuotationManager {
             srcFile = 'riskvehicle.html';
         } else if (type === 'vessel') {
             srcFile = 'riskvessel.html';
+        } else if (type === 'health' || type === 'employee_benefit') {
+            srcFile = 'healthrisk.html';
         }
         const frame = document.getElementById('riskDetailFrame');
         if (!frame) return;
@@ -1451,13 +1505,13 @@ class QuotationManager {
         window.addEventListener('message', (event) => {
             if (!event || !event.data) return;
 
-            if (event.data.type === 'riskvehicle:totals') {
+            if (event.data.type === 'riskvehicle:totals' || event.data.type === 'healthrisk:totals') {
                 const totals = event.data.payload || {};
                 this.applyRiskVehicleTotals(totals);
                 return;
             }
 
-            if (event.data.type === 'riskvehicle:returnToQuotation') {
+            if (event.data.type === 'riskvehicle:returnToQuotation' || event.data.type === 'healthrisk:returnToQuotation') {
                 const payload = event.data.payload || {};
                 if (String(payload.action || '').toLowerCase() === 'save') {
                     this.applyRiskVehicleTotals(payload);
@@ -2621,9 +2675,20 @@ class QuotationManager {
 
     getFilteredQuotations() {
         const activeRows = this.quotations.filter((item) => item.statusRecord !== 'inactive');
-        if (!this.searchTerm) return activeRows;
+        
+        // Sort activeRows by ID or createdAt descending (newest at the top)
+        const sortedRows = activeRows.sort((a, b) => {
+            const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            if (aTime && bTime && aTime !== bTime) {
+                return bTime - aTime;
+            }
+            return String(b.id || '').localeCompare(String(a.id || ''));
+        });
 
-        return activeRows.filter((item) => {
+        if (!this.searchTerm) return sortedRows;
+
+        return sortedRows.filter((item) => {
             const content = [item.regNo, item.client, item.cob, item.status, item.effectiveDate].join(' ').toLowerCase();
             return content.includes(this.searchTerm);
         });
@@ -2648,13 +2713,15 @@ class QuotationManager {
         if (!pageRows.length) {
             this.tableBody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="px-4 py-6 text-center text-gray-500">No quotation data found.</td>
+                    <td colspan="7" class="px-4 py-6 text-center text-gray-500">No quotation data found.</td>
                 </tr>
             `;
         } else {
-            this.tableBody.innerHTML = pageRows.map((item) => {
+            this.tableBody.innerHTML = pageRows.map((item, idx) => {
+                const rowNo = start + idx + 1;
                 return `
                     <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm text-gray-900 font-medium">${rowNo}</td>
                         <td class="px-4 py-3 text-sm text-gray-900 font-medium">${this.escapeHtml(item.regNo)}</td>
                         <td class="px-4 py-3 text-sm text-gray-700">${this.escapeHtml(item.client)}</td>
                         <td class="px-4 py-3 text-sm text-gray-700">${this.escapeHtml(item.cob)}</td>
@@ -2869,9 +2936,7 @@ class QuotationManager {
 
     async resetForm() {
         this.isNewClicked = true;
-        await this.createNewQuotation();
         this.form?.reset();
-        if (this.quotationId) this.quotationId.value = '';
         this.currentQuotationCreatedAt = '';
         this.manualFieldOverrides = {
             endors: false,
@@ -2888,10 +2953,12 @@ class QuotationManager {
         this.populateSubCobOptions('');
         this.populatePartnerOptions();
         this.populateCurrencyOptions();
+
+        await this.createNewQuotation();
+
         this.updateQuotationYearFromIssueDate();
-        this.applyRequiredQuotationDefaults();
-        this.autoGenerateRegNo();
         this.syncAutoQuotationFields(true);
+        this.applyRequiredQuotationDefaults();
         this.applyAuditDefaultsForNewRecord();
         this.installments = [];
         this.renderInstallmentRows();
@@ -2905,9 +2972,11 @@ class QuotationManager {
         try {
             console.log('Creating new quotation...');
             // Generate minimal payload for new quotation
-            const regNo = this.generateRegNo();
+            const regNo = this.generateTemporaryRegNo();
             const today = this.getTodayDateValue();
             const payload = {
+                id: this.generateRecordId(),
+                isNew: true,
                 regNo: regNo,
                 quotation_year: new Date().getFullYear().toString(),
                 status: 'Open',
@@ -2931,36 +3000,94 @@ class QuotationManager {
         }
     }
 
-    generateRegNo() {
+    generateTemporaryRegNo() {
         const year = new Date().getFullYear();
         const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-        return `QUOT-${year}-${random}`;
+        return `QS-${year}-${random}`;
     }
 
     async insertRiskTables(quotationId) {
         if (!quotationId) return;
         try {
             const regNo = this.regNo?.value || '';
-            // Insert to risk_vehicle
-            await fetch('http://localhost:3001/api/risk-vehicle', {
+            const baseUrl = window.GibsyNetApi?.baseUrl || 'http://localhost:3001/api';
+
+            const riskVehiclePayload = { data: [{ quotation_id: quotationId, reg_no: regNo }] };
+            const objectPayload = { data: [{ quotation_id: quotationId, reg_no: regNo, risk_no: 1 }] };
+            const coveragePayload = { data: [{ quotation_id: quotationId, reg_no: regNo, risk_no: 1 }] };
+
+            await fetch(`${baseUrl}/risk-vehicle`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: [{ quotation_id: quotationId, reg_no: regNo }] })
+                body: JSON.stringify(riskVehiclePayload)
             });
-            // Insert to risk_vehicle_object
-            await fetch('http://localhost:3001/api/risk-vehicle-object', {
+
+            await fetch(`${baseUrl}/risk-vehicle-object`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: [{ quotation_id: quotationId }] })
+                body: JSON.stringify(objectPayload)
             });
-            // Insert to risk_vehicle_coverage
-            await fetch('http://localhost:3001/api/risk-vehicle-coverage', {
+
+            await fetch(`${baseUrl}/risk-vehicle-coverage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: [{ quotation_id: quotationId }] })
+                body: JSON.stringify(coveragePayload)
             });
         } catch (error) {
             console.error('Error inserting to risk tables:', error);
+        }
+    }
+
+    async syncToRiskVehicle(regNo, quotationId) {
+        if (!regNo || !quotationId) return;
+
+        try {
+            const baseUrl = window.GibsyNetApi?.baseUrl || 'http://localhost:3001/api';
+            const payload = {
+                data: [{
+                    reg_no: regNo,
+                    quotation_id: quotationId,
+                    risk_no: 1,
+                    status_record: 'ACTIVE'
+                }]
+            };
+
+            const response = await fetch(`${baseUrl}/risk-vehicle`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData?.message || errorData?.error || `HTTP ${response.status}`);
+            }
+
+            await fetch(`${baseUrl}/risk-vehicle-object`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json'
+                },
+                body: JSON.stringify({ data: [{ quotation_id: quotationId, reg_no: regNo, risk_no: 1 }] })
+            });
+
+            await fetch(`${baseUrl}/risk-vehicle-coverage`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json'
+                },
+                body: JSON.stringify({ data: [{ quotation_id: quotationId, reg_no: regNo, risk_no: 1 }] })
+            });
+
+            console.log('Successfully synced quotation to risk_vehicle and related object/coverage records');
+        } catch (error) {
+            console.error('Failed to sync to risk_vehicle and related records:', error);
+            // Don't throw error to avoid breaking quotation save
         }
     }
 

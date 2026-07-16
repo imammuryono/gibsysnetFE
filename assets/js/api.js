@@ -16,6 +16,8 @@
 			modelRiskLookup: `${baseUrl}/modelrisk`,
 			partners: `${baseUrl}/partners`,
 			riskVehicle: `${baseUrl}/risk-vehicle`,
+			riskVehicleObject: `${baseUrl}/risk-vehicle-object`,
+			riskVehicleCoverage: `${baseUrl}/risk-vehicle-coverage`,
 			classConstruction: `${baseUrl}/class-construction`,
 			// User Management
 			users: `${baseUrl}/users`,

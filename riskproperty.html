@@ -648,9 +648,8 @@
                 const endpoints = [];
 
                 resources.forEach(function (name) {
-                    endpoints.push('../backend/' + name + '.php');
-                    endpoints.push('../backend/api/' + name);
-                    endpoints.push('../backend/' + name);
+                    endpoints.push(`http://localhost:3001/api/${name}`);
+                    endpoints.push(`http://localhost:3001/api/${name}s`);
                 });
 
                 for (const endpoint of endpoints) {
