@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "docxtemplater": "^3.69.0",
+    "file-saver": "^2.0.5",
+    "fs-extra": "^11.3.6",
+    "html2pdf.js": "^0.14.0",
+    "mammoth": "^1.12.0",
+    "pizzip": "^3.2.0"
+  }
+}

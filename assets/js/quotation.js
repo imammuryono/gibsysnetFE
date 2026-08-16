@@ -25,6 +25,7 @@ class QuotationManager {
         };
         this.currentQuotationCreatedAt = '';
         this.isNewClicked = false;
+        this.activeRiskTemplateType = null;
 
         this.quotations = [];
         this.versions = this.loadVersions();
@@ -152,6 +153,8 @@ class QuotationManager {
         this.insPpn = document.getElementById('insPpn');
         this.insTotalPayable = document.getElementById('insTotalPayable');
         this.insPremiNet = document.getElementById('insPremiNet');
+        this.quotClientStatus = document.getElementById('quotClientStatus');
+        this.openQuotClientTemplateBtn = document.getElementById('openQuotClientTemplateBtn');
 
     }
 
@@ -183,6 +186,8 @@ class QuotationManager {
                 if (panel) panel.classList.remove('hidden');
                 if (target === 'tab-installment') this.refreshInstallmentSummary();
                 if (target === 'tab-insurance') this.syncInsurancePremiumFromQuotationPremium(true);
+                if (target === 'tab-wordquot') this.openWordQuotationTemplate();
+                if (target === 'tab-quotclient') this.renderQuotationClientFromStorage();
             });
         });
 
@@ -260,6 +265,11 @@ class QuotationManager {
 
             this.form.addEventListener('input', () => {
                 this.previewAuditForEdit();
+                this.saveQuotationTemplateState();
+            });
+
+            this.form.addEventListener('change', () => {
+                this.saveQuotationTemplateState();
             });
         }
 
@@ -385,6 +395,9 @@ class QuotationManager {
         if (this.deleteBtnSidebar) this.deleteBtnSidebar.addEventListener('click', () => this.promptDeleteFromForm());
         if (this.exportBtnSidebar) this.exportBtnSidebar.addEventListener('click', () => this.exportData());
 
+        this.openQuotClientTemplateBtn?.addEventListener('click', () => this.openQuotationClientDocument());
+        document.getElementById('openWordQuotationBtn')?.addEventListener('click', () => this.openWordQuotationTemplate());
+
         if (this.searchInput) {
             this.searchInput.addEventListener('input', (event) => {
                 this.searchTerm = (event.target.value || '').trim().toLowerCase();
@@ -443,6 +456,876 @@ class QuotationManager {
             this.messageModal.addEventListener('click', (event) => {
                 if (event.target === this.messageModal) this.hideMessage();
             });
+        }
+    }
+
+
+    getQuotationFormSnapshot() {
+        if (!this.form) return {};
+
+        const snapshot = {};
+        this.form.querySelectorAll('input, select, textarea').forEach((field) => {
+            if (!field.name || field.disabled) return;
+            const value = field.type === 'checkbox' ? field.checked : field.value;
+            snapshot[field.name] = value;
+        });
+
+        return snapshot;
+    }
+
+    saveQuotationTemplateState() {
+        try {
+            const payload = {
+                version: 1,
+                savedAt: new Date().toISOString(),
+                templatePath: this.getWordTemplatePathForCurrentRisk(),
+                riskType: this.getRiskTemplateTypeFromSelection(),
+                formData: this.getQuotationFormSnapshot()
+            };
+            localStorage.setItem('quotation_word_template_state', JSON.stringify(payload));
+            return payload;
+        } catch (error) {
+            console.warn('Unable to save quotation template state:', error);
+            return null;
+        }
+    }
+
+    getQuotationTemplateState() {
+        try {
+            const raw = localStorage.getItem('quotation_word_template_state');
+            return raw ? JSON.parse(raw) : null;
+        } catch (error) {
+            console.warn('Unable to read quotation template state:', error);
+            return null;
+        }
+    }
+
+    renderQuotationClientFromStorage() {
+        const panel = document.getElementById('tab-quotclient');
+        if (!panel) return;
+
+        // Save current form state
+        this.saveQuotationTemplateState();
+
+        // Get quotation ID from form (if a record is selected)
+        const quotId = this.getCurrentQuotationIdFromForm ? this.getCurrentQuotationIdFromForm() : null;
+
+        panel.innerHTML = `
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden" style="box-shadow: 0 2px 16px rgba(0,0,0,0.06);">
+                <!-- Header Bar -->
+                <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 14px;">
+                        <div style="width:44px; height:44px; background: rgba(255,255,255,0.18); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+                            <i class="fas fa-file-word" style="font-size:22px; color:#fff;"></i>
+                        </div>
+                        <div>
+                            <div style="color:#fff; font-size:17px; font-weight:700; letter-spacing:0.3px;">Quotation Client — QSMV</div>
+                            <div style="color:rgba(255,255,255,0.75); font-size:12px; margin-top:2px;">Dokumen quotation untuk dikirim ke klien</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button id="qclient-refresh-btn" type="button"
+                            style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:#fff; border-radius:8px; padding:9px 18px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:7px; transition:background 0.2s;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+                            <i class="fas fa-sync-alt"></i> Refresh Data
+                        </button>
+                        <button id="qclient-generate-btn" type="button"
+                            style="background:#fff; border:none; color:#1e40af; border-radius:8px; padding:9px 22px; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; box-shadow:0 2px 8px rgba(0,0,0,0.12); transition:all 0.2s;"
+                            onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='#fff'">
+                            <i class="fas fa-file-pdf"></i> Generate &amp; Download QSMV.pdf
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status Banner -->
+                <div id="qclient-status-bar" style="padding:10px 24px; background:#f0f9ff; border-bottom:1px solid #bae6fd; display:flex; align-items:center; gap:8px; font-size:12.5px; color:#0369a1; display:none;">
+                    <i class="fas fa-info-circle"></i>
+                    <span id="qclient-status-text"></span>
+                </div>
+
+                <!-- Loading State -->
+                <div id="qclient-loading" style="padding:48px; text-align:center; display:none;">
+                    <div style="width:44px;height:44px;border:3px solid #e5e7eb;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 14px;"></div>
+                    <div style="color:#6b7280; font-size:13px;">Mengambil data dari server...</div>
+                </div>
+
+                <!-- Data Preview -->
+                <div id="qclient-data-panel" style="padding: 24px;">
+                    <!-- Summary Cards Row -->
+                    <div id="qclient-summary-cards" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:14px; margin-bottom:24px;"></div>
+
+                    <!-- Detail Table -->
+                    <div style="background:#f8fafc; border-radius:10px; border:1px solid #e5e7eb; overflow:hidden;">
+                        <div style="padding:12px 18px; background:#f1f5f9; border-bottom:1px solid #e5e7eb; display:flex; align-items:center; gap:8px;">
+                            <i class="fas fa-table-list" style="color:#3b82f6;"></i>
+                            <span style="font-size:13px; font-weight:700; color:#374151;">Data Preview (dari Local Storage)</span>
+                        </div>
+                        <div id="qclient-detail-table" style="padding:16px;"></div>
+                    </div>
+
+                    <!-- Template Info -->
+                    <div style="margin-top:16px; padding:12px 16px; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; display:flex; align-items:center; gap:10px;">
+                        <i class="fas fa-lightbulb" style="color:#f59e0b;"></i>
+                        <div style="font-size:12px; color:#92400e;">
+                            <strong>Template:</strong> QSMV.docx &nbsp;|&nbsp;
+                            <strong>Path:</strong> template/QSMV.docx &nbsp;|&nbsp;
+                            Data disinkronisasikan dari: <code style="background:#fef3c7; padding:1px 5px; border-radius:3px;">Formulir Lokal (localStorage)</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <style>
+                @keyframes spin { to { transform: rotate(360deg); } }
+            </style>`;
+
+        // Bind buttons
+        document.getElementById('qclient-refresh-btn')?.addEventListener('click', () => {
+            this._loadQuotClientData(quotId);
+        });
+        document.getElementById('qclient-generate-btn')?.addEventListener('click', () => {
+            this.generateQSMVDocx();
+        });
+
+        // Auto-load data
+        this._loadQuotClientData(quotId);
+    }
+
+    _showQuotClientStatus(msg, type = 'info') {
+        const bar = document.getElementById('qclient-status-bar');
+        const txt = document.getElementById('qclient-status-text');
+        if (!bar || !txt) return;
+        const colors = {
+            info: { bg: '#f0f9ff', border: '#bae6fd', text: '#0369a1', icon: 'fa-info-circle' },
+            success: { bg: '#f0fdf4', border: '#bbf7d0', text: '#166534', icon: 'fa-check-circle' },
+            error: { bg: '#fef2f2', border: '#fecaca', text: '#991b1b', icon: 'fa-exclamation-circle' }
+        };
+        const c = colors[type] || colors.info;
+        bar.style.background = c.bg;
+        bar.style.borderBottomColor = c.border;
+        bar.style.color = c.text;
+        bar.style.display = 'flex';
+        bar.querySelector('i').className = `fas ${c.icon}`;
+        txt.textContent = msg;
+    }
+
+    async _loadQuotClientData(quotId = null) {
+        const loading = document.getElementById('qclient-loading');
+        const dataPanel = document.getElementById('qclient-data-panel');
+        if (!loading || !dataPanel) return;
+
+        loading.style.display = 'block';
+        dataPanel.style.display = 'none';
+
+        try {
+            // Save state immediately to ensure localstorage is up-to-date
+            this.saveQuotationTemplateState();
+            const state = this.getQuotationTemplateState();
+            const formData = state?.formData || this.getQuotationFormSnapshot();
+
+            // Map localstorage form data to matches template structure
+            const localData = {
+                reg_no: formData.reg_no || formData.regNo,
+                cob: formData.cob,
+                sub_cob: formData.sub_cob || formData.subCob,
+                client: formData.client,
+                client_qq: formData.client_qq || formData.clientQQ,
+                address: formData.address,
+                policy_no: formData.policy_no || formData.policyNo,
+                periode: formData.periode,
+                conversion_to: formData.conversion_to || formData.conversionTo,
+                effective_date: formData.effective_date || formData.effectiveDate,
+                currency: formData.currency,
+                tsi: formData.tsi,
+                premium: formData.premium,
+                rate: formData.rate,
+                ins_premi: formData.ins_premi || formData.insPremi,
+                ins_biaya_polis: formData.ins_biaya_polis || formData.insBiayaPolis,
+                ins_materai: formData.ins_materai || formData.insMaterai,
+                ins_diskon: formData.ins_diskon || formData.insDiskon,
+                ins_brokerage: formData.ins_brokerage || formData.insBrokerage,
+                ins_ppn: formData.ins_ppn || formData.insPpn,
+                ins_pph: formData.ins_pph || formData.insPph,
+                ins_total_payable: formData.ins_total_payable || formData.insTotalPayable || formData.premium,
+                endors: formData.endors,
+                marketing: formData.marketing,
+                agent: formData.agent,
+                quotation_status: formData.status
+            };
+
+            this._lastQuotClientData = localData;
+
+            // Render
+            this._renderQuotClientDataPreview(localData);
+            this._showQuotClientStatus('Data Preview dimuat dari form local storage.', 'success');
+
+        } catch (err) {
+            console.error('[QuotClient] Load error:', err);
+            this._showQuotClientStatus(`Gagal memuat data preview: ${err.message}`, 'error');
+        } finally {
+            loading.style.display = 'none';
+            dataPanel.style.display = 'block';
+        }
+    }
+
+    _renderQuotClientDataPreview(data) {
+        if (!data) return;
+
+        const fmt = (v) => (v === null || v === undefined || v === '') ? '-' : String(v);
+        const fmtNum = (v) => {
+            const n = parseFloat(v);
+            return isNaN(n) ? '-' : n.toLocaleString('id-ID');
+        };
+
+        // Summary cards
+        const summaryCards = [
+            { label: 'Reg. Number', value: fmt(data.reg_no), icon: 'fas fa-hashtag', color: '#3b82f6' },
+            { label: 'Client', value: fmt(data.client), icon: 'fas fa-user-tie', color: '#8b5cf6' },
+            { label: 'COB', value: fmt(data.cob), icon: 'fas fa-tag', color: '#10b981' },
+            { label: 'Status', value: fmt(data.quotation_status ?? data.status), icon: 'fas fa-circle-check', color: '#f59e0b' },
+        ];
+
+        const cardsEl = document.getElementById('qclient-summary-cards');
+        if (cardsEl) {
+            cardsEl.innerHTML = summaryCards.map(c => `
+                <div style="background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:14px 18px; display:flex; align-items:center; gap:12px; box-shadow:0 1px 4px rgba(0,0,0,0.05);">
+                    <div style="width:38px;height:38px;border-radius:8px;background:${c.color}18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="${c.icon}" style="color:${c.color};font-size:16px;"></i>
+                    </div>
+                    <div style="min-width:0;">
+                        <div style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">${c.label}</div>
+                        <div style="font-size:14px;color:#111827;font-weight:700;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${this.escapeHtml(c.value)}">${this.escapeHtml(c.value)}</div>
+                    </div>
+                </div>`).join('');
+        }
+
+        // Detail table
+        const fields = [
+            ['Reg. Number', fmt(data.reg_no)],
+            ['Client (Tertanggung)', fmt(data.client)],
+            ['Client QQ', fmt(data.client_qq ?? data.clientQQ)],
+            ['Address', fmt(data.address)],
+            ['COB', fmt(data.cob)],
+            ['Sub COB', fmt(data.sub_cob ?? data.subCob)],
+            ['Policy No', fmt(data.policy_no ?? data.policyNo)],
+            ['Endors', fmt(data.endors)],
+            ['Inception Date', fmt(data.periode)],
+            ['Expiry Date', fmt(data.conversion_to ?? data.conversionTo)],
+            ['Effective Date', fmt(data.effective_date ?? data.effectiveDate)],
+            ['Currency', fmt(data.currency)],
+            ['TSI', fmtNum(data.tsi)],
+            ['Rate', fmt(data.rate)],
+            ['Premium', fmtNum(data.premium)],
+            ['Insurance Premium', fmtNum(data.ins_premi ?? data.insPremi)],
+            ['Policy Cost', fmtNum(data.ins_biaya_polis ?? data.insBiayaPolis)],
+            ['Stamp Duty (Materai)', fmtNum(data.ins_materai ?? data.insMaterai)],
+            ['Discount', fmtNum(data.ins_diskon ?? data.insDiskon)],
+            ['Brokerage', fmtNum(data.ins_brokerage ?? data.insBrokerage)],
+            ['PPN', fmtNum(data.ins_ppn ?? data.insPpn)],
+            ['PPH', fmtNum(data.ins_pph ?? data.insPph)],
+            ['Total Payable', fmtNum(data.ins_total_payable ?? data.insTotalPayable)],
+            ['Marketing', fmt(data.marketing)],
+            ['Agent', fmt(data.agent)],
+            ['Status', fmt(data.quotation_status ?? data.status)],
+        ];
+
+        const tableEl = document.getElementById('qclient-detail-table');
+        if (tableEl) {
+            tableEl.innerHTML = `
+                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                    ${fields.map(([label, value], i) => `
+                        <tr style="background:${i % 2 === 0 ? '#fff' : '#f8fafc'};">
+                            <td style="padding:8px 12px; color:#6b7280; font-weight:600; width:45%; border-bottom:1px solid #f1f5f9;">${label}</td>
+                            <td style="padding:8px 12px; color:#111827; border-bottom:1px solid #f1f5f9;">${this.escapeHtml(value)}</td>
+                        </tr>`).join('')}
+                </table>`;
+        }
+    }
+
+    async generateQSMVDocx() {
+        const btn = document.getElementById('qclient-generate-btn');
+
+        // Check libraries — the local build exposes window.docxtemplater (lowercase)
+        const DocxtemplaterClass = (typeof Docxtemplater !== 'undefined') ? Docxtemplater
+            : (typeof docxtemplater !== 'undefined') ? (docxtemplater.default || docxtemplater)
+            : null;
+        if (typeof PizZip === 'undefined' || !DocxtemplaterClass) {
+            this.showMessage('Library DOCX belum siap. Coba refresh halaman (F5).');
+            return;
+        }
+
+        // Set button loading state
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+        }
+
+        try {
+            // 1) Get current form data from localstorage (saved immediately when switching/viewing tab or typing)
+            this.saveQuotationTemplateState();
+            const state = this.getQuotationTemplateState();
+            const formData = state?.formData || this.getQuotationFormSnapshot();
+
+            // Map localstorage form data to data object matching template structure
+            const data = {
+                reg_no: formData.reg_no || formData.regNo,
+                cob: formData.cob,
+                sub_cob: formData.sub_cob || formData.subCob,
+                client: formData.client,
+                address: formData.address,
+                policy_no: formData.policy_no || formData.policyNo,
+                periode: formData.periode,
+                conversion_to: formData.conversion_to || formData.conversionTo,
+                currency: formData.currency,
+                tsi: formData.tsi,
+                premium: formData.premium,
+                rate: formData.rate,
+                ins_premi: formData.ins_premi || formData.insPremi,
+                ins_biaya_polis: formData.ins_biaya_polis || formData.insBiayaPolis,
+                ins_materai: formData.ins_materai || formData.insMaterai,
+                ins_diskon: formData.ins_diskon || formData.insDiskon,
+                ins_brokerage: formData.ins_brokerage || formData.insBrokerage,
+                ins_ppn: formData.ins_ppn || formData.insPpn,
+                ins_pph: formData.ins_pph || formData.insPph,
+                ins_total_payable: formData.ins_total_payable || formData.insTotalPayable || formData.premium,
+                endors: formData.endors,
+                ins_company_single: formData.ins_company_single || formData.insCompanySingle,
+                coinsurances: formData.coinsurances,
+                quotation_status: formData.status
+            };
+
+            // 2) Fetch QSMV.docx template as ArrayBuffer
+            const templateUrl = 'template/QSMV.docx';
+            const templateRes = await fetch(templateUrl);
+            if (!templateRes.ok) throw new Error(`Template tidak ditemukan: ${templateUrl} (HTTP ${templateRes.status})`);
+            const templateBuffer = await templateRes.arrayBuffer();
+
+            // 3) Build docxtemplater data payload (matching QSMV.docx placeholders)
+            const fmtNum = (v) => {
+                const n = parseFloat(v);
+                if (isNaN(n) || n === 0) return '-';
+                return n.toLocaleString('id-ID');
+            };
+            const fmt = (v) => (v === null || v === undefined || v === '') ? '-' : String(v);
+
+            // Indonesian date format for tgl field
+            const now = new Date();
+            const bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+            const tglStr = `${now.getDate()} ${bulan[now.getMonth()]} ${now.getFullYear()}`;
+
+            // Insurer from coinsurances or single company
+            let insurer = '-';
+            try {
+                const coins = data.coinsurances ? JSON.parse(data.coinsurances) : [];
+                if (Array.isArray(coins) && coins.length > 0) {
+                    insurer = coins.map(c => c.company || c.name || '').filter(Boolean).join(', ') || '-';
+                } else if (data.ins_company_single) {
+                    insurer = data.ins_company_single;
+                }
+            } catch (e) { insurer = fmt(data.ins_company_single); }
+
+            const templateData = {
+                // Header
+                judul: `QUOTATION - ${fmt(data.reg_no)}`,
+                // Insurance info
+                cob: fmt(data.cob),
+                sub_cob: fmt(data.sub_cob ?? data.subCob),
+                reg_no: fmt(data.reg_no),
+                insurer: insurer,
+                endors: fmt(data.endors),
+                no_polis: fmt(data.policy_no ?? data.policyNo),
+                client: fmt(data.client),
+                address: fmt(data.address),
+                inception_date: fmt(data.periode),
+                expiry_date: fmt(data.conversion_to ?? data.conversionTo),
+                // Financial
+                currency: fmt(data.currency),
+                tsi: fmtNum(data.tsi),
+                rate: fmt(data.rate),
+                brokerage: fmtNum(data.ins_brokerage ?? data.insBrokerage),
+                security: insurer,
+                tot_security: '100%',
+                premi: fmtNum(data.ins_premi ?? data.insPremi ?? data.premium),
+                biaya_pol: fmtNum(data.ins_biaya_polis ?? data.insBiayaPolis),
+                materai: fmtNum(data.ins_materai ?? data.insMaterai),
+                biaya_lain: '-',
+                diskon: fmtNum(data.ins_diskon ?? data.insDiskon),
+                ppn: fmtNum(data.ins_ppn ?? data.insPpn),
+                pph: fmtNum(data.ins_pph ?? data.insPph),
+                tot_premi: fmtNum(data.ins_total_payable ?? data.insTotalPayable ?? data.premium),
+                // Date
+                tgl: tglStr
+            };
+
+            // 4) Generate filled DOCX
+            const zip = new PizZip(templateBuffer);
+
+            // Pre-process: fix [JUDUL] bracket-style placeholder in document.xml
+            const docXmlFile = zip.files['word/document.xml'];
+            if (docXmlFile) {
+                let xmlContent = docXmlFile.asText();
+                // Replace [JUDUL] with the title value (bracket notation → direct text)
+                xmlContent = xmlContent.replace(/\[JUDUL\]/g, this.escapeHtml(templateData.judul));
+                
+                // Fix malformed {{currency} di XML secara presisi:
+                xmlContent = xmlContent.replace(/currency<\/w:t><\/w:r><w:r\s+w:rsidR="[0-9a-fA-F]+"><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"\/><w:b\/><w:bCs\/><\/w:rPr><w:t>\}/g, 'currency}}');
+
+                // Fix malformed [tsi
+                xmlContent = xmlContent.replace(/\[tsi/g, 'tsi');
+
+                // Fix malformed {{tgl}} di XML secara presisi:
+                xmlContent = xmlContent.replace(/\{<\/w:t><\/w:r><w:proofErr w:type="gramEnd"\/><w:r\s+w:rsidR="[0-9a-fA-F]+"><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"\/><\/w:rPr><w:t>\{/g, '{{');
+
+                zip.file('word/document.xml', xmlContent);
+            }
+
+            let doc;
+            try {
+                doc = new DocxtemplaterClass(zip, {
+                    paragraphLoop: true,
+                    linebreaks: true,
+                    nullGetter: () => '-'
+                });
+                doc.render(templateData);
+            } catch (renderErr) {
+                // Log detailed error from docxtemplater
+                if (renderErr.properties && renderErr.properties.errors) {
+                    console.warn('[QSMV] Template render warnings:', renderErr.properties.errors);
+                }
+                // Re-throw so outer catch handles it
+                throw renderErr;
+            }
+
+            const outputBlob = doc.getZip().generate({
+                type: 'blob',
+                mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                compression: 'DEFLATE'
+            });
+
+            // 5) Convert to HTML via Mammoth.js and print to PDF via html2pdf.js
+            const fileReader = new FileReader();
+            fileReader.onload = async (event) => {
+                const arrayBuffer = event.target.result;
+                try {
+                    // Mammoth rendering options
+                    const options = {
+                        styleMap: [
+                            "p[style-name='Heading 1'] => h1:safe",
+                            "p[style-name='Heading 2'] => h2:safe",
+                            "table => table.pdf-table:safe"
+                        ]
+                    };
+
+                    const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer }, options);
+                    const htmlResult = result.value; // The generated HTML
+
+                    // Create a hidden container for rendering the PDF layout
+                    const optContainer = document.createElement('div');
+                    optContainer.style.padding = '40px';
+                    optContainer.style.fontFamily = 'Arial, sans-serif';
+                    optContainer.style.color = '#333';
+                    optContainer.style.lineHeight = '1.5';
+                    optContainer.innerHTML = `
+                        <style>
+                            h1, h2, h3 { text-align: center; color: #111; margin-bottom: 20px; font-weight: bold; }
+                            table { width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 20px; }
+                            th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; font-size: 12px; }
+                            th { background-color: #f2f2f2; font-weight: bold; }
+                            p { font-size: 13px; margin: 8px 0; }
+                        </style>
+                        ${htmlResult}
+                    `;
+
+                    // Generate PDF from the HTML content
+                    const pdfFileName = `QSMV_${fmt(data.reg_no).replace(/[^a-zA-Z0-9_-]/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
+                    const pdfOptions = {
+                        margin:       [15, 15, 15, 15],
+                        filename:     pdfFileName,
+                        image:        { type: 'jpeg', quality: 0.98 },
+                        html2canvas:  { scale: 2, useCORS: true },
+                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    };
+
+                    await html2pdf().set(pdfOptions).from(optContainer).save();
+                    this._showQuotClientStatus(`✓ Dokumen PDF "${pdfFileName}" berhasil digenerate dan diunduh.`, 'success');
+
+                } catch (mammothErr) {
+                    console.error('[QSMV] PDF Convert error:', mammothErr);
+                    // Fallback to downloading DOCX if PDF fails
+                    const fileNameDocx = `QSMV_${fmt(data.reg_no).replace(/[^a-zA-Z0-9_-]/g, '_')}_${new Date().toISOString().slice(0, 10)}.docx`;
+                    saveAs(outputBlob, fileNameDocx);
+                    this._showQuotClientStatus(`Gagal convert ke PDF, mendownload DOCX sebagai cadangan.`, 'warning');
+                }
+            };
+            fileReader.readAsArrayBuffer(outputBlob);
+
+        } catch (err) {
+            console.error('[QSMV] Generate error:', err);
+            // Provide user-friendly error with details if available
+            let errMsg = err.message || 'Unknown error';
+            if (err.properties && err.properties.errors && err.properties.errors.length > 0) {
+                const details = err.properties.errors.map(e => e.message || e.id || '').filter(Boolean).slice(0, 3).join('; ');
+                errMsg = `Template error: ${details}`;
+            }
+            this._showQuotClientStatus(`Gagal generate dokumen: ${errMsg}`, 'error');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-file-pdf"></i> Generate &amp; Download QSMV.pdf';
+            }
+        }
+    }
+
+    escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    getWordTemplateOpenUrls(templatePath = null) {
+        const resolvedPath = templatePath || this.getWordTemplatePathForCurrentRisk();
+        const absoluteUrl = new URL(resolvedPath, window.location.href).toString();
+        return {
+            wordAppUrl: `ms-word:ofe|u|${absoluteUrl}`,
+            directUrl: absoluteUrl
+        };
+    }
+
+    openWordDocument(templatePath = null) {
+        const { wordAppUrl, directUrl } = this.getWordTemplateOpenUrls(templatePath);
+
+        try {
+            const popup = window.open(wordAppUrl, '_blank', 'noopener,noreferrer');
+            if (!popup) {
+                window.open(directUrl, '_blank', 'noopener,noreferrer');
+            }
+        } catch (error) {
+            console.warn('Unable to open template via Word app:', error);
+            window.open(directUrl, '_blank', 'noopener,noreferrer');
+        }
+    }
+
+    async openWordTemplateInEditor(templatePath = null) {
+        const resolvedPath = templatePath || this.getWordTemplatePathForCurrentRisk();
+        const templateName = resolvedPath.split('/').pop();
+        const panel = document.getElementById('tab-wordquot');
+        if (!panel) return;
+
+        const previewContainer = panel.querySelector('[data-role="document-preview"]');
+        if (!previewContainer) return;
+
+        // Tampilkan loading spinner
+        previewContainer.innerHTML = `
+            <div class="p-4 text-center text-gray-500">
+                <div style="width:30px;height:30px;border:3px solid #e5e7eb;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 10px;"></div>
+                <div class="text-xs">Membaca preview template ${this.escapeHtml(templateName)}...</div>
+            </div>`;
+
+        try {
+            // Fetch berkas QSMV.docx asli
+            const res = await fetch(resolvedPath);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const arrayBuffer = await res.arrayBuffer();
+
+            // Render ke HTML menggunakan Mammoth.js
+            const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+            const htmlResult = result.value;
+
+            // Render preview dengan gaya visual terformat rapi sesuai gambar
+            previewContainer.innerHTML = `
+                <div class="p-3 border border-blue-100 rounded-lg bg-blue-50 text-xs text-blue-700 mb-3 flex items-center gap-2">
+                    <i class="fas fa-eye"></i>
+                    <span>Preview Teks Template Dokumen Asli (${this.escapeHtml(templateName)})</span>
+                </div>
+                <div class="word-docx-rendered-preview" style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:24px; font-family:Arial, sans-serif; font-size:13px; line-height:1.6; color:#334155; max-height:400px; overflow-y:auto; box-shadow:inset 0 2px 4px rgba(0,0,0,0.02);">
+                    <style>
+                        .word-docx-rendered-preview h1, .word-docx-rendered-preview h2 { text-align: center; font-weight: bold; color: #0f172a; margin-bottom: 16px; }
+                        .word-docx-rendered-preview table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+                        .word-docx-rendered-preview td, .word-docx-rendered-preview th { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; }
+                        .word-docx-rendered-preview p { margin: 8px 0; }
+                    </style>
+                    ${htmlResult}
+                </div>`;
+
+        } catch (err) {
+            console.error('[WordQuot] Preview error:', err);
+            previewContainer.innerHTML = `
+                <div class="p-3 border border-red-100 rounded-lg bg-red-50 text-xs text-red-700">
+                    <i class="fas fa-exclamation-circle mr-1"></i> Gagal memuat pratinjau teks: ${this.escapeHtml(err.message)}
+                </div>`;
+        }
+    }
+
+    getWordQuotationDraftContent(formData = null) {
+        const data = formData || this.getQuotationFormSnapshot();
+        const regNo = data.reg_no || data.regNo || 'Auto-generated';
+        const cob = data.cob || '-';
+        const subCob = data.sub_cob || data.subCob || '-';
+        const client = data.client || '-';
+        const premium = data.premium || '-';
+        const tsi = data.tsi || '-';
+        const effectiveDate = data.effective_date || data.effectiveDate || '-';
+        const templateName = this.getWordTemplateFileNameForCurrentRisk();
+
+        return `GIBSYSNET - Quotation Draft\n\nTemplate: ${templateName}\nReg Number: ${regNo}\nCOB: ${cob}\nSub COB: ${subCob}\nInsured: ${client}\nEffective Date: ${effectiveDate}\nPremium: ${premium}\nTSI: ${tsi}\n\nThis document is prepared as a DMS draft and can be synced with the backend through the quotation API.`;
+    }
+
+    getWordQuotationEditorState() {
+        try {
+            const raw = localStorage.getItem('quotation_word_editor_state');
+            return raw ? JSON.parse(raw) : null;
+        } catch (error) {
+            console.warn('Unable to read quotation editor state:', error);
+            return null;
+        }
+    }
+
+    saveWordQuotationEditorState(content) {
+        try {
+            const state = this.getQuotationTemplateState() || {};
+            const payload = {
+                ...state,
+                documentContent: content,
+                updatedAt: new Date().toISOString()
+            };
+            localStorage.setItem('quotation_word_editor_state', JSON.stringify(payload));
+            return payload;
+        } catch (error) {
+            console.warn('Unable to save quotation editor state:', error);
+            return null;
+        }
+    }
+
+    getWordQuotationDocumentContent() {
+        const panel = document.getElementById('tab-wordquot');
+        if (!panel) return '';
+        const editor = panel.querySelector('#dmsDocumentEditor');
+        return editor ? editor.value : '';
+    }
+
+    bindWordQuotationEditorEvents() {
+        const panel = document.getElementById('tab-wordquot');
+        if (!panel) return;
+
+        panel.querySelector('[data-action="save"]')?.addEventListener('click', async () => {
+            await this.saveWordQuotationDocument();
+        });
+
+        panel.querySelector('[data-action="edit"]')?.addEventListener('click', () => {
+            const editor = panel.querySelector('#dmsDocumentEditor');
+            if (editor) {
+                editor.focus();
+                editor.setSelectionRange(0, editor.value.length);
+            }
+        });
+
+        panel.querySelector('[data-action="export"]')?.addEventListener('click', () => {
+            this.exportWordQuotationDocument();
+        });
+
+        panel.querySelector('[data-action="generate"]')?.addEventListener('click', () => {
+            const editor = panel.querySelector('#dmsDocumentEditor');
+            if (editor) {
+                editor.value = this.getWordQuotationDraftContent(this.getQuotationFormSnapshot());
+                this.saveWordQuotationEditorState(editor.value);
+            }
+        });
+
+        panel.querySelector('#dmsDocumentEditor')?.addEventListener('input', () => {
+            this.saveWordQuotationEditorState(this.getWordQuotationDocumentContent());
+        });
+    }
+
+    async saveWordQuotationDocument(content = this.getWordQuotationDocumentContent()) {
+        const payload = {
+            quotationId: this.getCurrentQuotationIdFromForm() || null,
+            content,
+            mode: 'draft',
+            formData: this.getQuotationFormSnapshot(),
+            savedAt: new Date().toISOString()
+        };
+
+        this.saveWordQuotationEditorState(content);
+
+        const endpointCandidates = [
+            `${this.quotationApiUrl}/${payload.quotationId || 'draft'}/documents`,
+            `${this.quotationApiUrl}/${payload.quotationId || 'draft'}/word`,
+            'http://localhost:3001/api/documents',
+            'http://localhost:3001/api/quotations/documents'
+        ];
+
+        for (const url of endpointCandidates) {
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    this.showMessage('Document draft saved and synced to the backend when the DMS endpoint is available.');
+                    return true;
+                }
+            } catch (error) {
+                console.warn(`Unable to sync document draft to ${url}:`, error);
+            }
+        }
+
+        this.showMessage('Document draft saved locally. Backend sync will be used when the DMS API endpoint is available.');
+        return false;
+    }
+
+    exportWordQuotationDocument(content = this.getWordQuotationDocumentContent()) {
+        try {
+            const blob = new Blob([content || ''], { type: 'text/plain;charset=utf-8' });
+            const downloadUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = `quotation-draft-${Date.now()}.txt`;
+            link.click();
+            URL.revokeObjectURL(downloadUrl);
+
+            const printWindow = window.open('', '_blank', 'width=980,height=760');
+            if (printWindow) {
+                printWindow.document.write(`<!doctype html><html><head><title>Quotation Draft</title><style>body{font-family:Segoe UI,Arial,sans-serif;padding:24px;line-height:1.6;}pre{white-space:pre-wrap;}</style></head><body><pre>${this.escapeHtml(content || '')}</pre></body></html>`);
+                printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => printWindow.print(), 300);
+            }
+
+            this.showMessage('Document draft prepared for export. The browser print dialog can be used to save as PDF.');
+        } catch (error) {
+            console.warn('Unable to export quotation document:', error);
+            this.showMessage('Unable to export the document draft.');
+        }
+    }
+
+    getWordTemplateFileNameForCurrentRisk() {
+        return this.getWordTemplatePathForCurrentRisk().split('/').pop();
+    }
+
+    renderWordQuotationEditor() {
+        const panel = document.getElementById('tab-wordquot');
+        if (!panel) return;
+
+        const editorState = this.getWordQuotationEditorState();
+        const formData = this.getQuotationFormSnapshot();
+        const draftContent = editorState?.documentContent || this.getWordQuotationDraftContent(formData);
+        const quotationId = this.getCurrentQuotationIdFromForm();
+        const templatePath = this.getWordTemplatePathForCurrentRisk();
+        const templateName = this.getWordTemplateFileNameForCurrentRisk();
+
+        panel.innerHTML = `
+            <div class="word-quot-editor-shell">
+                <div class="word-quot-topbar">
+                    <div class="word-quot-topbar-left">
+                        <div class="word-quot-brand">GIBSYSNET</div>
+                        <div class="word-quot-status"><span class="dot"></span> Draft</div>
+                    </div>
+                    <div class="word-quot-topbar-actions">
+                        <button type="button" class="word-quot-action-btn word-quot-action-btn-secondary" data-action="save"><i class="fas fa-save"></i> Save</button>
+                        <button type="button" class="word-quot-action-btn word-quot-action-btn-primary" data-action="edit"><i class="fas fa-edit"></i> Edit</button>
+                        <button type="button" class="word-quot-action-btn word-quot-action-btn-accent" data-action="export"><i class="fas fa-file-export"></i> Export PDF</button>
+                    </div>
+                </div>
+
+                <div class="word-quot-ribbon">
+                    <div class="word-quot-ribbon-item">Home</div>
+                    <div class="word-quot-ribbon-item">Insert</div>
+                    <div class="word-quot-ribbon-item">Layout</div>
+                    <div class="word-quot-ribbon-item">References</div>
+                    <div class="word-quot-ribbon-item">Review</div>
+                    <div class="word-quot-ribbon-item">View</div>
+                </div>
+
+                <div class="word-quot-toolbar">
+                    <button type="button"><i class="fas fa-bold"></i></button>
+                    <button type="button"><i class="fas fa-italic"></i></button>
+                    <button type="button"><i class="fas fa-underline"></i></button>
+                    <button type="button"><i class="fas fa-list-ul"></i></button>
+                    <button type="button"><i class="fas fa-align-left"></i></button>
+                    <button type="button"><i class="fas fa-table"></i></button>
+                    <button type="button"><i class="fas fa-image"></i></button>
+                </div>
+
+                <div class="word-quot-main">
+                    <aside class="word-quot-sidebar">
+                        <div class="word-quot-sidebar-card">
+                            <h4>INFORMASI</h4>
+                            <ul class="word-quot-info-list">
+                                <li>Reg Number <span>${this.escapeHtml(formData.reg_no || formData.regNo || '-')}</span></li>
+                                <li>COB <span>${this.escapeHtml(formData.cob || '-')}</span></li>
+                                <li>SCOB <span>${this.escapeHtml(formData.sub_cob || formData.subCob || '-')}</span></li>
+                                <li>Insured <span>${this.escapeHtml(formData.client || '-')}</span></li>
+                                <li>Period <span>${this.escapeHtml(formData.effective_date || formData.effectiveDate || '-')}</span></li>
+                                <li>Premium <span>${this.escapeHtml(formData.premium || '-')}</span></li>
+                                <li>TSI <span>${this.escapeHtml(formData.tsi || '-')}</span></li>
+                            </ul>
+                        </div>
+                        <div class="word-quot-sidebar-card">
+                            <h4>Generate</h4>
+                            <button type="button" class="word-quot-generate-btn" data-action="generate">Generate Current Content</button>
+                        </div>
+                        <div class="word-quot-sidebar-card">
+                            <h4>Status</h4>
+                            <p class="text-sm text-gray-600">${this.escapeHtml(quotationId ? `Quotation ID: ${quotationId}` : 'Draft is ready to be saved to the DMS backend.')}</p>
+                        </div>
+                    </aside>
+
+                    <section class="word-quot-document-pane">
+                        <div class="word-quot-document-header">
+                            <div>A4 DOCUMENT</div>
+                            <div class="word-quot-document-meta">${this.escapeHtml(quotationId ? `Quotation ${quotationId}` : 'Draft quotation')}</div>
+                        </div>
+                        <div class="text-xs text-blue-700 font-semibold mb-1">Template aktif: ${this.escapeHtml(templateName)}</div>
+                        <div class="text-xs text-gray-500 mb-2">Path: ${this.escapeHtml(templatePath)}</div>
+                        <div class="word-quot-document-frame">
+                            <div data-role="document-preview" class="space-y-2">
+                                <div class="p-3 border border-blue-100 rounded-lg bg-blue-50 text-sm text-blue-700">
+                                    <i class="fas fa-file-word mr-2"></i>Previewing ${this.escapeHtml(templateName)}
+                                </div>
+                                <iframe class="word-quot-preview-frame" src="${this.escapeHtml(templatePath)}"></iframe>
+                            </div>
+                            <textarea id="dmsDocumentEditor" class="word-quot-editor-textarea mt-3">${this.escapeHtml(draftContent)}</textarea>
+                        </div>
+                    </section>
+                </div>
+            </div>`;
+
+        this.bindWordQuotationEditorEvents();
+    }
+
+    openWordQuotationTemplate() {
+        this.saveQuotationTemplateState();
+        const templatePath = this.getWordTemplatePathForCurrentRisk();
+        const templateName = this.getWordTemplateFileNameForCurrentRisk();
+
+        this.renderWordQuotationEditor();
+        this.openWordTemplateInEditor(templatePath);
+
+        if (this.quotClientStatus) {
+            this.quotClientStatus.innerHTML = `
+                <div class="text-blue-700">
+                    <i class="fas fa-check-circle mr-2"></i>${this.escapeHtml(templateName)} opened for ${this.escapeHtml(this.getRiskTemplateTypeFromSelection() === 'property' ? 'Property Risk' : 'Vehicle Risk')}.
+                </div>`;
+        }
+    }
+
+    openQuotationClientDocument() {
+        this.saveQuotationTemplateState();
+        this.openWordDocument();
+
+        if (this.quotClientStatus) {
+            this.quotClientStatus.innerHTML = `
+                <div class="text-blue-700">
+                    <i class="fas fa-check-circle mr-2"></i>Template QSMV.docx sudah dibuka.
+                </div>`;
         }
     }
 
@@ -1369,6 +2252,16 @@ class QuotationManager {
         return !!this.getCurrentWorkingQuotation();
     }
 
+    getCurrentQuotationIdFromForm() {
+        const idValue = (this.quotationId?.value || '').trim();
+        if (idValue) {
+            return idValue;
+        }
+
+        const currentRecord = this.getCurrentWorkingQuotation();
+        return currentRecord?.id ? String(currentRecord.id).trim() : '';
+    }
+
     getCurrentWorkingQuotation() {
         const currentId = (this.quotationId?.value || '').trim();
         if (currentId) {
@@ -1417,6 +2310,37 @@ class QuotationManager {
         return !!riskBtn && riskBtn.classList.contains('active');
     }
 
+    getRiskTemplateTypeFromSelection() {
+        if (this.activeRiskTemplateType === 'property') return 'property';
+        if (this.activeRiskTemplateType === 'vehicle') return 'vehicle';
+
+        const cobVal = String(this.cob?.value || '').trim();
+        const cobEntry = this.cobProducts.find((item) => item.cob === cobVal);
+        const cobLabel = String(cobEntry?.cobName || cobVal).toLowerCase();
+        const subCobCode = String(this.subCob?.value || '').trim().toLowerCase();
+        const subCobLabel = String(this.subCobName?.value || '').trim().toLowerCase();
+        const codeUpper = cobVal.toUpperCase();
+
+        const isMotor = ['MOT', 'MOTOR', 'KEND'].includes(codeUpper)
+            || /motor|vehicle|kendaraan/i.test(cobLabel)
+            || /motor|vehicle|kendaraan/i.test(subCobCode)
+            || /motor|vehicle|kendaraan/i.test(subCobLabel);
+        const isProperty = ['PROP', 'FIRE'].includes(codeUpper)
+            || /property|properti|fire/i.test(cobLabel)
+            || /property|properti|fire/i.test(subCobCode)
+            || /property|properti|fire/i.test(subCobLabel);
+
+        if (isMotor) return 'vehicle';
+        if (isProperty) return 'property';
+        return null;
+    }
+
+    getWordTemplatePathForCurrentRisk() {
+        const riskType = this.getRiskTemplateTypeFromSelection();
+        if (riskType === 'property') return 'template/QSPRO.docx';
+        return 'template/QSMV.docx';
+    }
+
     loadRiskTabContent(cobVal) {
         // Resolve display name alongside code for flexible matching
         const cobEntry  = this.cobProducts.find((item) => item.cob === cobVal);
@@ -1448,10 +2372,21 @@ class QuotationManager {
             || /health|employee benefit|benefit/i.test(subCobCode)
             || /health|employee benefit|benefit/i.test(subCobLabel);
 
-        if (isMotor)          srcFile = 'riskvehicle.html';
-        else if (isProperty)  srcFile = 'riskproperty.html';
-        else if (isVessel)    srcFile = 'riskvessel.html';
-        else if (isHealth)    srcFile = 'healthrisk.html';
+        if (isMotor) {
+            srcFile = 'riskvehicle.html';
+            this.activeRiskTemplateType = 'vehicle';
+        } else if (isProperty) {
+            srcFile = 'riskproperty.html';
+            this.activeRiskTemplateType = 'property';
+        } else if (isVessel) {
+            srcFile = 'riskvessel.html';
+            this.activeRiskTemplateType = null;
+        } else if (isHealth) {
+            srcFile = 'healthrisk.html';
+            this.activeRiskTemplateType = null;
+        } else {
+            this.activeRiskTemplateType = null;
+        }
 
         if (!srcFile) {
             // COB has no dedicated risk form — stay on basic info panel
@@ -1462,10 +2397,11 @@ class QuotationManager {
         const frame = document.getElementById('riskDetailFrame');
         if (!frame) return;
 
-        const currentRecord = this.getCurrentWorkingQuotation();
         const frameUrl = new URL(srcFile, window.location.href);
+        const currentRecord = this.getCurrentWorkingQuotation();
         frameUrl.searchParams.set('regNo', currentRecord?.regNo || this.regNo?.value || '');
         frameUrl.searchParams.set('quotationId', currentRecord?.id || this.quotationId?.value || '');
+        frameUrl.searchParams.set('loadExisting', 'false');
 
         // Only reload iframe when COB changes
         if (this._riskDetailLoaded !== riskKey) {
@@ -1480,18 +2416,27 @@ class QuotationManager {
         let srcFile = 'riskproperty.html';
         if (type === 'vehicle') {
             srcFile = 'riskvehicle.html';
+            this.activeRiskTemplateType = 'vehicle';
+        } else if (type === 'property') {
+            srcFile = 'riskproperty.html';
+            this.activeRiskTemplateType = 'property';
         } else if (type === 'vessel') {
             srcFile = 'riskvessel.html';
+            this.activeRiskTemplateType = null;
         } else if (type === 'health' || type === 'employee_benefit') {
             srcFile = 'healthrisk.html';
+            this.activeRiskTemplateType = null;
+        } else {
+            this.activeRiskTemplateType = null;
         }
         const frame = document.getElementById('riskDetailFrame');
         if (!frame) return;
 
-        const currentRecord = this.getCurrentWorkingQuotation();
         const frameUrl = new URL(srcFile, window.location.href);
+        const currentRecord = this.getCurrentWorkingQuotation();
         frameUrl.searchParams.set('regNo', currentRecord?.regNo || this.regNo?.value || '');
         frameUrl.searchParams.set('quotationId', currentRecord?.id || this.quotationId?.value || '');
+        frameUrl.searchParams.set('loadExisting', 'false');
 
         frame.src = frameUrl.toString();
         this._riskDetailLoaded = type;

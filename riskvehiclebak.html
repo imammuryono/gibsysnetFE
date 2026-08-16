@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motor Vehicle Risk Details</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/riskvehicle.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <i class="fas fa-shield-alt"></i> RiskManager
+        </div>
+        <ul class="nav-menu">
+        </ul>
+
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1><i class="fas fa-car"></i> Motor Vehicle Risk Details</h1>
+            <div class="header-actions" style="display: flex; gap: 8px;">
+
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span id="riskBadge" class="risk-badge">Risk No: 1/1</span>
+                <span class="status-badge">Active</span>
+            </div>
+            <div class="card-body">
+                <!-- Multi Risk Switcher -->
+                <div class="risk-switcher">
+                    <div class="risk-switcher-head" style="flex-wrap: wrap; gap: 8px;">
+                        <span class="risk-switcher-title">Multi Vehicle Setup</span>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <button type="button" id="downloadTemplateBtn" class="btn-add-risk" style="background-color: #10b981; border-color: #10b981;">
+                                <i class="fas fa-file-excel"></i> Template
+                            </button>
+                            <button type="button" id="uploadExcelBtn" class="btn-add-risk" style="background-color: #8b5cf6; border-color: #8b5cf6;">
+                                <i class="fas fa-upload"></i> Bulk Upload
+                            </button>
+                            <button type="button" id="addRiskBtn" class="btn-add-risk">
+                                <i class="fas fa-plus-circle"></i> Add Vehicle
+                            </button>
+                            <button type="button" id="delRiskBtn" class="btn-add-risk" style="background-color: #ef4444; border-color: #ef4444;">
+                                <i class="fas fa-trash"></i> Del Vehicle
+                            </button>
+                        </div>
+                        <input type="file" id="excelFileInput" class="hidden" accept=".xlsx, .xls" style="display: none;">
+                    </div>
+                    <div id="riskList" class="risk-list"></div>
+                </div>
+
+                <!-- Dynamic Fields for Active Risk -->
+                <div class="info-grid" id="vehicleFieldsContainer">
+                    <!-- Filled by JS -->
+                </div>
+
+                <!-- Object Breakdown Tabs (Object & Coverage) -->
+                <div class="breakdown-section">
+                    <h3>Object Breakdown</h3>
+                    <div class="tabs-shell">
+                        <div class="tab-controls">
+                            <button type="button" class="tab-btn active" data-target="object-tab"><i class="fas fa-cubes"></i> Object</button>
+                            <button type="button" class="tab-btn" data-target="coverage-tab"><i class="fas fa-umbrella"></i> Coverage</button>
+                        </div>
+
+                        <div id="object-tab" class="tab-panel active">
+                            <p class="lookup-hint">Rows for active vehicle only. Lookup from <strong>object_group</strong>. Total object value = <strong>Sum Insured</strong> for this vehicle.</p>
+                            <div id="objectRows" class="entry-list"></div>
+                            <div class="tab-tools">
+                                <button type="button" id="addObjectRowBtn" class="btn-add-row">
+                                    <i class="fas fa-plus-circle"></i> Add Object
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="coverage-tab" class="tab-panel">
+                            <p class="lookup-hint">Coverage and rate in percentage (%). Premium = Sum Insured &times; (Total Rate / 100).</p>
+                            <div id="coverageRows" class="entry-list"></div>
+                            <div class="tab-tools">
+                                <button type="button" id="addCoverageRowBtn" class="btn-add-row">
+                                    <i class="fas fa-plus-circle"></i> Add Coverage
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Premium Calculation Card -->
+                    <div class="calc-card">
+                        <h4><i class="fas fa-calculator"></i> Premium Calculation</h4>
+                        <div id="riskPremiumBreakdown" class="premium-breakdown-table"></div>
+                        <div class="active-risk-detail">
+                            <div class="calc-item">
+                                <span class="calc-label">Active Vehicle Sum Insured</span>
+                                <span id="activeSumInsuredDisplay" class="calc-value">0,00</span>
+                            </div>
+                            <div class="calc-item">
+                                <span class="calc-label">Total Rate (%)</span>
+                                <span id="activeRateDisplay" class="calc-value">0,0000</span>
+                            </div>
+                            <div class="premium-box">
+                                <span class="calc-label">Active Risk Premium</span>
+                                <div id="premiumDisplay" class="premium-value">0,00</div>
+                                <span id="formulaDisplay" class="formula-text"></span>
+                            </div>
+                        </div>
+                        <div class="grand-total">
+                            <div><span class="calc-label">Total Sum Insured (All Vehicles)</span><div id="globalSumInsuredDisplay" class="premium-value">0,00</div></div>
+                            <div><span class="calc-label">Total Premium (All Vehicles)</span><div id="globalPremiumDisplay" class="premium-value">0,00</div></div>
+                        </div>
+                    </div>
+                </div>
+                <p class="footnote"><i class="fas fa-info-circle"></i> Multi-vehicle data ready for quotation system.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="assets/js/api.js?v=20260422-node-api-2"></script>
+    <script src="assets/js/riskvehicle.js?v=20260422-node-api-2"></script>
+</body>
+</html>
+

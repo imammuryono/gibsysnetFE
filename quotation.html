@@ -230,7 +230,7 @@
                         </div><!-- /basicInfoPanel -->
                         <!-- Risk Detail: replaces basic info view when COB+SubCOB are set -->
                         <div id="tab-risk-detail" class="hidden">
-                            <iframe id="riskDetailFrame" src="" style="width:100%;min-height:900px;border:none;border-radius:6px;display:block;" title="Risk Detail Form"></iframe>
+                            <iframe id="riskDetailFrame" src="" style="width:100%;min-height:900px;border:none;border-radius:6px;display:block;"></iframe>
                         </div>
 
                         </div><!-- /tab-risk -->
@@ -454,9 +454,7 @@
                             </div>
 
                         </div><!-- /tab-insurance -->
-                        <div id="tab-wordquot" class="quot-tab-panel hidden">
-                            <p class="text-gray-500 text-sm py-6 text-center"><i class="fas fa-file-word mr-2"></i>Word Quotation tab — coming soon.</p>
-                        </div>
+                        <div id="tab-wordquot" class="quot-tab-panel hidden"></div>
                         <div id="tab-attachment" class="quot-tab-panel hidden">
                             <div class="bg-white p-6 rounded-lg border border-gray-200">
                                 <h3 class="text-base font-bold text-gray-800 mb-2"><i class="fas fa-paperclip mr-2 text-blue-600"></i>Policy Attachments</h3>
@@ -495,7 +493,7 @@
                             </div>
                         </div>
                         <div id="tab-quotclient" class="quot-tab-panel hidden">
-                            <p class="text-gray-500 text-sm py-6 text-center"><i class="fas fa-user mr-2"></i>Quot. Client tab — coming soon.</p>
+                            <!-- Content rendered dynamically by quotation.js -->
                         </div>
                         <div id="tab-closing" class="quot-tab-panel hidden">
                             <p class="text-gray-500 text-sm py-6 text-center"><i class="fas fa-times-circle mr-2"></i>Closing tab — coming soon.</p>
@@ -629,6 +627,12 @@
         </div>
     </div>
 
+    <!-- Libraries for DOCX generation and PDF conversion (local offline builds) -->
+    <script src="assets/js/pizzip.min.js"></script>
+    <script src="assets/js/FileSaver.min.js"></script>
+    <script src="assets/js/docxtemplater.js"></script>
+    <script src="assets/js/mammoth.browser.min.js"></script>
+    <script src="assets/js/html2pdf.bundle.min.js"></script>
     <script>
         // API Configuration already loaded from api.js
     </script>
